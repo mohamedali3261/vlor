@@ -16,7 +16,7 @@
 }
 
 .text-outline {
-  -webkit-text-stroke: 1px rgba(20, 16, 25, 0.35);
+  -webkit-text-stroke: 1px rgba(77,51,8, 0.35);
   color: transparent;
 }
 
@@ -199,7 +199,7 @@
   background: var(--color-ink);
   border: 3px solid var(--color-acid);
   cursor: pointer;
-  box-shadow: 0 2px 8px rgba(20, 16, 25, 0.3);
+  box-shadow: 0 2px 8px rgba(77,51,8, 0.3);
 }
 .range-acid::-moz-range-thumb {
   height: 16px;

@@ -41,8 +41,8 @@ function Bottle({ product, active, near }: { product: Product; active: boolean; 
           className={cn(
             "select-none",
             hasCutout
-              ? "h-[90%] w-auto max-w-full object-contain drop-shadow-[0_26px_26px_rgba(0,0,0,0.45)]"
-              : "aspect-[4/5] h-[84%] w-auto rounded-2xl object-cover shadow-[0_26px_50px_-14px_rgba(0,0,0,0.6)]",
+              ? "h-[90%] w-auto max-w-full object-contain drop-shadow-[0_26px_26px_rgba(77,51,8,0.45)]"
+              : "aspect-[4/5] h-[84%] w-auto rounded-2xl object-cover shadow-[0_26px_50px_-14px_rgba(77,51,8,0.6)]",
             active && hasCutout && "shop-bottle"
           )}
         />
@@ -112,7 +112,7 @@ export function ShopHeroSlider() {
     go(active + ((event.key === "ArrowRight") !== rtl ? 1 : -1));
   };
 
-  const navButton = "press absolute z-30 grid h-11 w-11 place-items-center rounded-full bg-bone text-ink shadow-[0_10px_30px_-8px_rgba(0,0,0,0.6)] transition-[background-color,opacity] duration-300 hover:bg-[var(--acc)] disabled:cursor-not-allowed disabled:opacity-35 disabled:hover:bg-bone lg:h-[46px] lg:w-[46px]";
+  const navButton = "press absolute z-30 grid h-11 w-11 place-items-center rounded-full bg-bone text-ink shadow-[0_10px_30px_-8px_rgba(77,51,8,0.6)] transition-[background-color,opacity] duration-300 hover:bg-[var(--acc)] disabled:cursor-not-allowed disabled:opacity-35 disabled:hover:bg-bone lg:h-[46px] lg:w-[46px]";
 
   return (
     <section

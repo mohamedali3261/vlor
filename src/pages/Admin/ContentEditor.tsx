@@ -7,6 +7,7 @@ import { Link } from "@/lib/router";
 import { siteBackground } from "@/lib/theme";
 import { Section } from "@/pages/Admin/ContentFields";
 import { ShowcaseEditor } from "@/pages/Admin/ShowcaseEditor";
+import { ProductCardColours } from "@/pages/Admin/ProductCardColours";
 import type { SiteContent } from "@/types/content";
 import { draftsChanged, registerDraft } from "@/lib/studioDrafts";
 import { useEffect, useRef, useState } from "react";
@@ -62,7 +63,7 @@ export function ContentEditor({ onManageProducts }: { onManageProducts?: () => v
 
   return (
     <div className="max-w-3xl">
-      <div className="sticky top-[76px] z-20 -mx-1 mb-4 flex items-center justify-between gap-2 rounded-2xl border border-ink/10 bg-bone px-3 py-2 shadow-[0_8px_24px_-18px_rgba(20,16,25,0.6)]">
+      <div className="sticky top-[76px] z-20 -mx-1 mb-4 flex items-center justify-between gap-2 rounded-2xl border border-ink/10 bg-bone px-3 py-2 shadow-[0_8px_24px_-18px_rgba(77,51,8,0.6)]">
         <p className="flex min-w-0 items-center gap-2 text-[11px] font-semibold text-mist">
           <span className={`h-2 w-2 shrink-0 rounded-full ${dirty ? "animate-pulse bg-amber-400" : "bg-emerald-500"}`} />
           <span className="truncate">{dirty ? (ar ? "تعديلات غير محفوظة" : "Unsaved edits") : ar ? "كل شيء محفوظ" : "All saved"}</span>
@@ -106,7 +107,7 @@ export function ContentEditor({ onManageProducts }: { onManageProducts?: () => v
       <div className="mt-3">
         <Section
           title={ar ? "ألوان الموقع" : "Site colours"}
-          description={ar ? "اختر ألوان الموقع؛ بطاقات المنتجات تستخدم درجات من لون التمييز، وألوان الكروت لا تتغير عند تغيير الخلفية. احفظ ثم انشر لتظهر للزوار." : "Choose the site palette; product cards use accent shades and card colours stay independent of the page background. Save and publish to make changes visible to visitors."}
+          description={ar ? "اختر ألوان الموقع والخلفية. يمكنك تخصيص ألوان بطاقات المنتجات ومعاينتها من القسم التالي." : "Choose the site palette and background. Customise and preview product card colours in the next section."}
         >
           <div className="grid gap-3 sm:grid-cols-2">
             {([
@@ -154,6 +155,25 @@ export function ContentEditor({ onManageProducts }: { onManageProducts?: () => v
               ))}
             </div>
           </div>
+        </Section>
+      </div>
+
+      <div className="mt-3">
+        <Section
+          title={ar ? "ألوان كروت المنتجات" : "Product card colours"}
+          description={ar ? "تحكّم في لون الكارت والدائرة والنص مع معاينة مباشرة." : "Control the card, circle and text colours with a live preview."}
+          defaultOpen
+        >
+          <ProductCardColours
+            theme={draft.theme}
+            product={products[0]}
+            dirty={dirty}
+            onSave={save}
+            onChange={(key, value) => edit((next) => {
+              if (value === undefined) delete next.theme[key];
+              else next.theme[key] = value;
+            })}
+          />
         </Section>
       </div>
 

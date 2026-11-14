@@ -208,7 +208,7 @@ export function createDefaultContent(): SiteContent {
     textOverrides: {},
 
     theme: {
-      ink: "#141019",
+      ink: "#4d3308",
       bone: "#f3efe7",
       accent: "#D4A035",
       lilac: "#c7a873",
@@ -374,7 +374,9 @@ export function mergeContent(stored: DeepPartial<SiteContent> | null | undefined
     typeof value === "string" && /^#[0-9a-f]{6}$/i.test(value) ? value : fallback;
   result.theme = {
     ...result.theme,
-    ink: validColour(result.theme?.ink, base.theme.ink),
+    // Upgrade the previous built-in near-black, but keep custom owner colours.
+    ink: typeof result.theme?.ink === "string" && result.theme.ink.toLowerCase() === "#141019"
+      ? base.theme.ink : validColour(result.theme?.ink, base.theme.ink),
     bone: validColour(result.theme?.bone, base.theme.bone),
     accent: validColour(result.theme?.accent, base.theme.accent),
     // Replace the old built-in purple while retaining owner-selected colours.
@@ -382,6 +384,9 @@ export function mergeContent(stored: DeepPartial<SiteContent> | null | undefined
       ? base.theme.lilac : validColour(result.theme?.lilac, base.theme.lilac),
     backgroundLight: validColour(result.theme?.backgroundLight, "") || undefined,
     backgroundDark: validColour(result.theme?.backgroundDark, "") || undefined,
+    productCardBase: validColour(result.theme?.productCardBase, "") || undefined,
+    productCardDisc: validColour(result.theme?.productCardDisc, "") || undefined,
+    productCardText: validColour(result.theme?.productCardText, "") || undefined,
     headingScale: clampScale("headingScale", Number(result.theme?.headingScale)),
     bodyScale: clampScale("bodyScale", Number(result.theme?.bodyScale)),
     sectionSpacing: clampScale("sectionSpacing", Number(result.theme?.sectionSpacing)),

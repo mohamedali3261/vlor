@@ -1,7 +1,7 @@
 import { useStore } from "@/context/StoreContext";
 import { defaultContent } from "@/data/defaultContent";
 import { applyScale } from "@/lib/scale";
-import { shade, siteBackground, siteSurfaces } from "@/lib/theme";
+import { productCardColours, shade, siteBackground, siteSurfaces } from "@/lib/theme";
 import { useLayoutEffect } from "react";
 
 /** Apply the studio palette in day mode, regardless of old browser preferences. */
@@ -14,6 +14,10 @@ export function ThemeProvider() {
     const set = (token: string, value: string) => root.setProperty(token, value);
     const background = siteBackground(theme, "light");
     const surfaces = siteSurfaces(theme);
+    const card = productCardColours(theme);
+    set("--product-card-base", card.base);
+    set("--product-card-disc", card.disc);
+    set("--product-card-text", card.text);
     set("--color-ink", theme.ink);
     set("--color-bone", background);
     set("--color-card-light", surfaces.cardLight);

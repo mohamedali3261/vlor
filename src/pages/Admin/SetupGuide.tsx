@@ -52,7 +52,7 @@ export function SetupGuide() {
           <Sparkle className="h-4 w-4 text-acid" />
           <h3 className="text-[12px] font-bold">{lang === "ar" ? "خريطة المشروع" : "Project structure"}</h3>
         </div>
-        <pre className="mt-3 overflow-x-auto rounded-xl bg-black/25 p-3 text-[9.5px] leading-relaxed text-bone/70" dir="ltr">
+        <pre className="mt-3 overflow-x-auto rounded-xl bg-ink/25 p-3 text-[9.5px] leading-relaxed text-bone/70" dir="ltr">
 {`src/
  ├ pages/
  │  ├ Home/      Hero, Featured, Runway…

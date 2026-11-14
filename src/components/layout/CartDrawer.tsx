@@ -43,7 +43,7 @@ export function CartDrawer() {
       />
       <aside
         className={cn(
-          "absolute inset-y-0 end-0 flex w-full max-w-[420px] flex-col bg-bone shadow-[-16px_0_64px_-20px_rgba(20,16,25,0.35)] transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]",
+          "absolute inset-y-0 end-0 flex w-full max-w-[420px] flex-col bg-bone shadow-[-16px_0_64px_-20px_rgba(77,51,8,0.35)] transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]",
           isOpen ? "translate-x-0" : "translate-x-full rtl:-translate-x-full"
         )}
         role={isOpen ? "dialog" : undefined}
@@ -64,7 +64,7 @@ export function CartDrawer() {
                 <p className="text-[10px] text-bone/60">{count === 0 ? t("cart.empty") : lang === "ar" ? `${count} منتجات` : `${count} items`}</p>
               </div>
               {count > 0 && (
-                <span className="grid h-6 min-w-6 place-items-center rounded-full bg-acid px-2 text-[11px] font-bold text-[#141019]">
+                <span className="grid h-6 min-w-6 place-items-center rounded-full bg-acid px-2 text-[11px] font-bold text-ink">
                   {count}
                 </span>
               )}
@@ -82,7 +82,7 @@ export function CartDrawer() {
         {lines.length === 0 ? (
           <div className="flex flex-1 flex-col items-center justify-center gap-6 px-8 py-12 text-center">
             <div className="relative">
-              <span className="grid h-24 w-24 place-items-center rounded-[1.5rem] bg-surface shadow-[0_12px_32px_-16px_rgba(20,16,25,0.18)] ring-1 ring-ink/5">
+              <span className="grid h-24 w-24 place-items-center rounded-[1.5rem] bg-surface shadow-[0_12px_32px_-16px_rgba(77,51,8,0.18)] ring-1 ring-ink/5">
                 <Bag className="h-9 w-9 text-ink/30" />
               </span>
               <span className="absolute -end-1 -top-1 grid h-6 w-6 place-items-center rounded-full bg-ink text-[10px] text-bone">0</span>
@@ -122,7 +122,7 @@ export function CartDrawer() {
 
             <div className="min-h-0 flex-1 space-y-3 overflow-y-auto bg-bone-2/40 p-3">
               {lines.map((line) => (
-                <div key={line.key} className="flex gap-3 rounded-2xl border border-ink/6 bg-surface p-3 shadow-[0_8px_24px_-16px_rgba(20,16,25,0.15)]">
+                <div key={line.key} className="flex gap-3 rounded-2xl border border-ink/6 bg-surface p-3 shadow-[0_8px_24px_-16px_rgba(77,51,8,0.15)]">
                   <Link to={`/product/${line.slug}`} onClick={close} className="w-[84px] shrink-0 overflow-hidden rounded-xl bg-bone-2/60">
                     <SmartImage src={line.image} alt={line.name[lang]} className="aspect-[3/4] w-full" />
                   </Link>
@@ -171,7 +171,7 @@ export function CartDrawer() {
               >
                 <Whatsapp className="h-4 w-4" /> {t("cart.quickSend")}
               </a>
-              <p className="mt-3 flex items-center justify-center gap-1.5 rounded-full bg-acid/20 px-3 py-2 text-[10px] font-semibold text-[#141019]">
+              <p className="mt-3 flex items-center justify-center gap-1.5 rounded-full bg-acid/20 px-3 py-2 text-[10px] font-semibold text-ink">
                 <Check className="h-3.5 w-3.5" /> {t("cart.cod")}
               </p>
             </div>

@@ -212,7 +212,7 @@ export function Select({
           aria-label={ariaLabel}
           dir={dir ?? resolveDirection()}
           style={menuStyle}
-          className="overflow-y-auto overscroll-contain rounded-2xl border border-ink/12 bg-bone p-1.5 text-ink shadow-[0_20px_55px_-18px_rgba(20,16,25,0.5)] ring-1 ring-ink/5 backdrop-blur-xl"
+          className="overflow-y-auto overscroll-contain rounded-2xl border border-ink/12 bg-bone p-1.5 text-ink shadow-[0_20px_55px_-18px_rgba(77,51,8,0.5)] ring-1 ring-ink/5 backdrop-blur-xl"
         >
           {options.map((option, index) => {
             const selectedOption = option.value === value;
