@@ -13,7 +13,7 @@
   overflow: hidden;
   border: 1px solid rgb(212 160 68 / 50%);
   border-radius: 10px;
-  background: #000;
+  background: var(--color-ink);
   box-shadow: 0 0 16px rgb(212 160 68 / 14%);
   transform: translate(-50%, -50%) scale(var(--nav-brand-scale));
   transform-origin: center;
@@ -26,7 +26,7 @@
   inset: 0;
   content: "";
   background-image:
-    linear-gradient(100deg, rgb(0 0 0 / 72%), rgb(0 0 0 / 57%) 50%, rgb(0 0 0 / 72%)),
+    linear-gradient(100deg, color-mix(in srgb, var(--color-ink) 72%, transparent), color-mix(in srgb, var(--color-ink) 57%, transparent) 50%, color-mix(in srgb, var(--color-ink) 72%, transparent)),
     url("/images/brand/vlor-emblem.webp");
   background-position: center;
   background-size: cover;
@@ -44,7 +44,7 @@
   width: 96%;
   height: 94%;
   object-fit: contain;
-  filter: drop-shadow(0 2px 8px rgb(0 0 0 / 75%));
+  filter: drop-shadow(0 2px 8px rgb(77 51 8 / 75%));
   pointer-events: none;
 }
 

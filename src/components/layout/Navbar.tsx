@@ -77,7 +77,7 @@ export function Navbar() {
         dir="ltr"
         className={cn(
           "sticky top-0 z-50 transition-all duration-500",
-          scrolled ? "glass border-b border-ink/10 shadow-[0_12px_40px_-24px_rgba(20,16,25,0.35)]" : "bg-bone"
+          scrolled ? "glass border-b border-ink/10 shadow-[0_12px_40px_-24px_rgba(77,51,8,0.35)]" : "bg-bone"
         )}
       >
         <div className="mx-auto flex h-[72px] max-w-[1400px] items-center justify-between gap-2 px-4 sm:gap-4 sm:px-6 lg:px-10">
@@ -155,7 +155,7 @@ export function Navbar() {
             >
               <Heart className="h-4 w-4" fill={wishlist.length > 0 || path === "/wishlist" ? "currentColor" : "none"} />
               {wishlist.length > 0 && (
-                <span className="absolute -end-1 -top-1 grid h-4 min-w-4 place-items-center rounded-full bg-lilac px-1 text-[9px] font-bold text-[#141019]">
+                <span className="absolute -end-1 -top-1 grid h-4 min-w-4 place-items-center rounded-full bg-lilac px-1 text-[9px] font-bold text-ink">
                   {wishlist.length}
                 </span>
               )}
@@ -183,7 +183,7 @@ export function Navbar() {
               <span
                 key={count}
                 className={cn(
-                  "grid h-5 min-w-5 place-items-center rounded-full bg-acid px-1 text-[10px] font-extrabold text-[#141019]",
+                  "grid h-5 min-w-5 place-items-center rounded-full bg-acid px-1 text-[10px] font-extrabold text-ink",
                   count > 0 && "m-badge-ping-pop"
                 )}
               >
@@ -252,7 +252,7 @@ export function Navbar() {
               <span className="inline-flex items-center gap-2.5 font-display text-4xl leading-none">
                 {x("Saved", "المفضلة")}
                 {wishlist.length > 0 && (
-                  <span className="rounded-full bg-lilac px-2 py-0.5 font-sans text-xs font-bold text-[#141019]">
+                  <span className="rounded-full bg-lilac px-2 py-0.5 font-sans text-xs font-bold text-ink">
                     {wishlist.length}
                   </span>
                 )}

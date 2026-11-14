@@ -43,7 +43,7 @@ export function StudioDot({ className }: { className?: string }) {
       tabIndex={-1}
       className={cn(
         "group relative grid h-5 w-5 shrink-0 place-items-center rounded-full",
-        "bg-black ring-1 ring-inset ring-white/10",
+        "bg-ink ring-1 ring-inset ring-white/10",
         "transition-all duration-300 hover:ring-acid/50 active:scale-90",
         className
       )}

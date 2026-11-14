@@ -13,8 +13,8 @@
   border-radius: 22px;
   /* Keep the card and its controls independent of the page background. */
   --color-bone: var(--color-card-light);
-  background-color: color-mix(in srgb, var(--color-acid) 48%, white);
-  box-shadow: 0 18px 50px -30px rgba(20, 16, 25, 0.9);
+  background-color: var(--product-card-base, color-mix(in srgb, var(--color-acid) 48%, white));
+  box-shadow: 0 18px 50px -30px rgba(77,51,8, 0.9);
   transition: box-shadow 500ms ease;
 }
 
@@ -25,14 +25,14 @@
 }
 
 .pc-card:hover {
-  box-shadow: 0 34px 70px -32px rgba(20, 16, 25, 1);
+  box-shadow: 0 34px 70px -32px rgba(77,51,8, 1);
 }
 
 /* Expanding corner accent disc */
 .pc-disc {
   position: absolute;
   inset: 0;
-  background: color-mix(in srgb, var(--color-acid) 66%, white);
+  background: var(--product-card-disc, color-mix(in srgb, var(--color-acid) 66%, white));
   clip-path: circle(140px at 80% 18%);
   transition: clip-path 500ms ease-in-out;
 }
@@ -62,7 +62,7 @@
   font-weight: 800;
   font-style: italic;
   line-height: 1;
-  color: color-mix(in srgb, var(--color-ink) 7%, transparent);
+  color: color-mix(in srgb, var(--product-card-text, var(--color-ink)) 7%, transparent);
 }
 
 html[lang="ar"] .pc-watermark {
@@ -118,9 +118,9 @@ html[lang="ar"] .pc-watermark {
   width: 2.25rem;
   place-items: center;
   border-radius: 9999px;
-  border: 1px solid color-mix(in srgb, var(--color-ink) 25%, transparent);
-  background-color: color-mix(in srgb, var(--color-ink) 10%, transparent);
-  color: var(--color-ink);
+  border: 1px solid color-mix(in srgb, var(--product-card-text, var(--color-ink)) 50%, transparent);
+  background-color: color-mix(in srgb, var(--product-card-text, var(--color-ink)) 10%, transparent);
+  color: var(--product-card-text, var(--color-ink));
   cursor: pointer;
   transition:
     background-color 300ms ease,
@@ -131,9 +131,9 @@ html[lang="ar"] .pc-watermark {
 
 .pc-wish:hover,
 .pc-wish--active {
-  border-color: var(--color-ink);
-  background-color: var(--color-ink);
-  color: var(--color-bone);
+  border-color: var(--product-card-text, var(--color-ink));
+  background-color: var(--product-card-text, var(--color-ink));
+  color: var(--product-card-disc, var(--color-bone));
 }
 
 .pc-wish:active {
@@ -168,7 +168,7 @@ html[lang="ar"] .pc-watermark {
   width: auto;
   max-width: none;
   object-fit: contain;
-  filter: drop-shadow(0 22px 28px rgba(0, 0, 0, 0.45));
+  filter: drop-shadow(0 22px 28px rgba(77,51,8, 0.45));
   transform: translate(-50%, -50%) rotate(var(--tilt, -22deg));
   transition: transform 700ms ease-out;
 }
@@ -212,7 +212,7 @@ html[lang="ar"] .pc-watermark {
   font-size: 20px;
   line-height: 1.25;
   letter-spacing: -0.02em;
-  color: var(--color-ink);
+  color: var(--product-card-text, var(--color-ink));
 }
 
 .pc-price-row {
@@ -227,12 +227,12 @@ html[lang="ar"] .pc-watermark {
 .pc-price {
   font-size: 15px;
   font-weight: 800;
-  color: var(--color-ink);
+  color: var(--product-card-text, var(--color-ink));
 }
 
 .pc-compare {
   font-size: 11px;
-  color: color-mix(in srgb, var(--color-ink) 55%, transparent);
+  color: color-mix(in srgb, var(--product-card-text, var(--color-ink)) 70%, transparent);
   text-decoration: line-through;
 }
 
@@ -265,7 +265,7 @@ html[lang="ar"] .pc-watermark {
   font-weight: 300;
   text-transform: uppercase;
   letter-spacing: 0.14em;
-  color: color-mix(in srgb, var(--color-ink) 70%, transparent);
+  color: var(--product-card-text, var(--color-ink));
 }
 
 .pc-size-btn {

@@ -49,10 +49,10 @@ export function ToastProvider({ children }: { children: ReactNode }) {
             <span
               className={`grid h-6 w-6 shrink-0 place-items-center rounded-full text-[11px] font-bold ${
                 toast.tone === "success"
-                  ? "bg-acid text-[#141019]"
+                  ? "bg-acid text-ink"
                   : toast.tone === "error"
                     ? "bg-rose-400 text-ink"
-                    : "bg-lilac text-[#141019]"
+                    : "bg-lilac text-ink"
               }`}
             >
               {toast.tone === "success" ? "✓" : toast.tone === "error" ? "!" : "i"}

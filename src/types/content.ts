@@ -50,6 +50,10 @@ export interface ThemeContent {
   /** Optional exact background colours; older palettes derive them from bone/ink. */
   backgroundLight?: string;
   backgroundDark?: string;
+  /** Optional product card colours; unset colours follow the site palette. */
+  productCardBase?: string;
+  productCardDisc?: string;
+  productCardText?: string;
   /** Headings, in percent of the designed size (see lib/scale.ts for limits). */
   headingScale: number;
   /** Lead paragraphs, in percent. */

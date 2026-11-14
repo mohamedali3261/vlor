@@ -13,6 +13,27 @@ export function shade(hex: string, percent: number): string {
   return `#${[16, 8, 0].map((s) => channel(s).toString(16).padStart(2, "0")).join("")}`;
 }
 
+/** Product cards default to two shades derived from the site's accent. */
+export function productCardColours(theme: ThemeContent) {
+  return {
+    base: theme.productCardBase ?? shade(theme.accent, 0.52),
+    disc: theme.productCardDisc ?? shade(theme.accent, 0.34),
+    text: theme.productCardText ?? theme.ink,
+  };
+}
+
+/** WCAG contrast ratio for the studio's card readability warning. */
+export function contrastRatio(first: string, second: string): number {
+  const luminance = (hex: string) => {
+    const rgb = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255)
+      .map((c) => c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4);
+    return 0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2];
+  };
+  const a = luminance(first);
+  const b = luminance(second);
+  return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
+}
+
 /** Replace purple product highlights with the site accent without changing saved product data. */
 export function productAccent(colour: string | undefined, fallback: string): string {
   if (!colour || !/^#[0-9a-f]{6}$/i.test(colour)) return fallback;

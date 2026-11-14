@@ -27,8 +27,8 @@ export function Badge({
 }) {
   const tones = {
     ink: "bg-ink text-bone",
-    acid: "bg-acid text-[#141019]",
-    lilac: "bg-lilac text-[#141019]",
+    acid: "bg-acid text-ink",
+    lilac: "bg-lilac text-ink",
     bone: "bg-bone/90 text-ink",
     glass: "glass-dark text-bone border border-white/15",
   };
@@ -210,7 +210,7 @@ export function SmartImage({
           }}
           className={cn(
             "h-full w-full transition-all duration-700 ease-out",
-            isCutout ? "object-contain p-3 drop-shadow-[0_14px_22px_rgba(0,0,0,0.22)]" : "object-cover",
+            isCutout ? "object-contain p-3 drop-shadow-[0_14px_22px_rgba(77,51,8,0.22)]" : "object-cover",
             loaded ? "scale-100 opacity-100 blur-0" : "scale-[1.04] opacity-0 blur-sm",
             imgClassName
           )}

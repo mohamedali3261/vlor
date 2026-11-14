@@ -37,7 +37,7 @@
 }
 .m-hover-lift-md:hover {
   transform: translate3d(0, -5px, 0);
-  box-shadow: 0 22px 46px -26px rgba(20, 16, 25, 0.42);
+  box-shadow: 0 22px 46px -26px rgba(77,51,8, 0.42);
 }
 
 /* 186 */ .m-hover-lift-lg {
@@ -45,7 +45,7 @@
 }
 .m-hover-lift-lg:hover {
   transform: translate3d(0, -8px, 0);
-  box-shadow: 0 28px 56px -28px rgba(20, 16, 25, 0.52);
+  box-shadow: 0 28px 56px -28px rgba(77,51,8, 0.52);
 }
 
 /* 187 */ .m-hover-scale-subtle {

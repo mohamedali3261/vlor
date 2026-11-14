@@ -40,7 +40,7 @@
 .shop-stage {
   --acc: #D4A035;
   /* Derived, so it follows the animated --acc frame by frame. */
-  --acc-deep: color-mix(in srgb, var(--acc) 66%, #000);
+  --acc-deep: color-mix(in srgb, var(--acc) 66%, var(--color-ink));
   --acc-soft: color-mix(in srgb, var(--acc) 30%, transparent);
   transition: --acc 0.75s ease;
 }

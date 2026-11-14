@@ -47,7 +47,7 @@ html[lang="ar"] .rl-wide-i18n {
   position: relative;
   z-index: 5;
   background: var(--color-surface);
-  border-bottom: 1px solid rgba(22, 25, 31, 0.06);
+  border-bottom: 1px solid rgba(77,51,8, 0.06);
   padding: calc(18 * var(--rl-u)) calc(46 * var(--rl-u)) calc(14 * var(--rl-u));
 }
 
@@ -202,7 +202,7 @@ html[lang="ar"] .rl-wide-i18n {
   pointer-events: none;
   user-select: none;
   -webkit-user-drag: none;
-  filter: drop-shadow(0 18px 28px rgba(22, 25, 31, 0.16));
+  filter: drop-shadow(0 18px 28px rgba(77,51,8, 0.16));
 }
 
 .rl-m::before {
@@ -359,7 +359,7 @@ html[lang="ar"] .rl-wide-i18n {
   width: calc(46 * var(--rl-u));
   height: calc(46 * var(--rl-u));
   margin: calc(-23 * var(--rl-u)) 0 0 calc(-23 * var(--rl-u));
-  border: calc(2.5 * var(--rl-u)) solid #16191f;
+  border: calc(2.5 * var(--rl-u)) solid var(--color-ink);
   border-radius: 99px;
   pointer-events: none;
   opacity: 0;
@@ -389,7 +389,7 @@ html[lang="ar"] .rl-wide-i18n {
   touch-action: pan-y pinch-zoom;
   user-select: none;
   -webkit-user-select: none;
-  border-left: 1px solid rgba(22, 25, 31, 0.06);
+  border-left: 1px solid rgba(77,51,8, 0.06);
 }
 
 .rl-card {
@@ -465,7 +465,7 @@ html[lang="ar"] .rl-wide-i18n {
   width: auto;
   height: 100%;
   object-fit: contain;
-  filter: drop-shadow(0 12px 18px rgba(22, 25, 31, 0.14));
+  filter: drop-shadow(0 12px 18px rgba(77,51,8, 0.14));
   transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
@@ -531,7 +531,7 @@ html[lang="ar"] .rl-wide-i18n {
 
 .rl-add:hover {
   transform: rotate(90deg);
-  background: rgba(22, 25, 31, 0.06);
+  background: rgba(77,51,8, 0.06);
 }
 
 /* ---------------- Section Decode Veil ---------------- */
@@ -624,7 +624,7 @@ html[lang="ar"] .rl-wide-i18n {
 
   .rl-rail {
     border-left: 0;
-    border-top: 1px solid rgba(22, 25, 31, 0.08);
+    border-top: 1px solid rgba(77,51,8, 0.08);
   }
 
   .rl-card {
@@ -707,7 +707,7 @@ html[data-theme="dark"] .rl-meta-sub {
 }
 html[data-theme="dark"] .rl-acct-badge {
   background: var(--color-acid);
-  color: #141019;
+  color: var(--color-ink);
 }
 html[data-theme="dark"] .rl-step-btn {
   border-color: var(--rl-line);

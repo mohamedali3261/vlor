@@ -242,7 +242,7 @@ export function GithubConnection({
             </li>
           ))}
         </ol>
-        <p className="mt-3 rounded-lg bg-black/25 px-3 py-2 text-[9.5px] leading-relaxed text-bone/45" dir="ltr">
+        <p className="mt-3 rounded-lg bg-ink/25 px-3 py-2 text-[9.5px] leading-relaxed text-bone/45" dir="ltr">
           GITHUB_CLIENT_ID · GITHUB_CLIENT_SECRET · ALLOWED_ORIGIN
         </p>
       </div>

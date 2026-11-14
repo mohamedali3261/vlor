@@ -75,7 +75,7 @@ export function PublishDock({ onLock }: { onLock: () => void }) {
           role="region"
           aria-label={x("Publish to GitHub", "النشر على GitHub")}
           aria-live="polite"
-          className="anim-pop w-[min(calc(100vw-2rem),25rem)] overflow-y-auto rounded-3xl border border-ink/10 bg-bone p-4 shadow-[0_30px_80px_-30px_rgba(20,16,25,0.65)] max-h-[min(72vh,38rem)]"
+          className="anim-pop w-[min(calc(100vw-2rem),25rem)] overflow-y-auto rounded-3xl border border-ink/10 bg-bone p-4 shadow-[0_30px_80px_-30px_rgba(77,51,8,0.65)] max-h-[min(72vh,38rem)]"
         >
           <header className="mb-3 flex items-start justify-between gap-3">
             <div className="min-w-0">
@@ -233,7 +233,7 @@ export function PublishDock({ onLock }: { onLock: () => void }) {
                     {explained.fix}
                   </p>
                   <div className="flex flex-wrap gap-2">
-                    <button onClick={() => void p.publish()} className="press inline-flex h-10 flex-1 items-center justify-center rounded-full bg-acid px-4 text-[12px] font-bold text-[#141019] hover:bg-acid-deep">
+                    <button onClick={() => void p.publish()} className="press inline-flex h-10 flex-1 items-center justify-center rounded-full bg-acid px-4 text-[12px] font-bold text-ink hover:bg-acid-deep">
                       {x("Try again", "حاول مجدداً")}
                     </button>
                     {fixInSettings && (
@@ -275,7 +275,7 @@ export function PublishDock({ onLock }: { onLock: () => void }) {
           className={cn(
             "press relative inline-flex h-12 items-center gap-2.5 rounded-full px-5 text-[12.5px] font-extrabold shadow-xl transition-colors disabled:cursor-wait",
             hasChanges || working || deploying
-              ? "bg-acid text-[#141019] shadow-acid/30 hover:bg-acid-deep"
+              ? "bg-acid text-ink shadow-acid/30 hover:bg-acid-deep"
               : "border border-ink/15 bg-bone text-ink/70 shadow-ink/10 hover:border-ink/40"
           )}
         >
