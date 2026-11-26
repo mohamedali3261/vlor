@@ -1,4 +1,3 @@
-import { IMG } from "@/data/images";
 import type { Product } from "@/types";
 
 const velvetDusk: Product = {
@@ -41,8 +40,7 @@ const velvetDusk: Product = {
       { en: "White musk", ar: "مسك أبيض" },
     ],
   },
-  images: [IMG.anemone, IMG.stonesFloral, IMG.bottleEditorial],
-  cutout: "/images/bottles/rose.webp",
+  images: [],
   accent: "#D9B8E8",
   featured: true,
   bestseller: true,

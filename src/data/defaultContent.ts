@@ -1,6 +1,6 @@
 import { clampScale } from "@/lib/scale";
 import { isValidTextId } from "@/i18n/textCatalog";
-import { MAX_SHOWCASE_IMAGES, type DeepPartial, type SiteContent } from "@/types/content";
+import { type DeepPartial, type SiteContent } from "@/types/content";
 
 /** Factory so every consumer gets its own mutable copy. */
 export function createDefaultContent(): SiteContent {
@@ -34,13 +34,7 @@ export function createDefaultContent(): SiteContent {
         en: "Swipe through our defining extraits — each flacon carries its own chapter.",
         ar: "تجوّل بين أبرز عطور الدار — كل زجاجة تروي فصلاً خاصاً.",
       },
-      images: [
-        { id: "s1", src: "/images/bottles/dark.webp", productSlug: "vlor-noir", fit: "contain", caption: { en: "", ar: "" } },
-        { id: "s2", src: "/images/bottles/amber.webp", productSlug: "fig-and-ember", fit: "contain", caption: { en: "", ar: "" } },
-        { id: "s3", src: "/images/bottles/rose.webp", productSlug: "velvet-dusk", fit: "contain", caption: { en: "", ar: "" } },
-        { id: "s4", src: "/images/bottles/lilac.webp", productSlug: "iris-mirage", fit: "contain", caption: { en: "", ar: "" } },
-        { id: "s5", src: "/images/bottles/oud.webp", productSlug: "oud-meridian", fit: "contain", caption: { en: "", ar: "" } },
-      ],
+      images: [],
     },
 
     featured: {
@@ -323,10 +317,8 @@ export function mergeContent(stored: DeepPartial<SiteContent> | null | undefined
     eyebrow: legacyShowcaseEyebrow ? base.showcase.eyebrow : result.showcase.eyebrow,
     title: legacyShowcaseTitle ? base.showcase.title : (replaceLegacyBrand(result.showcase.title) as typeof base.showcase.title),
     lead: legacyShowcaseLead ? base.showcase.lead : result.showcase.lead,
-    images: (result.showcase?.images ?? []).slice(0, MAX_SHOWCASE_IMAGES).map((img) => ({
-      ...img,
-      productSlug: img.productSlug === "malika-noir" ? "vlor-noir" : img.productSlug,
-    })),
+    // This removed section cannot revive historical image URLs from saved content.
+    images: [],
   };
 
   // Replace the previous built-in consultation copy in saved catalogues while

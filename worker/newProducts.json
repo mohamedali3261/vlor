@@ -83,10 +83,7 @@
         }
       ]
     },
-    "images": [
-      "/images/bottles/amber.webp"
-    ],
-    "cutout": "/images/bottles/amber.webp",
+    "images": [],
     "accent": "#D4A035",
     "showOnHome": true,
     "showOnShop": true,
@@ -172,10 +169,7 @@
         }
       ]
     },
-    "images": [
-      "/images/bottles/rose.webp"
-    ],
-    "cutout": "/images/bottles/rose.webp",
+    "images": [],
     "accent": "#D4A035",
     "showOnHome": true,
     "showOnShop": true,
@@ -265,10 +259,7 @@
         }
       ]
     },
-    "images": [
-      "/images/bottles/dark.webp"
-    ],
-    "cutout": "/images/bottles/dark.webp",
+    "images": [],
     "accent": "#D4A035",
     "showOnHome": true,
     "showOnShop": true,
@@ -362,10 +353,7 @@
         }
       ]
     },
-    "images": [
-      "/images/bottles/amber.webp"
-    ],
-    "cutout": "/images/bottles/amber.webp",
+    "images": [],
     "accent": "#D4A035",
     "showOnHome": true,
     "showOnShop": true,
@@ -463,10 +451,7 @@
         }
       ]
     },
-    "images": [
-      "/images/bottles/amber.webp"
-    ],
-    "cutout": "/images/bottles/amber.webp",
+    "images": [],
     "accent": "#D4A035",
     "showOnHome": true,
     "showOnShop": true,
@@ -525,10 +510,7 @@
       "heart": [],
       "base": []
     },
-    "images": [
-      "/images/bottles/oud.webp"
-    ],
-    "cutout": "/images/bottles/oud.webp",
+    "images": [],
     "accent": "#D4A035",
     "showOnHome": true,
     "showOnShop": true,
@@ -610,10 +592,7 @@
         }
       ]
     },
-    "images": [
-      "/images/bottles/dark.webp"
-    ],
-    "cutout": "/images/bottles/dark.webp",
+    "images": [],
     "accent": "#D4A035",
     "showOnHome": true,
     "showOnShop": true,
@@ -703,10 +682,7 @@
         }
       ]
     },
-    "images": [
-      "/images/bottles/aqua.webp"
-    ],
-    "cutout": "/images/bottles/aqua.webp",
+    "images": [],
     "accent": "#D4A035",
     "showOnHome": true,
     "showOnShop": true,

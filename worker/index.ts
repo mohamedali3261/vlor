@@ -418,6 +418,9 @@ app.post('/api/images', adminGuard, uploadImage);
 app.get('/api/images/:key', async c => {
   const key=c.req.param('key');
   if(!imageKey.test(key)) { c.header('Cache-Control','no-store'); return c.notFound(); }
+  // Check tombstones before the edge cache, including images removed in bulk.
+  const deleted = await c.env.DB.prepare('SELECT 1 FROM deleted_images WHERE key=?').bind(key).first();
+  if (deleted) { c.header('Cache-Control','no-store'); return c.notFound(); }
   const cacheKey = new Request(new URL(`/api/images/${key}`, c.req.url).toString(), { method: 'GET' });
   const cache = edgeCache();
   const cached = await cache?.match(cacheKey);

@@ -185,6 +185,16 @@ async function ensureRequestedScents(db: D1Database): Promise<void> {
   ]);
 }
 
+// Some deployments skip D1 migrations; apply the same one-time removal atomically.
+async function removeOldImages(db: D1Database): Promise<void> {
+  await db.batch([
+    db.prepare(`UPDATE products SET data = json_remove(json_set(data, '$.images', json('[]')), '$.cutout') WHERE json_valid(data) AND NOT EXISTS (SELECT 1 FROM store_meta WHERE key='remove_old_images_v1')`),
+    db.prepare(`INSERT OR IGNORE INTO deleted_images(key) SELECT key FROM images WHERE NOT EXISTS (SELECT 1 FROM store_meta WHERE key='remove_old_images_v1')`),
+    db.prepare(`DELETE FROM images WHERE NOT EXISTS (SELECT 1 FROM store_meta WHERE key='remove_old_images_v1')`),
+    db.prepare(`INSERT OR IGNORE INTO store_meta(key, value) VALUES ('remove_old_images_v1', '1')`),
+  ]);
+}
+
 async function initialize(db: D1Database): Promise<void> {
   let initialized = false;
   try {
@@ -196,6 +206,7 @@ async function initialize(db: D1Database): Promise<void> {
   if (initialized) {
     await applyVlorBrandMigration(db);
     await ensureRequestedScents(db);
+    await removeOldImages(db);
     readyDb = db;
     return;
   }
@@ -279,6 +290,7 @@ async function initialize(db: D1Database): Promise<void> {
     db.prepare("INSERT OR REPLACE INTO store_meta(key, value) VALUES ('rebrand_vlor_v2', '1')"),
   ]);
   await ensureRequestedScents(db);
+  await removeOldImages(db);
   readyDb = db;
 }
 

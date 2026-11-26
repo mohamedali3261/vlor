@@ -176,7 +176,7 @@ export function ContentEditor({ onManageProducts }: { onManageProducts?: () => v
       </div>
 
       <div className="mt-3">
-        <Section title={ar ? "حجم صور المنتجات" : "Product image size"} description={ar ? "الصور مخفية عن زوار الموقع، والمعاينة داخل الاستوديو فقط." : "Images are hidden from visitors; preview is available only in the studio."} defaultOpen>
+        <Section title={ar ? "حجم صور المنتجات" : "Product image size"} description={ar ? "تحكّم في حجم صور المنتجات بعد إضافتها من الاستوديو." : "Control the size of product images added from the studio."} defaultOpen>
           <ProductImageScale products={products} value={draft.theme.productImageScale}
             onChange={(value) => edit((next) => { next.theme.productImageScale = value; })} />
         </Section>

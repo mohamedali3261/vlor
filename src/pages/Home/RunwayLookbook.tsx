@@ -1,3 +1,4 @@
+import { ProductPhoto } from "@/components/product/ProductPhoto";
 import { Logo } from "@/components/ui/Primitives";
 import { useCart } from "@/context/CartContext";
 import { useStore } from "@/context/StoreContext";
@@ -500,7 +501,7 @@ export function RunwayLookbook() {
                 data-i={i}
                 className="rl-m"
               >
-                <div className="rl-text-flacon"><span>{l(product.name)}</span></div>
+                <ProductPhoto src={product.cutout || product.images[0]} alt={l(product.name)} className="rl-m-img" fallback={<div className="rl-text-flacon"><span>{l(product.name)}</span></div>} />
               </div>
             ))}
           </div>
@@ -626,7 +627,7 @@ export function RunwayLookbook() {
                   className="rl-shot"
                   aria-label={l(entry.product.name)}
                 >
-                  <span className="rl-text-rail">{l(entry.product.name)}</span>
+                  <ProductPhoto src={entry.product.cutout || entry.product.images[0]} alt={l(entry.product.name)} fallback={<span className="rl-text-rail">{l(entry.product.name)}</span>} />
                 </Link>
 
                 <div className="rl-meta" dir={dir}>

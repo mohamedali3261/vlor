@@ -353,8 +353,8 @@ export function ProductForm({
               full
               hint={
                 lang === "ar"
-                  ? "الصور مخفية عن الزوار وتظهر في معاينة الاستوديو فقط. الرفع اختياري؛ الحد الأقصى ١ ميجابايت للصورة، أو الصق رابطًا مباشرًا."
-                  : "Images are hidden from visitors and shown only in the studio preview. Uploading is optional; max 1 MB per image, or paste a direct URL."
+                  ? "الصور المضافة تظهر للزوار. الرفع اختياري؛ الحد الأقصى ١ ميجابايت للصورة، أو الصق رابطًا مباشرًا."
+                  : "Added images are shown to visitors. Uploading is optional; max 1 MB per image, or paste a direct URL."
               }
             >
               <input
@@ -427,7 +427,7 @@ export function ProductForm({
                 onChange={(event) => update("cutout", event.target.value)}
                 className="field mt-1.5 text-[11px]"
                 dir="ltr"
-                placeholder="/images/bottles/dark.webp or /api/images/…"
+                placeholder="/api/images/… or https://…"
               />
             </Field>
 

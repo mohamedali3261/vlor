@@ -1,3 +1,4 @@
+import { clearOldImageStorage } from "@/lib/clearOldImageStorage";
 import { publishedAt, publishedContent, publishedSettings } from "@/data/published";
 import { defaultSettings } from "@/data/site";
 import { usePersistentState } from "@/hooks/usePersistentState";
@@ -47,6 +48,9 @@ function initialSettings(): SiteSettings {
 }
 
 export function StoreProvider({ children }: { children: ReactNode }) {
+  useState(() => {
+    try { if (typeof window !== "undefined") clearOldImageStorage(window.localStorage); } catch { /* Storage may be blocked. */ }
+  });
   const [products, setProducts] = useState<Product[]>([]);
   useEffect(() => {
     fetch('/api/products').then(async r => { if (!r.ok) throw new Error('Catalogue unavailable'); setProducts(await r.json()); }).catch(() => console.error('Catalogue unavailable'));

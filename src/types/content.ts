@@ -54,7 +54,7 @@ export interface ThemeContent {
   productCardBase?: string;
   productCardDisc?: string;
   productCardText?: string;
-  /** Preview scale for product images in the studio; storefront images remain hidden. */
+  /** Scale for product images on the storefront and in the studio preview. */
   productImageScale: number;
   /** Headings, in percent of the designed size (see lib/scale.ts for limits). */
   headingScale: number;

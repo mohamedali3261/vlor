@@ -1,4 +1,3 @@
-import { IMG } from "@/data/images";
 import type { Product } from "@/types";
 
 const saltAndSmoke: Product = {
@@ -41,8 +40,7 @@ const saltAndSmoke: Product = {
       { en: "Ambergris", ar: "عنبر" },
     ],
   },
-  images: [IMG.blue, IMG.stone, IMG.minimalWhite],
-  cutout: "/images/bottles/aqua.webp",
+  images: [],
   accent: "#A9CFE0",
   rating: 4.8,
   reviews: 211,

@@ -1,3 +1,4 @@
+import { ProductPhoto } from "@/components/product/ProductPhoto";
 import { QuickView } from "@/components/product/QuickView";
 import { Check, Heart } from "@/components/ui/icons";
 import { useCart } from "@/context/CartContext";
@@ -82,8 +83,10 @@ function ProductCardBase({ product, className }: ProductCardProps) {
 
       {/* Bottle — centred, then lifts to the top on hover. */}
       <Link to={`/product/${product.slug}`} aria-label={l(product.name)} className="pc-bottle-link">
-        <span className="pc-fragrance-name">{l(product.name)}</span>
-        <span className="pc-fragrance-tagline">{l(product.tagline)}</span>
+        <ProductPhoto src={product.cutout || product.images[0]} alt={l(product.name)} className="pc-user-image" fallback={<>
+          <span className="pc-fragrance-name">{l(product.name)}</span>
+          <span className="pc-fragrance-tagline">{l(product.tagline)}</span>
+        </>} />
       </Link>
 
       {/* Content panel — grows on hover to reveal the details. */}

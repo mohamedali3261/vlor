@@ -3,7 +3,7 @@ import { resolveAsset } from "@/lib/assets";
 import type { Product } from "@/types";
 import { useState } from "react";
 
-/** Studio-only preview: it never changes the storefront's image visibility. */
+/** Preview the global image scale, including owner-supplied product photos. */
 export function ProductImageScale({ products, value, onChange }: {
   products: Product[];
   value: number;
@@ -19,7 +19,7 @@ export function ProductImageScale({ products, value, onChange }: {
   return (
     <div className="grid gap-4 sm:grid-cols-2 sm:items-start">
       <div className="space-y-4">
-        <p className="text-xs leading-relaxed text-mist">{ar ? "اضبط حجم الصورة لمعاينتها هنا. الإعداد يُحفظ لكل المنتجات، ولن يُظهر الصور في الموقع." : "Adjust the image size in this preview. The setting is saved for all products and does not show images on the storefront."}</p>
+        <p className="text-xs leading-relaxed text-mist">{ar ? "اضبط حجم الصور لكل المنتجات وشاهد النتيجة مباشرة. بعد الحفظ والنشر تظهر الصور الجديدة للزوار." : "Adjust the image size for all products and preview it here. Save and publish to show the new images to visitors."}</p>
         {products.length > 0 && <label className="block text-xs font-bold">
           {ar ? "اختر منتجاً للمعاينة" : "Choose a product to preview"}
           <select className="field mt-2" value={product?.id ?? ""} onChange={(event) => setSelected(event.target.value)}>
@@ -33,9 +33,9 @@ export function ProductImageScale({ products, value, onChange }: {
         <button type="button" onClick={() => onChange(100)} className="text-xs font-bold underline underline-offset-4">{ar ? "الحجم الأصلي" : "Reset size"}</button>
       </div>
       <div>
-        <p className="mb-2 text-xs font-bold">{ar ? "معاينة الصورة في الاستوديو" : "Studio image preview"}</p>
+        <p className="mb-2 text-xs font-bold">{ar ? "معاينة حجم الصورة" : "Image size preview"}</p>
         <div className="flex h-56 items-center justify-center overflow-hidden rounded-2xl border border-ink/10 bg-bone-2/50 p-4">
-          {src && failedSrc !== src ? <img key={src} src={resolveAsset(src)} alt={product ? l(product.name) : ""} onError={() => setFailedSrc(src)} style={{ transform: `scale(${scale / 100})` }} className="studio-product-preview h-full w-full object-contain transition-transform" /> : <p className="text-center text-xs text-mist">{ar ? "لا توجد صورة متاحة لهذا المنتج. يمكنك إضافتها من تبويب المنتجات." : "No image is available for this product. Add one in Products."}</p>}
+          {src && failedSrc !== src ? <img key={src} src={resolveAsset(src)} alt={product ? l(product.name) : ""} onError={() => setFailedSrc(src)} style={{ transform: `scale(${scale / 100})` }} className="h-full w-full object-contain transition-transform" /> : <p className="text-center text-xs text-mist">{ar ? "لا توجد صورة متاحة لهذا المنتج. يمكنك إضافتها من تبويب المنتجات." : "No image is available for this product. Add one in Products."}</p>}
         </div>
       </div>
     </div>

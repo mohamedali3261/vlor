@@ -51,3 +51,9 @@ export function renderStudioSettingsAndImages(scale: number, withImage = true) {
     </LanguageProvider></StoreProvider>,
   );
 }
+
+export function renderGalleryWithImage() {
+  const product = { ...(products[0] as Product), images: ['/api/images/new-image'], cutout: undefined };
+  return renderToStaticMarkup(<StoreProvider><LanguageProvider><Gallery product={product} /></LanguageProvider></StoreProvider>);
+}
+export { clearOldImageStorage } from '@/lib/clearOldImageStorage';

@@ -1,4 +1,3 @@
-import { IMG } from "@/data/images";
 import type { Product } from "@/types";
 
 const nightJasmine: Product = {
@@ -41,8 +40,7 @@ const nightJasmine: Product = {
       { en: "Musk", ar: "مسك" },
     ],
   },
-  images: [IMG.magazines, IMG.stonesFloral, IMG.magazines],
-  cutout: "/images/bottles/lilac.webp",
+  images: [],
   accent: "#A9A6E8",
   bestseller: true,
   rating: 4.9,

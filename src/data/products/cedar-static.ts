@@ -1,4 +1,3 @@
-import { IMG } from "@/data/images";
 import type { Product } from "@/types";
 
 const cedarStatic: Product = {
@@ -41,8 +40,7 @@ const cedarStatic: Product = {
       { en: "Vetiver root", ar: "جذور النجيل" },
     ],
   },
-  images: [IMG.shadow, IMG.grayStones, IMG.minimalWhite],
-  cutout: "/images/bottles/forest.webp",
+  images: [],
   accent: "#9FC7B9",
   featured: true,
   rating: 4.8,

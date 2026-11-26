@@ -109,7 +109,3 @@ html[data-theme="dark"] .border-rose-200 {
 html[data-theme="dark"] .bg-surface {
   background-color: var(--color-surface) !important;
 }
-
-/* Keep storefront images hidden; only the brand logo and studio-only image preview are visible. */
-img, picture, video { display: none !important; }
-img.brand-logo, img.studio-product-preview { display: block !important; }

@@ -18,6 +18,7 @@ export function ThemeProvider() {
     set("--product-card-base", card.base);
     set("--product-card-disc", card.disc);
     set("--product-card-text", card.text);
+    set("--product-image-scale", String(theme.productImageScale / 100));
     set("--color-ink", theme.ink);
     set("--color-bone", background);
     set("--color-card-light", surfaces.cardLight);
