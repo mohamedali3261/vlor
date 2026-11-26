@@ -68,6 +68,8 @@ export interface SiteSettings {
   whatsapp: string;
   messenger: string;
   instagram: string;
+  facebook: string;
+  youtube: string;
   email: string;
   phone: string;
   freeShippingThreshold: number;

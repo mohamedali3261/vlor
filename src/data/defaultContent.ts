@@ -15,8 +15,8 @@ export function createDefaultContent(): SiteContent {
       titleLine1: { en: "Arrive like", ar: "حضورٌ" },
       titleLine2: { en: "royalty.", ar: "ملكي." },
       lead: {
-        en: "Extraits composed for people who are remembered before they speak. Blended slowly, in small batches — made with care.",
-        ar: "عطور تُركَّب لمن يُذكَرون قبل أن يتكلّموا. تُمزج ببطء، بكميات صغيرة — صُنعت بعناية.",
+        en: "Scents that linger in memory, crafted with care for a presence that is unmistakably yours.",
+        ar: "عطور تترك أثرها في الذاكرة، صُنعت بعناية لتُكمل حضورك الذي يشبهك وحدك.",
       },
       primaryCta: { en: "Discover the collection", ar: "اكتشف المجموعة" },
       secondaryCta: { en: "Contact us", ar: "تواصل معنا" },
@@ -279,6 +279,14 @@ export function mergeContent(stored: DeepPartial<SiteContent> | null | undefined
   clean.sections = sections;
 
   const result = clean as unknown as SiteContent;
+  // Upgrade each untouched legacy default independently, preserving edited copy.
+  if (result.hero?.lead) {
+    result.hero = { ...result.hero, lead: {
+      en: result.hero.lead.en === "Extraits composed for people who are remembered before they speak. Blended slowly, in small batches — made with care." ? base.hero.lead.en : result.hero.lead.en,
+      ar: result.hero.lead.ar === "عطور تُركَّب لمن يُذكَرون قبل أن يتكلّموا. تُمزج ببطء، بكميات صغيرة — صُنعت بعناية." ? base.hero.lead.ar : result.hero.lead.ar,
+    } };
+  }
+
   if (typeof result.studioDeliveryTab !== "boolean") result.studioDeliveryTab = base.studioDeliveryTab;
   // The cap holds even for hand-edited or imported data.
   // Also upgrade untouched legacy default wording stored in older localStorage snapshots.

@@ -23,3 +23,17 @@ export function renderParts() {
     </LanguageProvider></StoreProvider>,
   );
 }
+
+import { Footer } from '@/components/layout/Footer';
+import { ContactPage } from '@/pages/Contact/ContactPage';
+import { ToastProvider } from '@/context/ToastContext';
+import { mergeContent } from '@/data/defaultContent';
+import { runwayWheel } from '@/lib/runwayScroll';
+import { socialUrl } from '@/lib/messaging';
+export { mergeContent, runwayWheel, socialUrl };
+
+export function renderContactAndFooter() {
+  return renderToStaticMarkup(
+    <StoreProvider><LanguageProvider><ToastProvider><ContactPage /><Footer /></ToastProvider></LanguageProvider></StoreProvider>,
+  );
+}

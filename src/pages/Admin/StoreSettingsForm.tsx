@@ -61,7 +61,7 @@ export function StoreSettingsForm({
             : "Every order and contact button on the storefront reads from here. Use WhatsApp numbers in international format without +."}
         </p>
         <div className="mt-4 grid gap-3 sm:grid-cols-2">
-          <Field label="WhatsApp number" hint="e.g. 201234567890">
+          <Field label="WhatsApp number" hint="e.g. 201276163222">
             <input value={draft.whatsapp} onChange={(event) => set("whatsapp", event.target.value)} className="field" dir="ltr" inputMode="tel" />
           </Field>
           <Field label="Messenger username" hint="facebook.com/yourpage → vlor.perfumes">
@@ -69,6 +69,12 @@ export function StoreSettingsForm({
           </Field>
           <Field label="Instagram handle">
             <input value={draft.instagram} onChange={(event) => set("instagram", event.target.value)} className="field" dir="ltr" />
+          </Field>
+          <Field label={lang === "ar" ? "رابط فيسبوك" : "Facebook URL"} hint="https://facebook.com/yourpage">
+            <input value={draft.facebook} onChange={(event) => set("facebook", event.target.value)} className="field" dir="ltr" />
+          </Field>
+          <Field label={lang === "ar" ? "رابط يوتيوب" : "YouTube URL"} hint="https://youtube.com/@yourchannel">
+            <input value={draft.youtube} onChange={(event) => set("youtube", event.target.value)} className="field" dir="ltr" />
           </Field>
           <Field label="Email">
             <input type="email" value={draft.email} onChange={(event) => set("email", event.target.value)} className="field" dir="ltr" />

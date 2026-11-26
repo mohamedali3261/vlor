@@ -5,6 +5,7 @@ import { useToast } from "@/context/ToastContext";
 import { useLang } from "@/i18n/LanguageContext";
 import { formatPrice } from "@/lib/format";
 import { Link } from "@/lib/router";
+import { runwayWheel } from "@/lib/runwayScroll";
 import { emitBagPulse } from "@/motion";
 import type { Product } from "@/types";
 import { cn } from "@/utils/cn";
@@ -26,10 +27,8 @@ const KH = [1.18, 0.832, 0.574, 0.436, 0.334, 0.258, 0.19] as const;
 const KB = [0, 0, 1.5, 4, 8, 12, 17] as const;
 const KO = [1, 1, 1, 1, 0.86, 0.5, 0] as const;
 
-const LOOK_COUNT = 6;
 const BOTTLE_ASPECT = 0.54;
 
-const wrap = (x: number, n: number) => ((x % n) + n) % n;
 const clamp = (x: number, a: number, b: number) => Math.min(b, Math.max(a, x));
 
 interface RailEntry {
@@ -46,62 +45,15 @@ export function RunwayLookbook() {
   const { count: cartCount, add, open: openCart } = useCart();
   const { push } = useToast();
 
-  // Select 6 signature flacons for the receding runway line + pair remaining catalogue scents in the 12-card rail
+  // Each displayed scent has one synchronized runway and rail position.
   const { lookProducts, railItems } = useMemo(() => {
-    const homeProducts = products.filter((product) => product.showOnHome !== false);
-    if (homeProducts.length === 0) {
-      return { lookProducts: [] as Product[], railItems: [] as RailEntry[] };
-    }
-
-    const sorted = [...homeProducts].sort(
-      (a, b) =>
-        Number(Boolean(b.featured)) - Number(Boolean(a.featured))
-    );
-
-    const primary: Product[] = [];
-    for (let i = 0; i < LOOK_COUNT; i++) {
-      primary.push(sorted[i % sorted.length]);
-    }
-
-    const secondaryPool = sorted.slice(LOOK_COUNT);
-    const entries: RailEntry[] = [];
-
-    for (let i = 0; i < LOOK_COUNT; i++) {
-      const lead = primary[i];
-      const leadSize = lead.sizes.find((s) => s.ml === 50) ?? lead.sizes[0] ?? { ml: 50, price: lead.price };
-      entries.push({
-        key: `lead-${i}-${lead.id}-${leadSize.ml}`,
-        product: lead,
-        ml: leadSize.ml,
-        price: leadSize.price,
-        badge: `${leadSize.ml} ${lang === "ar" ? "مل" : "ml"}`,
-      });
-
-      const paired = secondaryPool[i];
-      if (paired && paired.id !== lead.id) {
-        const pairSize =
-          paired.sizes.find((s) => s.ml === 50) ?? paired.sizes[0] ?? { ml: 50, price: paired.price };
-        entries.push({
-          key: `pair-${i}-${paired.id}-${pairSize.ml}`,
-          product: paired,
-          ml: pairSize.ml,
-          price: pairSize.price,
-          badge: `${pairSize.ml} ${lang === "ar" ? "مل" : "ml"}`,
-        });
-      } else {
-        const altSize =
-          lead.sizes[lead.sizes.length - 1] ?? lead.sizes[0] ?? { ml: 100, price: lead.price };
-        entries.push({
-          key: `alt-${i}-${lead.id}-${altSize.ml}`,
-          product: lead,
-          ml: altSize.ml,
-          price: altSize.price,
-          badge: `${altSize.ml} ${lang === "ar" ? "مل" : "ml"}`,
-        });
-      }
-    }
-
-    return { lookProducts: primary, railItems: entries };
+    const lookProducts = products.filter((product) => product.showOnHome !== false)
+      .sort((a, b) => Number(Boolean(b.featured)) - Number(Boolean(a.featured)));
+    const railItems = lookProducts.map((product): RailEntry => {
+      const size = product.sizes.find((s) => s.ml === 50) ?? product.sizes[0] ?? { ml: 50, price: product.price };
+      return { key: product.id, product, ml: size.ml, price: size.price, badge: `${size.ml} ${lang === "ar" ? "مل" : "ml"}` };
+    });
+    return { lookProducts, railItems };
   }, [products, lang]);
 
   const sectionRef = useRef<HTMLElement>(null);
@@ -138,8 +90,8 @@ export function RunwayLookbook() {
     wheelTimer: 0,
     inView: true,
     calm: false,
-    filterCache: Array(LOOK_COUNT).fill(""),
-    opacityCache: Array(LOOK_COUNT).fill(""),
+    filterCache: [] as string[],
+    opacityCache: [] as string[],
   });
 
   const measure = useCallback(() => {
@@ -151,9 +103,11 @@ export function RunwayLookbook() {
     s.W = stage.clientWidth;
     s.H = stage.clientHeight;
     s.base = s.H * 1.2;
+    s.target = clamp(s.target, 0, Math.max(0, lookProducts.length - 1));
+    s.p = clamp(s.p, 0, Math.max(0, lookProducts.length - 1));
     s.side = window.innerWidth <= 820;
 
-    for (let i = 0; i < LOOK_COUNT; i++) {
+    for (let i = 0; i < lookProducts.length; i++) {
       const el = modelRefs.current[i];
       if (!el) continue;
       el.style.width = `${(s.base * BOTTLE_ASPECT).toFixed(1)}px`;
@@ -168,12 +122,12 @@ export function RunwayLookbook() {
     }
 
     s.dirty = true;
-  }, []);
+  }, [lookProducts.length]);
 
   const paint = useCallback(() => {
     const s = animRef.current;
-    const N = LOOK_COUNT;
-    if (s.W === 0 || s.H === 0) return;
+    const N = lookProducts.length;
+    if (s.W === 0 || s.H === 0 || N === 0) return;
     // Disable expensive blur on coarse pointers / narrow screens for 60fps
     const disableBlur = s.side || s.W < 820;
 
@@ -181,8 +135,12 @@ export function RunwayLookbook() {
       const el = modelRefs.current[i];
       if (!el) continue;
 
-      let d = wrap(i - s.p, N);
-      if (d > N - 1) d -= N;
+      const d = i - s.p;
+      if (d < -1) {
+        el.style.opacity = "0";
+        s.opacityCache[i] = "0";
+        continue;
+      }
 
       const k = clamp(d + 1, 0, 6);
       const a = Math.floor(k);
@@ -217,24 +175,22 @@ export function RunwayLookbook() {
 
     const itemCount = cardRefs.current.length;
     if (itemCount > 0 && s.cardS > 0) {
-      const all = s.cardS * itemCount;
       for (let i = 0; i < itemCount; i++) {
         const card = cardRefs.current[i];
         if (!card) continue;
-        let pos = wrap(i * s.cardS - s.p * 2 * s.cardS, all);
-        if (pos > all - s.cardS) pos -= all;
+        const pos = i * s.cardS - s.p * s.cardS;
         card.style.transform = s.side
           ? `translate3d(${pos.toFixed(1)}px,0,0)`
           : `translate3d(0,${pos.toFixed(1)}px,0)`;
       }
     }
 
-    const nextIdx = Math.round(wrap(s.p, N)) % N;
+    const nextIdx = Math.round(clamp(s.p, 0, N - 1));
     if (nextIdx !== activeIdxRef.current) {
       activeIdxRef.current = nextIdx;
       setActiveIdx(nextIdx);
     }
-  }, []);
+  }, [lookProducts.length]);
 
   // Viewport observer + rAF loop + resize listener
   useEffect(() => {
@@ -295,13 +251,10 @@ export function RunwayLookbook() {
         (entries) => {
           const nowIn = entries.some((e) => e.isIntersecting);
           s.inView = nowIn;
-          if (nowIn && stopped && !s.calm) {
+          if (nowIn && stopped) {
             stopped = false;
             s.last = performance.now();
             schedule();
-          } else if (nowIn && s.calm) {
-            // Reduced motion: just paint once, no loop
-            paint();
           } else if (!nowIn) {
             // Pause loop when out of view
             if (raf) {
@@ -336,47 +289,35 @@ export function RunwayLookbook() {
     };
   }, [measure, paint, lookProducts.length]);
 
-  // Wheel handlers: rail loops infinitely; stage walks looks 1..6 and yields smoothly at boundaries so page scroll never traps
+  // Both the stage and rail yield to native page scrolling at the ends.
   useEffect(() => {
     const stage = stageRef.current;
     const rail = railRef.current;
     if (!stage || !rail) return;
     const s = animRef.current;
-
-    const snapSoon = () => {
+    const last = lookProducts.length - 1;
+    const onWheel = (event: WheelEvent) => {
+      const delta = (event.deltaY + event.deltaX) * (event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? 400 : 1);
+      const { target, consume } = runwayWheel(s.target, last, delta);
+      s.target = target;
+      if (!consume) return;
+      event.preventDefault();
       window.clearTimeout(s.wheelTimer);
       s.wheelTimer = window.setTimeout(() => {
-        s.target = Math.round(s.target);
+        s.target = clamp(delta > 0 ? Math.ceil(s.target) : Math.floor(s.target), 0, last);
       }, 150);
     };
-
-    const onStageWheel = (e: WheelEvent) => {
-      const horiz = Math.abs(e.deltaX) > Math.abs(e.deltaY);
-      if (!horiz) {
-        if (e.deltaY > 0 && s.target >= LOOK_COUNT - 1) return;
-        if (e.deltaY < 0 && s.target <= 0) return;
-      }
-      e.preventDefault();
-      s.target += clamp(e.deltaY + e.deltaX, -120, 120) / 420;
-      snapSoon();
-    };
-
-    const onRailWheel = (e: WheelEvent) => {
-      e.preventDefault();
-      s.target += clamp(e.deltaY + e.deltaX, -120, 120) / 420;
-      snapSoon();
-    };
-
-    stage.addEventListener("wheel", onStageWheel, { passive: false });
-    rail.addEventListener("wheel", onRailWheel, { passive: false });
+    stage.addEventListener("wheel", onWheel, { passive: false });
+    rail.addEventListener("wheel", onWheel, { passive: false });
     return () => {
-      stage.removeEventListener("wheel", onStageWheel);
-      rail.removeEventListener("wheel", onRailWheel);
+      stage.removeEventListener("wheel", onWheel);
+      rail.removeEventListener("wheel", onWheel);
+      window.clearTimeout(s.wheelTimer);
     };
   }, [lookProducts.length]);
 
   const stepBy = (delta: number) => {
-    animRef.current.target = Math.round(animRef.current.target) + delta;
+    animRef.current.target = clamp(Math.round(animRef.current.target) + delta, 0, lookProducts.length - 1);
   };
 
   const onStagePointerEnter = (e: ReactPointerEvent<HTMLElement>) => {
@@ -409,7 +350,7 @@ export function RunwayLookbook() {
     const dx = e.clientX - s.sx;
     s.moved = Math.max(s.moved, Math.abs(dx));
     const pull = Math.max(150, s.W * 0.2);
-    s.target = s.st + dx / pull;
+    s.target = clamp(s.st + dx / pull, 0, lookProducts.length - 1);
   };
 
   const onStagePointerRelease = (e: ReactPointerEvent<HTMLElement>) => {
@@ -423,11 +364,7 @@ export function RunwayLookbook() {
         .elementsFromPoint(e.clientX, e.clientY)
         .find((node) => node.classList?.contains("rl-m")) as HTMLElement | undefined;
       if (hit && hit.dataset.i !== undefined) {
-        let d = wrap(Number(hit.dataset.i) - s.target, LOOK_COUNT);
-        d = Math.round(d);
-        if (d > 0 && d < LOOK_COUNT) {
-          s.target = Math.round(s.target) + d;
-        }
+        s.target = clamp(Number(hit.dataset.i), 0, lookProducts.length - 1);
       }
     } else {
       s.target = Math.round(s.target);
@@ -535,7 +472,7 @@ export function RunwayLookbook() {
         </nav>
       </div>
 
-      {/* Runway Stage + Infinite Synchronized Product Rail */}
+      {/* Runway Stage + Synchronized Product Rail */}
       <div className="rl-main">
         <section
           ref={stageRef}
@@ -569,9 +506,6 @@ export function RunwayLookbook() {
           </div>
 
           <div className="rl-intro" dir={dir}>
-            <h2 className="rl-wide rl-wide-i18n">
-              {x("Signature Collection", "مجموعة التوقيع الملكية")}
-            </h2>
             <p>
               {x("Explore the collection. Drag, scroll or use the arrows to discover each scent.", "اكتشف المجموعة. اسحب أو مرّر أو استخدم الأسهم لتتعرّف على العطور.")}
             </p>
@@ -623,7 +557,7 @@ export function RunwayLookbook() {
           <div ref={ringRef} className="rl-ring" />
         </section>
 
-        {/* Synchronized Wrapping 12-Card Product Rail */}
+        {/* Synchronized Product Rail */}
         <aside
           ref={railRef}
           className="rl-rail"
@@ -644,7 +578,7 @@ export function RunwayLookbook() {
             const cur = s.side ? e.clientX : e.clientY;
             const delta = s.sx - cur;
             s.moved = Math.max(s.moved, Math.abs(delta));
-            s.target = s.st + delta / Math.max(120, s.cardS * 2);
+            s.target = clamp(s.st + delta / Math.max(120, s.cardS), 0, lookProducts.length - 1);
           }}
           onPointerUp={(e) => {
             const s = animRef.current;
@@ -671,9 +605,9 @@ export function RunwayLookbook() {
                 className={cn(
                   "rl-card",
                   idx % 2 === 1 && "is-alt",
-                  idx === activeIdx * 2 && "is-active"
+                  idx === activeIdx && "is-active"
                 )}
-                aria-current={idx === activeIdx * 2 ? "true" : undefined}
+                aria-current={idx === activeIdx ? "true" : undefined}
               >
                 <button
                   type="button"

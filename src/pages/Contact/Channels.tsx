@@ -1,8 +1,8 @@
 import { Reveal } from "@/components/ui/Reveal";
-import { ArrowUpRight, Instagram, Mail, Messenger, Whatsapp } from "@/components/ui/icons";
+import { ArrowUpRight, Instagram, Messenger, Whatsapp } from "@/components/ui/icons";
 import { useStore } from "@/context/StoreContext";
 import { useLang } from "@/i18n/LanguageContext";
-import { instagramUrl, messengerUrl, whatsappUrl } from "@/lib/messaging";
+import { socialUrl, messengerUrl, whatsappUrl } from "@/lib/messaging";
 
 export function Channels() {
   const { t, x } = useLang();
@@ -28,24 +28,16 @@ export function Channels() {
     {
       label: t("contact.instagram"),
       description: t("contact.instagram.desc"),
-      href: instagramUrl(settings.instagram),
+      href: socialUrl(settings.instagram, "instagram"),
       icon: Instagram,
       tone: "hover:bg-[#F0AEC9] hover:border-[#F0AEC9] hover:text-ink",
       badge: null,
     },
-    {
-      label: x("Email", "البريد الإلكتروني"),
-      description: settings.email,
-      href: `mailto:${settings.email}`,
-      icon: Mail,
-      tone: "hover:bg-acid hover:border-acid hover:text-ink",
-      badge: null,
-    },
-  ];
+  ].filter((channel) => channel.href);
 
   return (
     <section className="bg-bone pb-10">
-      <div className="mx-auto grid max-w-[1400px] gap-2.5 px-4 sm:grid-cols-2 sm:px-6 lg:grid-cols-4 lg:px-10">
+      <div className="mx-auto grid max-w-[1400px] gap-2.5 px-4 sm:grid-cols-2 sm:px-6 lg:grid-cols-3 lg:px-10">
         {channels.map((channel, index) => (
           <Reveal key={channel.label} variant="m-spring-soft" delay={index * 55}>
             <a
