@@ -1,0 +1,17 @@
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+const css = readFileSync('src/styles/product-card.css', 'utf8');
+const photo = readFileSync('src/components/product/ProductPhoto.tsx', 'utf8');
+const card = readFileSync('src/components/product/ProductCard.tsx', 'utf8');
+const lang = readFileSync('src/i18n/LanguageContext.tsx', 'utf8');
+assert.match(card, /className="pc-user-image"/);
+assert.match(card, /observeMobileProductCard\(card\)/);
+assert.match(lang, /root\.lang\s*=\s*lang/);
+assert.match(css, /\.pc-card\s*\{\s*--pc-photo-tilt:\s*-14deg/);
+assert.match(css, /html\[lang="ar"\]\s+\.pc-card\s*\{\s*--pc-photo-tilt:\s*14deg/);
+assert.match(css, /@media\s*\(hover:\s*hover\)\s*\{\s*\.pc-card:hover\s+\.pc-user-image\s*\{\s*rotate:\s*var\(--pc-photo-tilt\)/);
+assert.match(css, /@media\s*\(max-width:\s*639px\)[\s\S]*?\.pc-card\.pc-scroll-active\s+\.pc-user-image\s*\{\s*rotate:\s*var\(--pc-photo-tilt\)/);
+assert.match(css, /\.pc-card:focus-within\s+\.pc-user-image\s*\{\s*rotate:\s*var\(--pc-photo-tilt\)/);
+assert.match(css, /@media\s*\(prefers-reduced-motion:\s*reduce\)[\s\S]*?\.pc-card\s+\.pc-user-image\s*\{\s*transition:\s*none/);
+assert.match(photo, /transform:\s*"scale\(var\(--product-image-scale, 1\)\)"/);
+console.log('Card image tilt direction, activation, accessibility and studio scale checks passed.');
