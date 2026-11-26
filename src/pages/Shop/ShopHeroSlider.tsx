@@ -3,7 +3,6 @@ import { ArrowRight } from "@/components/ui/icons";
 import { useStore } from "@/context/StoreContext";
 import { useContent } from "@/hooks/useContent";
 import { useLang } from "@/i18n/LanguageContext";
-import { resolveAsset } from "@/lib/assets";
 import { productAccent } from "@/lib/theme";
 import { ShopSlide } from "@/pages/Shop/ShopSlide";
 import type { Product } from "@/types";
@@ -11,44 +10,9 @@ import { cn } from "@/utils/cn";
 import { useCallback, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent } from "react";
 import "@/styles/shop-slider.css";
 
-/** One scent's picture on the left. Cut-outs stand free; photographs get a frame. */
-function Bottle({ product, active, near }: { product: Product; active: boolean; near: boolean }) {
+function Bottle({ product, active }: { product: Product; active: boolean; near: boolean }) {
   const { l } = useLang();
-  const [failed, setFailed] = useState(false);
-  const hasCutout = Boolean(product.cutout) && !failed;
-  const src = resolveAsset(hasCutout ? (product.cutout as string) : product.images[0] ?? "");
-
-  return (
-    <div
-      aria-hidden="true"
-      className={cn(
-        // flex, not grid: a grid item's percentage height resolves against an
-        // auto-sized track, i.e. not at all, so tall bottles rendered at their
-        // natural pixel size and spilled out of the frame.
-        "absolute inset-0 flex items-center justify-center transition-[opacity,translate] duration-500",
-        active
-          ? "translate-x-0 opacity-100 delay-300"
-          : "opacity-0 ltr:-translate-x-[110px] rtl:translate-x-[110px]"
-      )}
-    >
-      {near && src && (
-        <img
-          src={src}
-          alt={l(product.name)}
-          decoding="async"
-          draggable={false}
-          onError={() => setFailed(true)}
-          className={cn(
-            "select-none",
-            hasCutout
-              ? "h-[90%] w-auto max-w-full object-contain drop-shadow-[0_26px_26px_rgba(77,51,8,0.45)]"
-              : "aspect-[4/5] h-[84%] w-auto rounded-2xl object-cover shadow-[0_26px_50px_-14px_rgba(77,51,8,0.6)]",
-            active && hasCutout && "shop-bottle"
-          )}
-        />
-      )}
-    </div>
-  );
+  return <div aria-hidden="true" className={cn("absolute inset-0 grid place-items-center px-4 text-center transition-opacity", active ? "opacity-100" : "opacity-0")}><span className="font-display text-2xl font-bold text-ink/70 sm:text-3xl">{l(product.name)}</span></div>;
 }
 
 export function ShopHeroSlider() {
@@ -64,7 +28,7 @@ export function ShopHeroSlider() {
     let pool = scope === "featured" ? shopProducts.filter((product) => product.featured) : shopProducts;
     if (pool.length === 0) pool = shopProducts; // "featured only" with nothing featured must not blank the page
     return [...pool]
-      .sort((a, b) => Number(Boolean(b.featured)) - Number(Boolean(a.featured)) || b.rating - a.rating)
+      .sort((a, b) => Number(Boolean(b.featured)) - Number(Boolean(a.featured)))
       .slice(0, max);
   }, [products, c.shopHero]);
 

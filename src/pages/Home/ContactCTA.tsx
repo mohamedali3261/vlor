@@ -1,12 +1,9 @@
 import { Reveal } from "@/components/ui/Reveal";
-import { SmartImage } from "@/components/ui/Primitives";
 import { ArrowUpRight, Messenger, Sparkle, Whatsapp } from "@/components/ui/icons";
-import { IMG } from "@/data/images";
 import { useStore } from "@/context/StoreContext";
 import { useLang } from "@/i18n/LanguageContext";
 import { useContent } from "@/hooks/useContent";
 import { openChannel, messengerUrl, whatsappUrl } from "@/lib/messaging";
-import { Link } from "@/lib/router";
 
 export function ContactCTA() {
   const { t, x } = useLang();
@@ -22,7 +19,7 @@ export function ContactCTA() {
             <div className="pointer-events-none absolute -start-20 bottom-0 h-80 w-80 rounded-full bg-plum blur-[90px]" />
             <div className="pointer-events-none absolute end-0 top-0 h-72 w-72 rounded-full bg-lilac/20 blur-[100px]" />
 
-            <div className="relative grid gap-10 lg:grid-cols-[1.08fr_0.92fr] lg:items-center">
+            <div className="relative">
               <div>
                 <span className="inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.28em] text-acid">
                   <Sparkle className="h-3.5 w-3.5" /> {lc(c.cta.eyebrow)}
@@ -53,24 +50,6 @@ export function ContactCTA() {
                 <p className="mt-6 max-w-md text-[10px] font-semibold leading-relaxed tracking-wide text-bone/45">
                   {x("Personal guidance from the first note to your final choice.", "إرشاد شخصي، من أول نوتة حتى اختيارك الأخير.")}
                 </p>
-              </div>
-
-              <div className="relative mx-auto w-full max-w-[330px]">
-                <div className="absolute inset-4 rounded-full bg-lilac/25 blur-2xl" />
-                <SmartImage
-                  src={IMG.bottleEditorial}
-                  alt={x("A VLOR signature perfume", "عطر ڨلور المميّز")}
-                  className="aspect-[4/5] w-full rotate-2 rounded-[1.8rem] border border-bone/15"
-                />
-                <Link
-                  to="/shop"
-                  className="absolute -end-3 top-5 grid h-20 w-20 -rotate-6 place-items-center rounded-full bg-lilac text-center text-ink shadow-lg transition hover:rotate-0"
-                >
-                  <div>
-                    <p className="font-display text-base leading-none">{x("discover", "اكتشف")}</p>
-                    <p className="mt-0.5 text-[8px] font-bold uppercase tracking-[0.12em]">{x("your signature", "عطرك المميّز")}</p>
-                  </div>
-                </Link>
               </div>
             </div>
           </div>

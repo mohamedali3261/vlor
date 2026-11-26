@@ -1,9 +1,7 @@
 import { Reveal } from "@/components/ui/Reveal";
 import { Button } from "@/components/ui/Button";
 import { Select } from "@/components/ui/Select";
-import { SmartImage } from "@/components/ui/Primitives";
 import { ArrowUpRight, Phone, Send, Whatsapp } from "@/components/ui/icons";
-import { IMG } from "@/data/images";
 import { useStore } from "@/context/StoreContext";
 import { useToast } from "@/context/ToastContext";
 import { useLang } from "@/i18n/LanguageContext";
@@ -94,9 +92,6 @@ export function ContactForm() {
             <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_85%_0%,rgba(199,168,115,0.22),transparent_52%)]" />
             <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_10%_90%,rgba(213,255,74,0.08),transparent_40%)]" />
             <div className="relative flex h-full flex-col">
-              <div className="overflow-hidden rounded-[1.4rem] border border-bone/10">
-                <SmartImage src={IMG.atelier} alt={x("VLOR — online atelier", "ڨلور — ورشة أونلاين")} className="aspect-[16/10] w-full" />
-              </div>
               <div className="mt-6 space-y-1">
                 <h3 className="font-display text-[26px] leading-none">{x("We’re online", "نحن أونلاين")}</h3>
                 <p className="text-[11px] leading-relaxed text-bone/60">{x("No storefront — we ship across Egypt and reply fast on WhatsApp.", "لا يوجد متجر فعلي — نشحن لكل محافظات مصر ونرد بسرعة على واتساب.")}</p>

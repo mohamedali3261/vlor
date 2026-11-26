@@ -5,6 +5,7 @@ import { MAX_SHOWCASE_IMAGES, type DeepPartial, type SiteContent } from "@/types
 /** Factory so every consumer gets its own mutable copy. */
 export function createDefaultContent(): SiteContent {
   return {
+    studioDeliveryTab: true,
     announcements: [
       { en: "Complimentary delivery on orders over EGP 2,000", ar: "توصيل مجاني للطلبات فوق ٢٠٠٠ ج.م" },
     ],
@@ -278,6 +279,7 @@ export function mergeContent(stored: DeepPartial<SiteContent> | null | undefined
   clean.sections = sections;
 
   const result = clean as unknown as SiteContent;
+  if (typeof result.studioDeliveryTab !== "boolean") result.studioDeliveryTab = base.studioDeliveryTab;
   // The cap holds even for hand-edited or imported data.
   // Also upgrade untouched legacy default wording stored in older localStorage snapshots.
   const replaceLegacyBrand = (val?: { en?: string; ar?: string }) =>

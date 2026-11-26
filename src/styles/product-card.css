@@ -427,3 +427,20 @@ html[data-theme="dark"] .pc-badge--light {
   border: 1px solid color-mix(in srgb, var(--color-ink) 12%, transparent);
 }
 
+
+/* Text-led product cards, without product images. */
+.pc-bottle-link {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  padding: 1rem 2rem;
+  text-align: center;
+  color: var(--product-card-text, var(--color-ink));
+}
+.pc-fragrance-name { font-family: var(--font-display); font-size: 1.9rem; line-height: 1.1; }
+.pc-fragrance-tagline { font-size: 0.75rem; line-height: 1.5; opacity: 0.7; }
+.related-cards .pc-card { max-width: 250px; height: 360px; }
+.related-cards .pc-bottle-link { height: 150px; }
+.related-cards .pc-fragrance-name { font-size: 1.35rem; }

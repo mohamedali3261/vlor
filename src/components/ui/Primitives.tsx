@@ -1,9 +1,7 @@
 import { useBrand } from "@/hooks/useBrand";
-import { resolveAsset } from "@/lib/assets";
 import { cn } from "@/utils/cn";
 import { useEffect, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
-import { Star } from "@/components/ui/icons";
 
 /* ---------- Portal (overlays must escape transformed page wrappers) ---------- */
 export function Portal({ children }: { children: ReactNode }) {
@@ -41,41 +39,6 @@ export function Badge({
       )}
     >
       {children}
-    </span>
-  );
-}
-
-/* ---------- Stars ---------- */
-export function Stars({
-  value,
-  reviews,
-  size = 12,
-  light,
-}: {
-  value: number;
-  reviews?: number;
-  size?: number;
-  light?: boolean;
-}) {
-  // A new product with no reviews has no rating yet, not a zero-star review.
-  if (value === 0 && reviews === 0) return null;
-  return (
-    <span className="inline-flex items-center gap-1.5" aria-label={`${value} / 5`}>
-      <span className={cn("flex gap-0.5", light ? "text-acid" : "text-plum")}>
-        {[1, 2, 3, 4, 5].map((star) => (
-          <Star
-            key={star}
-            width={size}
-            height={size}
-            filled={value >= star - 0.25}
-            className={value >= star - 0.25 ? "" : "opacity-30"}
-          />
-        ))}
-      </span>
-      <span dir="ltr" className={cn("text-[11px] font-semibold", light ? "text-bone/70" : "text-mist")}>
-        {value.toFixed(1)}
-        {reviews !== undefined && ` · ${reviews}`}
-      </span>
     </span>
   );
 }
@@ -158,73 +121,12 @@ export function SectionHeading({
   );
 }
 
-/* ---------- Smart image ---------- */
-export function SmartImage({
-  src,
-  fallbackSrc,
-  alt,
-  className,
-  imgClassName,
-  sizes,
-  priority,
-}: {
-  src: string;
-  fallbackSrc?: string;
-  alt: string;
-  className?: string;
-  imgClassName?: string;
-  sizes?: string;
-  priority?: boolean;
+/* ---------- Image-free placeholder ---------- */
+export function SmartImage({ alt, className }: {
+  src: string; fallbackSrc?: string; alt: string; className?: string;
+  imgClassName?: string; sizes?: string; priority?: boolean;
 }) {
-  const [currentSrc, setCurrentSrc] = useState(src);
-  const [loaded, setLoaded] = useState(false);
-  const [failed, setFailed] = useState(false);
-
-  useEffect(() => {
-    setCurrentSrc(src);
-    setLoaded(false);
-    setFailed(false);
-  }, [src]);
-
-  const resolved = resolveAsset(currentSrc);
-  const isCutout =
-    currentSrc.startsWith("/api/images/40000000-0000-4000-8000-00000000000") ||
-    currentSrc.startsWith("/images/bottles/");
-
-  return (
-    <div className={cn("relative overflow-hidden bg-bone-2", className)}>
-      {!failed ? (
-        <img
-          src={resolved}
-          alt={alt}
-          loading={priority ? "eager" : "lazy"}
-          decoding="async"
-          sizes={sizes}
-          onLoad={() => setLoaded(true)}
-          onError={() => {
-            if (fallbackSrc && fallbackSrc !== currentSrc) {
-              setCurrentSrc(fallbackSrc);
-              setLoaded(false);
-              return;
-            }
-            setFailed(true);
-            setLoaded(true);
-          }}
-          className={cn(
-            "h-full w-full transition-all duration-700 ease-out",
-            isCutout ? "object-contain p-3 drop-shadow-[0_14px_22px_rgba(77,51,8,0.22)]" : "object-cover",
-            loaded ? "scale-100 opacity-100 blur-0" : "scale-[1.04] opacity-0 blur-sm",
-            imgClassName
-          )}
-        />
-      ) : (
-        <div className="absolute inset-0 grid place-items-center bg-linear-to-br from-bone-2 to-lilac-soft p-6 text-center">
-          <span className="font-display text-2xl text-ink/50">{alt}</span>
-        </div>
-      )}
-      {!loaded && <span className="absolute inset-0 animate-pulse bg-linear-to-br from-bone-2 to-[#ded6c8]" />}
-    </div>
-  );
+  return <div className={cn("grid place-items-center overflow-hidden bg-bone-2 p-2 text-center text-xs text-ink/60", className)}>{alt}</div>;
 }
 
 /* ---------- Accordion ---------- */
@@ -281,17 +183,5 @@ export function Accordion({
 /* ---------- Brand logo ---------- */
 export function Logo({ compact, className }: { light?: boolean; compact?: boolean; className?: string }) {
   const { wordmark } = useBrand();
-  return (
-    <img
-      src="/images/brand/vlor-logo.png"
-      alt={wordmark || "VLOR"}
-      draggable={false}
-      decoding="async"
-      className={cn(
-        "block shrink-0 object-contain",
-        compact ? "h-8 w-24" : "h-12 w-36 sm:w-40",
-        className
-      )}
-    />
-  );
+  return <span className={cn("inline-flex shrink-0 items-center font-display font-bold tracking-[0.16em]", compact ? "text-xl" : "text-3xl", className)}>{wordmark || "VLOR"}</span>;
 }

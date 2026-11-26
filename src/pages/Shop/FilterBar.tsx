@@ -30,7 +30,6 @@ const sortOptions = [
   { key: "newest", label: "shop.sortNew" },
   { key: "price-asc", label: "shop.sortPriceAsc" },
   { key: "price-desc", label: "shop.sortPriceDesc" },
-  { key: "rating", label: "shop.sortRating" },
 ] as const;
 
 const genderLabel = {

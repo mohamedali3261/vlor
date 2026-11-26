@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/Button";
-import { Portal, SmartImage } from "@/components/ui/Primitives";
+import { Portal } from "@/components/ui/Primitives";
 import { ArrowRight, Check, Copy, Messenger, Send, Truck, Whatsapp, X } from "@/components/ui/icons";
 import { useCart } from "@/context/CartContext";
 import { useStore } from "@/context/StoreContext";
@@ -187,11 +187,6 @@ export function CheckoutSheet({ open, onClose }: CheckoutSheetProps) {
 
             <div className="mt-4 flex items-center justify-between rounded-xl border border-ink/10 bg-surface/50 px-3 py-2.5">
               <div className="flex items-center gap-2">
-                <span className="flex -space-x-2 rtl:space-x-reverse">
-                  {lines.slice(0, 3).map((line) => (
-                    <SmartImage key={line.key} src={line.image} alt={line.name[lang]} className="h-9 w-8 rounded-md border border-bone" />
-                  ))}
-                </span>
                 <span className="text-[11px] font-semibold text-ink/70">
                   {count} {t("cart.items")} · {formatPrice(displayedSubtotal, lang)}
                 </span>

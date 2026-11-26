@@ -58,7 +58,7 @@ export function findRelated(products: Product[], product: Product, count = 3): P
       score += item.moods.filter((mood) => product.moods.includes(mood)).length * 2;
       return { item, score };
     })
-    .sort((a, b) => b.score - a.score || b.item.rating - a.item.rating);
+    .sort((a, b) => b.score - a.score);
   return scored.slice(0, count).map((entry) => entry.item);
 }
 

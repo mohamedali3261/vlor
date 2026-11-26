@@ -3,7 +3,6 @@ import { useCart } from "@/context/CartContext";
 import { useStore } from "@/context/StoreContext";
 import { useToast } from "@/context/ToastContext";
 import { useLang } from "@/i18n/LanguageContext";
-import { resolveAsset } from "@/lib/assets";
 import { formatPrice } from "@/lib/format";
 import { Link } from "@/lib/router";
 import { emitBagPulse } from "@/motion";
@@ -36,7 +35,6 @@ const clamp = (x: number, a: number, b: number) => Math.min(b, Math.max(a, x));
 interface RailEntry {
   key: string;
   product: Product;
-  image: string;
   ml: number;
   price: number;
   badge: string;
@@ -57,9 +55,7 @@ export function RunwayLookbook() {
 
     const sorted = [...homeProducts].sort(
       (a, b) =>
-        Number(Boolean(b.cutout)) - Number(Boolean(a.cutout)) ||
-        Number(Boolean(b.featured)) - Number(Boolean(a.featured)) ||
-        b.rating - a.rating
+        Number(Boolean(b.featured)) - Number(Boolean(a.featured))
     );
 
     const primary: Product[] = [];
@@ -76,7 +72,6 @@ export function RunwayLookbook() {
       entries.push({
         key: `lead-${i}-${lead.id}-${leadSize.ml}`,
         product: lead,
-        image: resolveAsset(lead.cutout || lead.images[0]),
         ml: leadSize.ml,
         price: leadSize.price,
         badge: `${leadSize.ml} ${lang === "ar" ? "مل" : "ml"}`,
@@ -89,7 +84,6 @@ export function RunwayLookbook() {
         entries.push({
           key: `pair-${i}-${paired.id}-${pairSize.ml}`,
           product: paired,
-          image: resolveAsset(paired.cutout || paired.images[0]),
           ml: pairSize.ml,
           price: pairSize.price,
           badge: `${pairSize.ml} ${lang === "ar" ? "مل" : "ml"}`,
@@ -100,7 +94,6 @@ export function RunwayLookbook() {
         entries.push({
           key: `alt-${i}-${lead.id}-${altSize.ml}`,
           product: lead,
-          image: resolveAsset(lead.cutout || lead.images[0]),
           ml: altSize.ml,
           price: altSize.price,
           badge: `${altSize.ml} ${lang === "ar" ? "مل" : "ml"}`,
@@ -118,7 +111,7 @@ export function RunwayLookbook() {
   const modelRefs = useRef<Array<HTMLDivElement | null>>([]);
   const cardRefs = useRef<Array<HTMLElement | null>>([]);
 
-  const [decoded, setDecoded] = useState(false);
+  const decoded = true;
   const [activeIdx, setActiveIdx] = useState(0);
   const activeIdxRef = useRef(0);
 
@@ -148,41 +141,6 @@ export function RunwayLookbook() {
     filterCache: Array(LOOK_COUNT).fill(""),
     opacityCache: Array(LOOK_COUNT).fill(""),
   });
-
-  // Pre-decode real bottle images before lifting the section veil
-  useEffect(() => {
-    if (lookProducts.length === 0) return;
-    let cancelled = false;
-    const urls = Array.from(
-      new Set([
-        ...lookProducts.map((p) => resolveAsset(p.cutout || p.images[0])),
-        ...railItems.map((r) => r.image),
-      ])
-    );
-
-    const fallbackTimer = window.setTimeout(() => {
-      if (!cancelled) setDecoded(true);
-    }, 1200);
-
-    Promise.all(
-      urls.map((u) => {
-        const img = new Image();
-        img.src = u;
-        return typeof img.decode === "function" ? img.decode().catch(() => undefined) : Promise.resolve();
-      })
-    ).then(() => {
-      if (!cancelled) {
-        window.clearTimeout(fallbackTimer);
-        animRef.current.dirty = true;
-        setDecoded(true);
-      }
-    });
-
-    return () => {
-      cancelled = true;
-      window.clearTimeout(fallbackTimer);
-    };
-  }, [lookProducts, railItems]);
 
   const measure = useCallback(() => {
     const stage = stageRef.current;
@@ -584,8 +542,8 @@ export function RunwayLookbook() {
           className="rl-stage"
           tabIndex={0}
           aria-label={x(
-            "Runway bottles. Drag, scroll or use the arrow keys to change scent.",
-            "قوارير العرض. اسحب أو مرّر أو استخدم الأسهم لتغيير العطر."
+            "Runway scents. Drag, scroll or use the arrow keys to change scent.",
+            "عطور العرض. اسحب أو مرّر أو استخدم الأسهم لتغيير العطر."
           )}
           onKeyDown={onKeyDown}
           onPointerEnter={onStagePointerEnter}
@@ -605,13 +563,7 @@ export function RunwayLookbook() {
                 data-i={i}
                 className="rl-m"
               >
-                <img
-                  src={resolveAsset(product.cutout || product.images[0])}
-                  alt={l(product.name)}
-                  draggable={false}
-                  decoding="async"
-                  className="rl-m-img"
-                />
+                <div className="rl-text-flacon"><span>{l(product.name)}</span></div>
               </div>
             ))}
           </div>
@@ -621,7 +573,7 @@ export function RunwayLookbook() {
               {x("Signature Collection", "مجموعة التوقيع الملكية")}
             </h2>
             <p>
-              {x("A study in sillage and presence. Six signature extraits from VLOR stand in one receding line — drag, scroll or tap any flacon in the distance to bring its story forward.", "دراسة في الثبات والحضور. ستّ قوارير من إكستريه ڨلور تقف في صفٍّ يمتدّ في العمق — اسحب أو مرّر أو اضغط على أي قارورة لتتقدّم بتفاصيلها إلى الواجهة.")}
+              {x("Explore the collection. Drag, scroll or use the arrows to discover each scent.", "اكتشف المجموعة. اسحب أو مرّر أو استخدم الأسهم لتتعرّف على العطور.")}
             </p>
           </div>
 
@@ -740,13 +692,7 @@ export function RunwayLookbook() {
                   className="rl-shot"
                   aria-label={l(entry.product.name)}
                 >
-                  <img
-                    src={entry.image}
-                    alt={l(entry.product.name)}
-                    loading="lazy"
-                    decoding="async"
-                    draggable={false}
-                  />
+                  <span className="rl-text-rail">{l(entry.product.name)}</span>
                 </Link>
 
                 <div className="rl-meta" dir={dir}>

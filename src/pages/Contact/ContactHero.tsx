@@ -1,6 +1,4 @@
 import { Reveal } from "@/components/ui/Reveal";
-import { SmartImage } from "@/components/ui/Primitives";
-import { IMG } from "@/data/images";
 import { useLang } from "@/i18n/LanguageContext";
 
 export function ContactHero() {
@@ -31,9 +29,6 @@ export function ContactHero() {
         <Reveal delay={120}>
           <div className="section-card relative overflow-hidden rounded-[1.6rem] border border-ink/10 bg-surface p-4 shadow-[0_20px_60px_rgba(16,16,16,0.08)] backdrop-blur sm:p-5">
             <div className="absolute inset-0 bg-gradient-to-br from-lilac/10 via-transparent to-acid/10" />
-            <div className="relative flex justify-center">
-              <SmartImage src={IMG.glass} alt={x("VLOR — online boutique", "ڨلور — متجر أونلاين")} className="h-32 w-full max-w-[280px] rounded-2xl border border-ink/5 sm:h-36" />
-            </div>
             <div className="relative mt-3 flex items-center justify-between rounded-full bg-ink px-4 py-2.5 text-bone">
               <span className="flex items-center gap-2 text-[11px] font-semibold">
                 <span className="h-2 w-2 rounded-full bg-acid animate-pulse" /> {x("We usually reply within an hour", "نرد عادةً خلال ساعة")}

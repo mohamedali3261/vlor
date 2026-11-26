@@ -25,9 +25,7 @@
   position: absolute;
   inset: 0;
   content: "";
-  background-image:
-    linear-gradient(100deg, color-mix(in srgb, var(--color-ink) 72%, transparent), color-mix(in srgb, var(--color-ink) 57%, transparent) 50%, color-mix(in srgb, var(--color-ink) 72%, transparent)),
-    url("/images/brand/vlor-emblem.webp");
+  background: linear-gradient(100deg, var(--color-ink), var(--color-plum-2), var(--color-ink));
   background-position: center;
   background-size: cover;
   opacity: .88;

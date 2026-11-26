@@ -83,11 +83,9 @@ export function ShopPage() {
           return b.price - a.price;
         case "newest":
           return Date.parse(b.createdAt) - Date.parse(a.createdAt);
-        case "rating":
-          return b.rating - a.rating || b.reviews - a.reviews;
         case "featured":
         default:
-          return Number(Boolean(b.featured)) - Number(Boolean(a.featured)) || b.rating - a.rating;
+          return Number(Boolean(b.featured)) - Number(Boolean(a.featured));
       }
     });
   }, [shopProducts, eGender, eSaved, wishlist, eMax, eQuery, eSort]);

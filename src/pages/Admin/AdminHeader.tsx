@@ -1,5 +1,6 @@
 import { Check, Eye, Lock, Pencil, Sparkle } from "@/components/ui/icons";
 import { useLang } from "@/i18n/LanguageContext";
+import { useStore } from "@/context/StoreContext";
 import { cn } from "@/utils/cn";
 
 export type AdminTab = "products" | "analytics" | "orders" | "delivery" | "security" | "content" | "settings";
@@ -16,6 +17,7 @@ export function AdminHeader({
   dirty: boolean;
 }) {
   const { t, lang } = useLang();
+  const { content } = useStore();
 
   const tabs: { key: AdminTab; label: string }[] = [
     { key: "products", label: t("admin.tab.products") },
@@ -54,7 +56,7 @@ export function AdminHeader({
         </div>
 
         <div className="relative mt-6 flex flex-wrap items-center gap-1.5">
-          {tabs.map((item) => (
+          {tabs.filter((item) => item.key !== "delivery" || content.studioDeliveryTab).map((item) => (
             <button
               key={item.key}
               onClick={() => setTab(item.key)}

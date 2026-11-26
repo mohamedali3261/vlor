@@ -188,7 +188,7 @@ export function AdminPage() {
 
           {tab === "analytics" && <Analytics />}
           {tab === "orders" && <Orders />}
-          {tab === "delivery" && <Delivery />}
+          {tab === "delivery" && content.studioDeliveryTab && <Delivery />}
           {tab === "security" && <><Security /><Accounts /><AuditLog /></>}
           {tab === "content" && (
             <>
