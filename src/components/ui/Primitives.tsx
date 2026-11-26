@@ -57,6 +57,8 @@ export function Stars({
   size?: number;
   light?: boolean;
 }) {
+  // A new product with no reviews has no rating yet, not a zero-star review.
+  if (value === 0 && reviews === 0) return null;
   return (
     <span className="inline-flex items-center gap-1.5" aria-label={`${value} / 5`}>
       <span className={cn("flex gap-0.5", light ? "text-acid" : "text-plum")}>

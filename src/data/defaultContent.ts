@@ -27,7 +27,7 @@ export function createDefaultContent(): SiteContent {
     },
 
     showcase: {
-      eyebrow: { en: "Curated editions", ar: "إصدارات مختارة" },
+      eyebrow: { en: "Selected perfumes", ar: "عطور مختارة" },
       title: { en: "Icons of VLOR.", ar: "أيقوناتُ ڨلور." },
       lead: {
         en: "Swipe through our defining extraits — each flacon carries its own chapter.",
@@ -302,7 +302,8 @@ export function mergeContent(stored: DeepPartial<SiteContent> | null | undefined
     result.showcase?.title?.ar === "أيقوناتُ مليكة." ||
     result.showcase?.title?.en === "Icons of Malika.";
   const legacyShowcaseEyebrow =
-    result.showcase?.eyebrow?.ar === "التشكيلة" && result.showcase?.eyebrow?.en === "The lineup";
+    (result.showcase?.eyebrow?.ar === "التشكيلة" && result.showcase?.eyebrow?.en === "The lineup") ||
+    (result.showcase?.eyebrow?.ar === "إصدارات مختارة" && result.showcase?.eyebrow?.en === "Curated editions");
   const legacyShowcaseLead =
     result.showcase?.lead?.ar === "تصفّح الزجاجات التي تُعرّف الدار — وكل واحدة تفتح حكايتها.";
 

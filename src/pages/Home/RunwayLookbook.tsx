@@ -115,7 +115,6 @@ export function RunwayLookbook() {
   const stageRef = useRef<HTMLElement>(null);
   const railRef = useRef<HTMLElement>(null);
   const ringRef = useRef<HTMLDivElement>(null);
-  const rollRef = useRef<HTMLSpanElement>(null);
   const modelRefs = useRef<Array<HTMLDivElement | null>>([]);
   const cardRefs = useRef<Array<HTMLElement | null>>([]);
 
@@ -270,13 +269,6 @@ export function RunwayLookbook() {
           ? `translate3d(${pos.toFixed(1)}px,0,0)`
           : `translate3d(0,${pos.toFixed(1)}px,0)`;
       }
-    }
-
-    const roll = rollRef.current;
-    const firstRow = roll?.firstElementChild as HTMLElement | null;
-    if (roll && firstRow) {
-      const rowH = firstRow.offsetHeight || 38;
-      roll.style.transform = `translate3d(0,${(-wrap(s.p, N) * rowH).toFixed(1)}px,0)`;
     }
 
     const nextIdx = Math.round(wrap(s.p, N)) % N;
@@ -579,7 +571,7 @@ export function RunwayLookbook() {
         </div>
 
         <nav className="rl-r2 rl-wide rl-wide-i18n" aria-label={x("Fragrance families", "العائلات العطرية")}>
-          <Link to="/shop">{x("All Extraits", "كل الإصدارات")}</Link>
+          <Link to="/shop">{x("All perfumes", "كل العطور")}</Link>
           <Link to="/shop">{t("shop.all")}</Link>
           <Link to="/wishlist">{x("Saved List", "قائمة المفضلة")}</Link>
         </nav>
@@ -634,17 +626,6 @@ export function RunwayLookbook() {
           </div>
 
           <div className="rl-tag" dir={dir}>
-            <div className="rl-look rl-wide rl-wide-i18n" aria-live="polite" dir="ltr">
-              <span>{x("Look", "إصدار")}</span>
-              <span className="rl-win">
-                <span ref={rollRef} className="rl-roll">
-                  {Array.from({ length: LOOK_COUNT + 1 }).map((_, idx) => (
-                    <b key={idx}>{String((idx % LOOK_COUNT) + 1).padStart(2, "0")}</b>
-                  ))}
-                </span>
-              </span>
-            </div>
-
             {activeProduct && (
               <div className="rl-active-scent">
                 <p className="rl-active-name">{l(activeProduct.name)}</p>
@@ -694,7 +675,7 @@ export function RunwayLookbook() {
         <aside
           ref={railRef}
           className="rl-rail"
-          aria-label={x("Scents in this edition", "عطور هذا الإصدار")}
+          aria-label={x("Perfumes in the collection", "عطور المجموعة")}
           onPointerDown={(e) => {
             if ((e.target as HTMLElement | null)?.closest("a, button")) return;
             const s = animRef.current;

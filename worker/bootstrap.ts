@@ -1,4 +1,5 @@
 import { INITIAL_ADMIN, SEED_IMAGES, SEED_PRODUCTS, SEED_SHIPPING_RATES } from './seedData';
+import NEW_PRODUCTS from './newProducts.json';
 
 const DDL_STATEMENTS = [
   `CREATE TABLE IF NOT EXISTS store_meta (key TEXT PRIMARY KEY, value TEXT NOT NULL)`,
@@ -221,6 +222,13 @@ async function initialize(db: D1Database): Promise<void> {
             .bind(p.id, s.ml)
         );
       }
+    });
+    // Requested scents start with zero stock; inventory triggers create each size.
+    NEW_PRODUCTS.forEach((p) => {
+      productBatch.push(
+        db.prepare('INSERT OR IGNORE INTO products(id, slug, category_id, data) VALUES (?, ?, ?, ?)')
+          .bind(p.id, p.slug, p.category, JSON.stringify(p))
+      );
     });
     await db.batch(productBatch);
   }

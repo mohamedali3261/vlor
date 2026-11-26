@@ -196,7 +196,7 @@ export const dict = {
   "contact.messenger": { en: "Messenger", ar: "ماسنجر" },
   "contact.messenger.desc": { en: "Voice notes welcome", ar: "نرحب بالرسائل الصوتية" },
   "contact.instagram": { en: "Instagram", ar: "إنستجرام" },
-  "contact.instagram.desc": { en: "New drops & atelier days", ar: "إصدارات جديدة وأيام الورشة" },
+  "contact.instagram.desc": { en: "New scents & atelier days", ar: "عطور جديدة وأيام الورشة" },
   "contact.email.desc": { en: "For press & partnerships", ar: "للصحافة والشراكات" },
   "contact.hours.title": { en: "Atelier hours", ar: "مواعيد الورشة" },
   "contact.hours.body": { en: "Online — daily 11:00 – 22:00. Shipping across Egypt.", ar: "أونلاين — يومياً ١١:٠٠ – ٢٢:٠٠. شحن لكل محافظات مصر." },
