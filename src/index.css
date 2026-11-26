@@ -110,6 +110,6 @@ html[data-theme="dark"] .bg-surface {
   background-color: var(--color-surface) !important;
 }
 
-/* Keep the image-free storefront, except for the supplied brand logo. */
+/* Keep storefront images hidden; only the brand logo and studio-only image preview are visible. */
 img, picture, video { display: none !important; }
-img.brand-logo { display: block !important; }
+img.brand-logo, img.studio-product-preview { display: block !important; }

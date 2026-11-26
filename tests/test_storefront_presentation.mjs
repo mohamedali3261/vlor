@@ -29,7 +29,7 @@ for (const path of ['src/pages/Product/PurchasePanel.tsx', 'src/components/produ
 assert.doesNotMatch(await read('src/pages/Shop/FilterBar.tsx'), /sortRating/);
 const css = await read('src/index.css');
 assert.match(css, /img, picture, video\s*\{\s*display:\s*none/);
-assert.match(css, /img\.brand-logo\s*\{\s*display:\s*block/);
+assert.match(css, /img\.brand-logo, img\.studio-product-preview\s*\{\s*display:\s*block/);
 assert.match(await read('src/components/layout/Navbar.tsx'), /<Logo compact className="nav-brand-wordmark"/);
 const navbarCss = await read('src/styles/navbar-brand.css');
 assert.match(navbarCss, /width:\s*clamp\(54px,\s*18vw,\s*60px\)/);

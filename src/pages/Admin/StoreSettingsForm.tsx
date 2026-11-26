@@ -76,9 +76,6 @@ export function StoreSettingsForm({
           <Field label={lang === "ar" ? "رابط يوتيوب" : "YouTube URL"} hint="https://youtube.com/@yourchannel">
             <input value={draft.youtube} onChange={(event) => set("youtube", event.target.value)} className="field" dir="ltr" />
           </Field>
-          <Field label="Email">
-            <input type="email" value={draft.email} onChange={(event) => set("email", event.target.value)} className="field" dir="ltr" />
-          </Field>
           <Field label="Display phone">
             <input value={draft.phone} onChange={(event) => set("phone", event.target.value)} className="field" dir="ltr" />
           </Field>
@@ -96,12 +93,6 @@ export function StoreSettingsForm({
           </Field>
           <Field label="العنوان (عربي)">
             <input value={draft.address.ar} onChange={(event) => set("address", { ...draft.address, ar: event.target.value })} className="field" dir="rtl" />
-          </Field>
-          <Field label="Hours (English)">
-            <input value={draft.hours.en} onChange={(event) => set("hours", { ...draft.hours, en: event.target.value })} className="field" dir="ltr" />
-          </Field>
-          <Field label="المواعيد (عربي)">
-            <input value={draft.hours.ar} onChange={(event) => set("hours", { ...draft.hours, ar: event.target.value })} className="field" dir="rtl" />
           </Field>
         </div>
       </div>

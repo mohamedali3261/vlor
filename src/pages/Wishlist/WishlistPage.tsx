@@ -121,7 +121,7 @@ export function WishlistPage() {
       {/* Saved Grid or Empty State */}
       <section className="mx-auto max-w-[1400px] px-4 py-8 sm:px-6 sm:py-10 lg:px-10">
         {savedProducts.length > 0 ? (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3 lg:gap-6">
+          <div className="grid grid-cols-1 gap-4 min-[400px]:grid-cols-2 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3 lg:gap-6">
             {savedProducts.map((product, index) => (
               <Reveal key={product.id} delay={(index % 3) * 55}>
                 <ProductCard product={product} priority={index < 3} />
@@ -168,7 +168,7 @@ export function WishlistPage() {
                 {t("footer.shopAll")}
               </Link>
             </div>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 sm:gap-5">
+            <div className="grid grid-cols-1 gap-4 min-[400px]:grid-cols-2 sm:grid-cols-3 sm:gap-5">
               {suggested.map((product) => (
                 <ProductCard key={product.id} product={product} />
               ))}

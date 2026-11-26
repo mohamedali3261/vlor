@@ -37,3 +37,17 @@ export function renderContactAndFooter() {
     <StoreProvider><LanguageProvider><ToastProvider><ContactPage /><Footer /></ToastProvider></LanguageProvider></StoreProvider>,
   );
 }
+
+import { ProductImageScale } from '@/pages/Admin/ProductImageScale';
+import { StoreSettingsForm } from '@/pages/Admin/StoreSettingsForm';
+import { defaultSettings } from '@/data/site';
+
+export function renderStudioSettingsAndImages(scale: number, withImage = true) {
+  const product = { ...(products[0] as Product), images: withImage ? ['https://example.com/scent.png'] : [], cutout: undefined };
+  return renderToStaticMarkup(
+    <StoreProvider><LanguageProvider>
+      <StoreSettingsForm settings={defaultSettings} onSave={() => {}} />
+      <ProductImageScale products={[product]} value={scale} onChange={() => {}} />
+    </LanguageProvider></StoreProvider>,
+  );
+}
