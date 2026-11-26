@@ -24,8 +24,10 @@
   }
 }
 
+@media (hover: hover) {
 .pc-card:hover {
   box-shadow: 0 34px 70px -32px rgba(77,51,8, 1);
+}
 }
 
 /* Expanding corner accent disc */
@@ -37,16 +39,20 @@
   transition: clip-path 500ms ease-in-out;
 }
 
+@media (hover: hover) {
 .pc-card:hover .pc-disc {
   clip-path: circle(330px at 80% -18%);
+}
 }
 
 [dir="rtl"] .pc-disc {
   clip-path: circle(140px at 20% 18%);
 }
 
+@media (hover: hover) {
 [dir="rtl"] .pc-card:hover .pc-disc {
   clip-path: circle(330px at 20% -18%);
+}
 }
 
 /* Oversized editorial scent watermark */
@@ -155,9 +161,11 @@ html[lang="ar"] .pc-watermark {
     transform 500ms ease-out;
 }
 
+@media (hover: hover) {
 .pc-card:hover .pc-bottle-link {
   top: 25px;
   transform: translateY(0);
+}
 }
 
 .pc-bottle-img {
@@ -173,8 +181,10 @@ html[lang="ar"] .pc-watermark {
   transition: transform 700ms ease-out;
 }
 
+@media (hover: hover) {
 .pc-card:hover .pc-bottle-img {
   transform: translate(-50%, -50%) rotate(var(--tilt-open, -14deg)) scale(0.74);
+}
 }
 
 /* Sliding bottom content panel */
@@ -189,8 +199,10 @@ html[lang="ar"] .pc-watermark {
   transition: height 700ms ease-out;
 }
 
+@media (hover: hover) {
 .pc-card:hover .pc-panel {
   height: 190px;
+}
 }
 
 .pc-panel-inner {
@@ -255,10 +267,12 @@ html[lang="ar"] .pc-watermark {
   padding-top: 0.4rem;
 }
 
+@media (hover: hover) {
 .pc-card:hover .pc-sizes {
   visibility: visible;
   opacity: 1;
   transition-delay: 400ms;
+}
 }
 
 .pc-row-label {
@@ -325,14 +339,16 @@ html[lang="ar"] .pc-watermark {
   color: var(--color-ink);
 }
 
+@media (hover: hover) {
 .pc-card:hover .pc-buy-btn {
   opacity: 1;
   transform: translateY(0);
   transition-delay: 640ms, 640ms, 0ms;
 }
+}
 
-/* Touch devices — card starts open because :hover never rests */
-@media (hover: none) {
+/* Wider touch devices retain their always-open layout. */
+@media (hover: none) and (min-width: 640px) {
   .pc-disc {
     clip-path: circle(330px at 80% -18%);
   }
@@ -366,10 +382,12 @@ html[lang="ar"] .pc-watermark {
 }
 
 /* Dark mode — keep cards dark with light text and the compact panel layout. */
+@media (hover: hover) {
 html[data-theme="dark"] .pc-card:hover .pc-panel {
   height: 210px;
 }
-@media (hover: none) {
+}
+@media (hover: none) and (min-width: 640px) {
   html[data-theme="dark"] .pc-panel {
     height: 210px;
   }
@@ -458,4 +476,34 @@ html[data-theme="dark"] .pc-badge--light {
   .pc-row-label { font-size: 9px; }
   .pc-badges { inset-inline-start: 0.5rem; top: 0.5rem; }
   .pc-wish { inset-inline-end: 0.5rem; top: 0.5rem; }
+}
+
+/* Restore the original card dimensions on phones only. */
+@media (max-width: 639px) {
+  .pc-card { height: 460px; max-width: 340px; }
+  .pc-bottle-link { height: 230px; }
+  .pc-fragrance-name { font-size: 1.9rem; }
+  .pc-title { font-size: 20px; }
+  .pc-row-label { font-size: 11px; }
+  .related-cards .pc-card { height: 360px; max-width: 250px; }
+  .related-cards .pc-bottle-link { height: 150px; }
+  .related-cards .pc-fragrance-name { font-size: 1.35rem; }
+  .pc-card.pc-scroll-active { box-shadow: 0 34px 70px -32px rgba(77,51,8, 1); }
+  .pc-card.pc-scroll-active .pc-disc { clip-path: circle(330px at 80% -18%); }
+  [dir="rtl"] .pc-card.pc-scroll-active .pc-disc { clip-path: circle(330px at 20% -18%); }
+  .pc-card.pc-scroll-active .pc-bottle-link,
+  .pc-card:focus-within .pc-bottle-link { top: 10px; transform: translateY(0); }
+  .pc-card.pc-scroll-active .pc-panel,
+  .pc-card:focus-within .pc-panel { height: 238px; }
+  .pc-card.pc-scroll-active .pc-sizes { visibility: visible; opacity: 1; transition-delay: 400ms; }
+  .pc-card.pc-scroll-active .pc-buy-btn { opacity: 1; transform: translateY(0); transition-delay: 640ms, 640ms, 0ms; }
+  .related-cards .pc-card.pc-scroll-active .pc-panel,
+  .related-cards .pc-card:focus-within .pc-panel { height: 190px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pc-card, .pc-card .pc-disc, .pc-card .pc-bottle-link,
+  .pc-card .pc-panel, .pc-card .pc-sizes, .pc-card .pc-buy-btn {
+    transition: none !important;
+  }
 }

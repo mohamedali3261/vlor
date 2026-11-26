@@ -45,7 +45,7 @@ export function Featured() {
           />
         </Reveal>
 
-        <div className="mt-10 grid grid-cols-1 gap-4 min-[400px]:grid-cols-2 sm:grid-cols-2 sm:gap-5 lg:mt-14 lg:grid-cols-3 lg:gap-6">
+        <div className="mt-10 grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 lg:mt-14 lg:grid-cols-3 lg:gap-6">
           {edit.map((product, index) => (
             <Reveal key={product.id} variant={pickCardRevealVariant(index)} delay={index * 55}>
               <ProductCard product={product} priority={index < 3} />
