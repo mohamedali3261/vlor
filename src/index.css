@@ -109,7 +109,3 @@ html[data-theme="dark"] .border-rose-200 {
 html[data-theme="dark"] .bg-surface {
   background-color: var(--color-surface) !important;
 }
-
-/* Keep the image-free storefront, except for the supplied brand logo. */
-img, picture, video { display: none !important; }
-img.brand-logo { display: block !important; }

@@ -1,4 +1,3 @@
-import { IMG } from "@/data/images";
 import type { Product } from "@/types";
 
 const citrusArchive: Product = {
@@ -41,8 +40,7 @@ const citrusArchive: Product = {
       { en: "Ambrette seed", ar: "بذور الأمبريت" },
     ],
   },
-  images: [IMG.minimalWhite, IMG.shell, IMG.blue],
-  cutout: "/images/bottles/aqua.webp",
+  images: [],
   accent: "#E4F06A",
   isNew: true,
   rating: 4.7,

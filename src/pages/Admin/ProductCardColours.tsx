@@ -11,7 +11,7 @@ const example: Product = {
   id: "studio-preview", slug: "preview", name: { en: "Your perfume", ar: "عطرك المميز" },
   tagline: { en: "", ar: "" }, description: { en: "", ar: "" }, story: { en: "", ar: "" },
   price: 1, sizes: [{ ml: 50, price: 1 }], category: "woody", gender: "unisex", moods: [],
-  notes: { top: [], heart: [], base: [] }, images: ["/images/bottles/noir.png"],
+  notes: { top: [], heart: [], base: [] }, images: [],
   accent: "#D4A035", longevity: "", sillage: { en: "", ar: "" }, rating: 0, reviews: 0, createdAt: "",
 };
 

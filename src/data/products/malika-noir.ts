@@ -1,4 +1,3 @@
-import { IMG } from "@/data/images";
 import type { Product } from "@/types";
 
 const malikaNoir: Product = {
@@ -41,8 +40,7 @@ const malikaNoir: Product = {
       { en: "Grey amber", ar: "عنبر رمادي" },
     ],
   },
-  images: [IMG.incense, IMG.anemone, IMG.shadow],
-  cutout: "/images/bottles/dark.webp",
+  images: [],
   accent: "#D4A035",
   featured: true,
   bestseller: true,

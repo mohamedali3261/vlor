@@ -122,11 +122,14 @@ export function SectionHeading({
 }
 
 /* ---------- Image-free placeholder ---------- */
-export function SmartImage({ alt, className }: {
+export function SmartImage({ src, alt, className, imgClassName }: {
   src: string; fallbackSrc?: string; alt: string; className?: string;
   imgClassName?: string; sizes?: string; priority?: boolean;
 }) {
-  return <div className={cn("grid place-items-center overflow-hidden bg-bone-2 p-2 text-center text-xs text-ink/60", className)}>{alt}</div>;
+  const [failed, setFailed] = useState("");
+  return <div className={cn("grid place-items-center overflow-hidden bg-bone-2 text-center text-xs text-ink/60", className)}>
+    {src && failed !== src ? <img src={src} alt={alt} onError={() => setFailed(src)} className={cn("h-full w-full object-contain", imgClassName)} /> : <span className="p-2">{alt}</span>}
+  </div>;
 }
 
 /* ---------- Accordion ---------- */

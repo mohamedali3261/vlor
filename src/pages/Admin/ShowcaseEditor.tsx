@@ -217,7 +217,7 @@ export function ShowcaseEditor({ value, products, onChange }: Props) {
             <input
               value={isUpload ? "" : image.src}
               onChange={(event) => patchImage(image.id, { src: event.target.value.trim() })}
-              placeholder={isUpload ? (ar ? "صورة مرفوعة — الصق رابطاً لاستبدالها" : "Uploaded — paste a link to replace it") : "https://… or /images/bottles/dark.webp"}
+              placeholder={isUpload ? (ar ? "صورة مرفوعة — الصق رابطاً لاستبدالها" : "Uploaded — paste a link to replace it") : "https://… or /api/images/…"}
               className="field mb-3 text-[11px]"
               dir="ltr"
             />

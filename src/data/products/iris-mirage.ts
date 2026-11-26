@@ -1,4 +1,3 @@
-import { IMG } from "@/data/images";
 import type { Product } from "@/types";
 
 const irisMirage: Product = {
@@ -41,8 +40,7 @@ const irisMirage: Product = {
       { en: "Ambrette", ar: "أمبريت" },
     ],
   },
-  images: [IMG.glass, IMG.shell, IMG.stoneRed],
-  cutout: "/images/bottles/lilac.webp",
+  images: [],
   accent: "#C9B5F7",
   featured: true,
   isNew: true,

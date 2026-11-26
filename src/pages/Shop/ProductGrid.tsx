@@ -50,7 +50,7 @@ export function ProductGrid({ products, total, visible, onMore, onReset, emptySa
         </span>
       </div>
 
-      <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3 lg:gap-6 xl:gap-7">
+      <div className="mt-5 grid grid-cols-1 gap-4 min-[400px]:grid-cols-2 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3 lg:gap-6 xl:gap-7">
         {products.map((product, index) => (
           <Reveal
             key={product.id}

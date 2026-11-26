@@ -5,10 +5,10 @@
   top: 50%;
   left: 50%;
   display: grid;
-  width: min(32vw, 148px);
-  height: min(12vw, 50px);
-  min-width: 100px;
-  min-height: 36px;
+  /* Match the supplied image's proportions so the frame fits the logo. */
+  box-sizing: content-box;
+  width: clamp(54px, 18vw, 60px);
+  aspect-ratio: 1024 / 683;
   place-items: center;
   overflow: hidden;
   border: 1px solid rgb(212 160 68 / 50%);
@@ -39,20 +39,11 @@
 .nav-brand-wordmark {
   position: relative;
   z-index: 1;
-  width: 96%;
-  height: 94%;
+  width: 100%;
+  height: 100%;
   object-fit: contain;
   filter: drop-shadow(0 2px 8px rgb(77 51 8 / 75%));
   pointer-events: none;
-}
-
-@media (max-width: 380px) {
-  .nav-brand-center {
-    width: min(32vw, 108px);
-    height: 38px;
-    min-width: 92px;
-    min-height: 34px;
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {

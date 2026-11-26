@@ -172,10 +172,6 @@ export function ProductForm({
       setError(lang === "ar" ? "الاسم الإنجليزي والرابط مطلوبان." : "English name and slug are required.");
       return;
     }
-    if (!draft.images.trim()) {
-      setError(lang === "ar" ? "أضف رابط صورة واحدة على الأقل." : "Add at least one image URL.");
-      return;
-    }
     const sizes = draft.sizes.filter((size) => size.ml > 0 && size.price > 0);
     if (sizes.length === 0) {
       setError(lang === "ar" ? "أضف حجماً وسعراً صحيحاً." : "Add at least one valid size and price.");
@@ -353,12 +349,12 @@ export function ProductForm({
             </div>
 
             <Field
-              label={`${t("admin.image")} *`}
+              label={lang === "ar" ? "صور المنتج (اختياري)" : "Product images (optional)"}
               full
               hint={
                 lang === "ar"
-                  ? "حد أقصى ١ ميجابايت للصورة في D1 (تُضغط الصور الكبيرة تلقائيًا قبل الرفع)، أو الصق رابطًا مباشرًا."
-                  : "Max 1 MB per D1 image (large photos are compressed automatically before upload), or paste a direct URL."
+                  ? "الصور المضافة تظهر للزوار. الرفع اختياري؛ الحد الأقصى ١ ميجابايت للصورة، أو الصق رابطًا مباشرًا."
+                  : "Added images are shown to visitors. Uploading is optional; max 1 MB per image, or paste a direct URL."
               }
             >
               <input
@@ -431,7 +427,7 @@ export function ProductForm({
                 onChange={(event) => update("cutout", event.target.value)}
                 className="field mt-1.5 text-[11px]"
                 dir="ltr"
-                placeholder="/images/bottles/dark.webp or /api/images/…"
+                placeholder="/api/images/… or https://…"
               />
             </Field>
 

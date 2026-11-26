@@ -1,0 +1,51 @@
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { createRequire } from 'node:module';
+import { build } from 'esbuild';
+const buildResult = await build({ entryPoints: ['tests/storefront_render_fixture.tsx'], bundle: true, platform: 'node', format: 'cjs', packages: 'external', jsx: 'automatic', write: false, alias: { '@': new URL('../src', import.meta.url).pathname } });
+const module = { exports: {} };
+new Function('require', 'module', 'exports', buildResult.outputFiles[0].text)(createRequire(import.meta.url), module, module.exports);
+const { renderStudioSettingsAndImages, mergeContent } = module.exports;
+const html = renderStudioSettingsAndImages(125);
+assert.match(html, /<img src="https:\/\/example.com\/scent.png"/); assert.match(html, /transform:scale\(1\.25\)/);
+assert.match(html, /type="range"[^>]+min="50"[^>]+max="150"/);
+assert.match(html, /تظهر الصور الجديدة للزوار/);
+assert.match(html, /رابط فيسبوك/); assert.match(html, /رابط يوتيوب/);
+assert.doesNotMatch(html, />Email<|>Hours \(English\)<|>المواعيد \(عربي\)</);
+assert.match(renderStudioSettingsAndImages(100, false), /لا توجد صورة متاحة/);
+assert.equal(mergeContent(null).theme.productImageScale, 100);
+assert.equal(mergeContent({theme:{productImageScale:125}}).theme.productImageScale, 125);
+assert.equal(mergeContent({theme:{productImageScale:1000}}).theme.productImageScale, 150);
+assert.equal(mergeContent({theme:{productImageScale:2}}).theme.productImageScale, 50);
+assert.equal(mergeContent({theme:{productImageScale:null}}).theme.productImageScale, 100);
+assert.equal(mergeContent({theme:{productImageScale:'oops'}}).theme.productImageScale, 100);
+const saved = mergeContent({theme:{productImageScale:130}});
+assert.equal(mergeContent(JSON.parse(JSON.stringify(saved))).theme.productImageScale, 130);
+const content = readFileSync('src/pages/Admin/ContentEditor.tsx', 'utf8');
+assert.doesNotMatch(content, /key: "story"/); assert.match(content, /next\.theme\.productImageScale = value/);
+const form = readFileSync('src/pages/Admin/ProductForm.tsx', 'utf8');
+assert.doesNotMatch(form, /if \(!draft\.images\.trim\(\)\)/); assert.match(form, /صور المنتج \(اختياري\)/);
+assert.match(form, /images: draft\.images\.split/);
+const css = readFileSync('src/styles/product-card.css', 'utf8');
+assert.match(css, /height: 350px/); assert.match(css, /max-width: 275px/); assert.match(css, /:focus-within/);
+assert.doesNotMatch(readFileSync('src/index.css','utf8'), /img, picture, video\s*\{\s*display:\s*none/);
+assert.match(readFileSync('src/components/product/ProductCard.tsx','utf8'), /<ProductPhoto/);
+console.log('Smaller cards, product image preview, settings cleanup and persistence tests passed.');
+
+const gallery = module.exports.renderGalleryWithImage();
+assert.match(gallery, /<img src="\/api\/images\/new-image"/);
+assert.match(gallery, /scale\(var\(--product-image-scale, 1\)\)/);
+assert.match(readFileSync('src/components/ThemeProvider.tsx', 'utf8'), /theme\.productImageScale \/ 100/);
+const values = new Map([
+  ['malika.content.v1.2020', JSON.stringify({ showcase: { images: [{src: 'https://old.example/photo.jpg'}] }, theme: {accent: '#123456'} })],
+  ['malika.cart.v2', JSON.stringify([{ productId: 'p', image: 'https://old.example/p.jpg', qty: 2 }])],
+]);
+const storage = { get length(){return values.size}, key: (i) => [...values.keys()][i] ?? null, getItem: (k) => values.get(k) ?? null, setItem: (k,v) => values.set(k,v) };
+module.exports.clearOldImageStorage(storage);
+assert.deepEqual(JSON.parse(values.get('malika.content.v1.2020')).showcase.images, []);
+assert.equal(JSON.parse(values.get('malika.content.v1.2020')).theme.accent, '#123456');
+assert.equal(JSON.parse(values.get('malika.cart.v2'))[0].image, '');
+assert.equal(JSON.parse(values.get('malika.cart.v2'))[0].qty, 2);
+values.set('malika.cart.v2', JSON.stringify([{image: 'new-photo'}]));
+module.exports.clearOldImageStorage(storage);
+assert.equal(JSON.parse(values.get('malika.cart.v2'))[0].image, 'new-photo');

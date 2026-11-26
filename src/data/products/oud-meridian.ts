@@ -1,4 +1,3 @@
-import { IMG } from "@/data/images";
 import type { Product } from "@/types";
 
 const oudMeridian: Product = {
@@ -41,8 +40,7 @@ const oudMeridian: Product = {
       { en: "Madagascar vanilla", ar: "فانيليا مدغشقر" },
     ],
   },
-  images: [IMG.incense, IMG.stone, IMG.grayStones],
-  cutout: "/images/bottles/oud.webp",
+  images: [],
   accent: "#D8A46B",
   featured: true,
   bestseller: true,

@@ -1,6 +1,6 @@
 import { clampScale } from "@/lib/scale";
 import { isValidTextId } from "@/i18n/textCatalog";
-import { MAX_SHOWCASE_IMAGES, type DeepPartial, type SiteContent } from "@/types/content";
+import { type DeepPartial, type SiteContent } from "@/types/content";
 
 /** Factory so every consumer gets its own mutable copy. */
 export function createDefaultContent(): SiteContent {
@@ -15,8 +15,8 @@ export function createDefaultContent(): SiteContent {
       titleLine1: { en: "Arrive like", ar: "حضورٌ" },
       titleLine2: { en: "royalty.", ar: "ملكي." },
       lead: {
-        en: "Extraits composed for people who are remembered before they speak. Blended slowly, in small batches — made with care.",
-        ar: "عطور تُركَّب لمن يُذكَرون قبل أن يتكلّموا. تُمزج ببطء، بكميات صغيرة — صُنعت بعناية.",
+        en: "Scents that linger in memory, crafted with care for a presence that is unmistakably yours.",
+        ar: "عطور تترك أثرها في الذاكرة، صُنعت بعناية لتُكمل حضورك الذي يشبهك وحدك.",
       },
       primaryCta: { en: "Discover the collection", ar: "اكتشف المجموعة" },
       secondaryCta: { en: "Contact us", ar: "تواصل معنا" },
@@ -34,13 +34,7 @@ export function createDefaultContent(): SiteContent {
         en: "Swipe through our defining extraits — each flacon carries its own chapter.",
         ar: "تجوّل بين أبرز عطور الدار — كل زجاجة تروي فصلاً خاصاً.",
       },
-      images: [
-        { id: "s1", src: "/images/bottles/dark.webp", productSlug: "vlor-noir", fit: "contain", caption: { en: "", ar: "" } },
-        { id: "s2", src: "/images/bottles/amber.webp", productSlug: "fig-and-ember", fit: "contain", caption: { en: "", ar: "" } },
-        { id: "s3", src: "/images/bottles/rose.webp", productSlug: "velvet-dusk", fit: "contain", caption: { en: "", ar: "" } },
-        { id: "s4", src: "/images/bottles/lilac.webp", productSlug: "iris-mirage", fit: "contain", caption: { en: "", ar: "" } },
-        { id: "s5", src: "/images/bottles/oud.webp", productSlug: "oud-meridian", fit: "contain", caption: { en: "", ar: "" } },
-      ],
+      images: [],
     },
 
     featured: {
@@ -213,6 +207,7 @@ export function createDefaultContent(): SiteContent {
       bone: "#f3efe7",
       accent: "#D4A035",
       lilac: "#c7a873",
+      productImageScale: 100,
       headingScale: 100,
       bodyScale: 100,
       sectionSpacing: 100,
@@ -279,6 +274,14 @@ export function mergeContent(stored: DeepPartial<SiteContent> | null | undefined
   clean.sections = sections;
 
   const result = clean as unknown as SiteContent;
+  // Upgrade each untouched legacy default independently, preserving edited copy.
+  if (result.hero?.lead) {
+    result.hero = { ...result.hero, lead: {
+      en: result.hero.lead.en === "Extraits composed for people who are remembered before they speak. Blended slowly, in small batches — made with care." ? base.hero.lead.en : result.hero.lead.en,
+      ar: result.hero.lead.ar === "عطور تُركَّب لمن يُذكَرون قبل أن يتكلّموا. تُمزج ببطء، بكميات صغيرة — صُنعت بعناية." ? base.hero.lead.ar : result.hero.lead.ar,
+    } };
+  }
+
   if (typeof result.studioDeliveryTab !== "boolean") result.studioDeliveryTab = base.studioDeliveryTab;
   // The cap holds even for hand-edited or imported data.
   // Also upgrade untouched legacy default wording stored in older localStorage snapshots.
@@ -314,10 +317,8 @@ export function mergeContent(stored: DeepPartial<SiteContent> | null | undefined
     eyebrow: legacyShowcaseEyebrow ? base.showcase.eyebrow : result.showcase.eyebrow,
     title: legacyShowcaseTitle ? base.showcase.title : (replaceLegacyBrand(result.showcase.title) as typeof base.showcase.title),
     lead: legacyShowcaseLead ? base.showcase.lead : result.showcase.lead,
-    images: (result.showcase?.images ?? []).slice(0, MAX_SHOWCASE_IMAGES).map((img) => ({
-      ...img,
-      productSlug: img.productSlug === "malika-noir" ? "vlor-noir" : img.productSlug,
-    })),
+    // This removed section cannot revive historical image URLs from saved content.
+    images: [],
   };
 
   // Replace the previous built-in consultation copy in saved catalogues while
@@ -390,6 +391,7 @@ export function mergeContent(stored: DeepPartial<SiteContent> | null | undefined
     productCardBase: validColour(result.theme?.productCardBase, "") || undefined,
     productCardDisc: validColour(result.theme?.productCardDisc, "") || undefined,
     productCardText: validColour(result.theme?.productCardText, "") || undefined,
+    productImageScale: typeof result.theme?.productImageScale === "number" && Number.isFinite(result.theme.productImageScale) ? Math.min(150, Math.max(50, Math.round(result.theme.productImageScale))) : 100,
     headingScale: clampScale("headingScale", Number(result.theme?.headingScale)),
     bodyScale: clampScale("bodyScale", Number(result.theme?.bodyScale)),
     sectionSpacing: clampScale("sectionSpacing", Number(result.theme?.sectionSpacing)),

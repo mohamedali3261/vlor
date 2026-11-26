@@ -309,3 +309,10 @@ export const Sparkles = (p: IconProps) => (
     <path d="M6 14l0.9 1.9L9 17l-2.1 0.9L6 20l-.9-2.1L3 17l2.1-0.9L6 14Z" />
   </Base>
 );
+
+export const Facebook = (p: IconProps) => (
+  <Base {...p}><path d="M14 21v-8h3l.5-4H14V7c0-1.2.4-2 2-2h1.5V1.5C17 1.4 16 1.3 15 1.3c-3 0-5 1.8-5 5.2V9H7v4h3v8" /></Base>
+);
+export const Youtube = (p: IconProps) => (
+  <Base {...p}><rect x="2" y="5" width="20" height="14" rx="4" /><path d="m10 9 5 3-5 3V9Z" /></Base>
+);

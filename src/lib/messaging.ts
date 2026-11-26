@@ -28,6 +28,19 @@ export function instagramUrl(username: string): string {
   return `https://instagram.com/${handle || "vlor.perfumes"}`;
 }
 
+/** Accept only profile links on the named platform; empty or invalid values stay inactive. */
+export function socialUrl(value: string | undefined, platform: "facebook" | "instagram" | "youtube"): string | undefined {
+  const input = value?.trim();
+  if (!input || (/^[a-z][a-z0-9+.-]*:/i.test(input) && !/^https:\/\//i.test(input))) return undefined;
+  const host = `${platform}.com`;
+  const urlText = /^https?:\/\//i.test(input) ? input : input.includes("/") || input.includes(".") ? `https://${input}` : `https://${host}/${input.replace(/^@/, "")}`;
+  try {
+    const url = new URL(urlText);
+    if (url.protocol !== "https:" || ![host, `www.${host}`, `m.${host}`].includes(url.hostname.toLowerCase()) || url.pathname === "/") return undefined;
+    return url.href;
+  } catch { return undefined; }
+}
+
 export function openChannel(url: string) {
   window.open(url, "_blank", "noopener,noreferrer");
 }

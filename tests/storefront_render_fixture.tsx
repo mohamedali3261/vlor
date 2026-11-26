@@ -23,3 +23,37 @@ export function renderParts() {
     </LanguageProvider></StoreProvider>,
   );
 }
+
+import { Footer } from '@/components/layout/Footer';
+import { ContactPage } from '@/pages/Contact/ContactPage';
+import { ToastProvider } from '@/context/ToastContext';
+import { mergeContent } from '@/data/defaultContent';
+import { runwayWheel } from '@/lib/runwayScroll';
+import { socialUrl } from '@/lib/messaging';
+export { mergeContent, runwayWheel, socialUrl };
+
+export function renderContactAndFooter() {
+  return renderToStaticMarkup(
+    <StoreProvider><LanguageProvider><ToastProvider><ContactPage /><Footer /></ToastProvider></LanguageProvider></StoreProvider>,
+  );
+}
+
+import { ProductImageScale } from '@/pages/Admin/ProductImageScale';
+import { StoreSettingsForm } from '@/pages/Admin/StoreSettingsForm';
+import { defaultSettings } from '@/data/site';
+
+export function renderStudioSettingsAndImages(scale: number, withImage = true) {
+  const product = { ...(products[0] as Product), images: withImage ? ['https://example.com/scent.png'] : [], cutout: undefined };
+  return renderToStaticMarkup(
+    <StoreProvider><LanguageProvider>
+      <StoreSettingsForm settings={defaultSettings} onSave={() => {}} />
+      <ProductImageScale products={[product]} value={scale} onChange={() => {}} />
+    </LanguageProvider></StoreProvider>,
+  );
+}
+
+export function renderGalleryWithImage() {
+  const product = { ...(products[0] as Product), images: ['/api/images/new-image'], cutout: undefined };
+  return renderToStaticMarkup(<StoreProvider><LanguageProvider><Gallery product={product} /></LanguageProvider></StoreProvider>);
+}
+export { clearOldImageStorage } from '@/lib/clearOldImageStorage';

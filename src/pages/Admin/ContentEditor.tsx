@@ -6,6 +6,7 @@ import { useLang } from "@/i18n/LanguageContext";
 import { Link } from "@/lib/router";
 import { siteBackground } from "@/lib/theme";
 import { Section } from "@/pages/Admin/ContentFields";
+import { ProductImageScale } from "@/pages/Admin/ProductImageScale";
 import { ProductCardColours } from "@/pages/Admin/ProductCardColours";
 import type { SiteContent } from "@/types/content";
 import { draftsChanged, registerDraft } from "@/lib/studioDrafts";
@@ -55,7 +56,6 @@ export function ContentEditor({ onManageProducts }: { onManageProducts?: () => v
   const sections: { key: keyof SiteContent["sections"]; label: string; hint: string }[] = [
     { key: "runwayLookbook", label: ar ? "منصّة العرض (Runway)" : "Runway lookbook", hint: ar ? "سلايدر المنتجات العلوي" : "Top product slider" },
     { key: "featured", label: ar ? "المنتجات المميزة" : "Featured products", hint: ar ? "المختارة" : "Picked" },
-    { key: "story", label: ar ? "حكايتنا" : "Our story", hint: ar ? "قسم القصة" : "Story block" },
     { key: "contactCta", label: ar ? "دعوة التواصل" : "Contact CTA", hint: ar ? "آخر الصفحة" : "Bottom CTA" },
   ];
 
@@ -172,6 +172,13 @@ export function ContentEditor({ onManageProducts }: { onManageProducts?: () => v
               else next.theme[key] = value;
             })}
           />
+        </Section>
+      </div>
+
+      <div className="mt-3">
+        <Section title={ar ? "حجم صور المنتجات" : "Product image size"} description={ar ? "تحكّم في حجم صور المنتجات بعد إضافتها من الاستوديو." : "Control the size of product images added from the studio."} defaultOpen>
+          <ProductImageScale products={products} value={draft.theme.productImageScale}
+            onChange={(value) => edit((next) => { next.theme.productImageScale = value; })} />
         </Section>
       </div>
 

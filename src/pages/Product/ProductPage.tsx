@@ -1,5 +1,4 @@
 import { Gallery } from "@/pages/Product/Gallery";
-import { PurchaseBar } from "@/pages/Product/PurchaseBar";
 import { PurchasePanel } from "@/pages/Product/PurchasePanel";
 import { RelatedScents } from "@/pages/Product/RelatedScents";
 import { Button } from "@/components/ui/Button";
@@ -57,8 +56,6 @@ export function ProductPage() {
       </section>
 
       <RelatedScents product={product} />
-      <div className="h-28 lg:hidden" aria-hidden="true" />
-      <PurchaseBar product={product} />
     </div>
   );
 }

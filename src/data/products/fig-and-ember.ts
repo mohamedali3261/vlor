@@ -1,4 +1,3 @@
-import { IMG } from "@/data/images";
 import type { Product } from "@/types";
 
 const figAndEmber: Product = {
@@ -41,8 +40,7 @@ const figAndEmber: Product = {
       { en: "Moss", ar: "طحالب" },
     ],
   },
-  images: [IMG.minimalWhite, IMG.anemone, IMG.glass],
-  cutout: "/images/bottles/amber.webp",
+  images: [],
   accent: "#B8C98A",
   featured: true,
   isNew: true,

@@ -1,4 +1,3 @@
-import { IMG } from "@/data/images";
 import type { Product } from "@/types";
 
 const muskElsewhere: Product = {
@@ -41,8 +40,7 @@ const muskElsewhere: Product = {
       { en: "Blond wood", ar: "خشب فاتح" },
     ],
   },
-  images: [IMG.glass, IMG.minimalWhite, IMG.shell],
-  cutout: "/images/bottles/lilac.webp",
+  images: [],
   accent: "#D9D2E8",
   rating: 4.8,
   reviews: 238,

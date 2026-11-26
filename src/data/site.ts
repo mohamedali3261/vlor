@@ -16,11 +16,13 @@ export const BRAND = {
 } as const;
 
 export const defaultSettings: SiteSettings = {
-  whatsapp: "201234567890",
+  whatsapp: "201276163222",
   messenger: "vlor.perfumes",
   instagram: "vlor.perfumes",
+  facebook: "",
+  youtube: "",
   email: "hello@vlor-perfumes.com",
-  phone: "+20 123 456 7890",
+  phone: "01276163222",
   freeShippingThreshold: 1,
   address: {
     en: "Online store · Shipping across Egypt",

@@ -1,3 +1,4 @@
+import { clearOldImageStorage } from "@/lib/clearOldImageStorage";
 import { publishedAt, publishedContent, publishedSettings } from "@/data/published";
 import { defaultSettings } from "@/data/site";
 import { usePersistentState } from "@/hooks/usePersistentState";
@@ -31,14 +32,32 @@ const StoreContext = createContext<StoreValue | null>(null);
 /** A new studio publish bumps the storage key so the deployment wins over stale local edits. */
 const catalogueVersion = publishedAt ? `.${publishedAt.replace(/[^0-9]/g, "").slice(0, 14)}` : "";
 
+// Import the previous settings once per published version, without losing unrelated edits.
+function initialSettings(): SiteSettings {
+  let old: Partial<SiteSettings> | null = null;
+  try {
+    if (typeof window !== "undefined") old = JSON.parse(window.localStorage.getItem(`malika.settings.v2${catalogueVersion}`) || "null");
+  } catch { /* use published settings */ }
+  const initial = { ...defaultSettings, ...publishedSettings, ...old };
+  if (old) return { ...initial, whatsapp: defaultSettings.whatsapp, phone: defaultSettings.phone };
+  return {
+    ...initial,
+    whatsapp: initial.whatsapp === "201234567890" ? defaultSettings.whatsapp : initial.whatsapp,
+    phone: initial.phone === "+20 123 456 7890" ? defaultSettings.phone : initial.phone,
+  };
+}
+
 export function StoreProvider({ children }: { children: ReactNode }) {
+  useState(() => {
+    try { if (typeof window !== "undefined") clearOldImageStorage(window.localStorage); } catch { /* Storage may be blocked. */ }
+  });
   const [products, setProducts] = useState<Product[]>([]);
   useEffect(() => {
     fetch('/api/products').then(async r => { if (!r.ok) throw new Error('Catalogue unavailable'); setProducts(await r.json()); }).catch(() => console.error('Catalogue unavailable'));
   }, []);
   const [rawSettings, setSettings] = usePersistentState<SiteSettings>(
-    `malika.settings.v2${catalogueVersion}`,
-    publishedSettings ? { ...defaultSettings, ...publishedSettings } : defaultSettings
+    `malika.settings.v3${catalogueVersion}`,
+    initialSettings()
   );
   const [priceSettingsMigrated, setPriceSettingsMigrated] = usePersistentState<boolean>("malika.settings.one-egp.v1", false);
   useEffect(() => {
@@ -48,10 +67,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }, [priceSettingsMigrated, setPriceSettingsMigrated, setSettings]);
   const settings = useMemo<SiteSettings>(
     () => ({
+      ...defaultSettings,
       ...rawSettings,
-      messenger: rawSettings.messenger === "malika.perfumes" ? defaultSettings.messenger : rawSettings.messenger,
-      instagram: rawSettings.instagram === "malika.perfumes" ? defaultSettings.instagram : rawSettings.instagram,
-      email: rawSettings.email === "hello@malika-perfumes.com" ? defaultSettings.email : rawSettings.email,
+      messenger: rawSettings.messenger === "malika.perfumes" ? defaultSettings.messenger : (rawSettings.messenger ?? defaultSettings.messenger),
+      instagram: rawSettings.instagram === "malika.perfumes" ? defaultSettings.instagram : (rawSettings.instagram ?? defaultSettings.instagram),
+      email: rawSettings.email === "hello@malika-perfumes.com" ? defaultSettings.email : (rawSettings.email ?? defaultSettings.email),
     }),
     [rawSettings]
   );

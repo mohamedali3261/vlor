@@ -22,7 +22,6 @@ export function ContactHero() {
               <span className="h-1.5 w-1.5 rounded-full bg-ink animate-pulse" />
               {x("online — reply in minutes", "متصلون الآن — نرد خلال دقائق")}
             </span>
-            <span className="text-mist">{x("Daily 11:00–22:00 · Online", "أونلاين · يومياً ١١:٠٠–٢٢:٠٠")}</span>
           </div>
         </Reveal>
 

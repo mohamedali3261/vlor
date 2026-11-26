@@ -1,4 +1,3 @@
-import { IMG } from "@/data/images";
 import type { Product } from "@/types";
 
 const bloomLedger: Product = {
@@ -41,8 +40,7 @@ const bloomLedger: Product = {
       { en: "Soft amber", ar: "عنبر ناعم" },
     ],
   },
-  images: [IMG.magazines, IMG.stonesFloral, IMG.anemone],
-  cutout: "/images/bottles/rose.webp",
+  images: [],
   accent: "#F0AEC9",
   rating: 4.8,
   reviews: 197,

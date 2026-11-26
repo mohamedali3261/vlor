@@ -351,7 +351,7 @@ html[lang="ar"] .rl-wide-i18n {
   margin: calc(-17 * var(--rl-u)) 0 0 calc(-42 * var(--rl-u));
 }
 
-/* ---------------- Infinite Wrapping Product Rail ---------------- */
+/* ---------------- Synchronized Product Rail ---------------- */
 .rl-rail {
   position: relative;
   overflow: hidden;

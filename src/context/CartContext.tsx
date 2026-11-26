@@ -38,7 +38,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         const product = products.find((item) => item.id === line.productId);
         const size = product?.sizes.find((item) => item.ml === line.ml);
         if (!product || !size) return line;
-        const image = product.images[0] || line.image;
+        const image = product.images[0] || product.cutout || "";
         if (line.price === size.price && line.slug === product.slug && line.name.en === product.name.en && line.name.ar === product.name.ar && line.image === image) return line;
         changed = true;
         return { ...line, price: size.price, slug: product.slug, name: product.name, image };
@@ -70,7 +70,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
             productId: product.id,
             slug: product.slug,
             name: product.name,
-            image: product.images[0],
+            image: product.images[0] || product.cutout || "",
             ml,
             price,
             qty,

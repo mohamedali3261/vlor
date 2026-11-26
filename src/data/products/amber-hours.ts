@@ -1,4 +1,3 @@
-import { IMG } from "@/data/images";
 import type { Product } from "@/types";
 
 const amberHours: Product = {
@@ -41,8 +40,7 @@ const amberHours: Product = {
       { en: "Bourbon vanilla", ar: "فانيليا بوربون" },
     ],
   },
-  images: [IMG.stoneRed, IMG.wood, IMG.anemone],
-  cutout: "/images/bottles/amber.webp",
+  images: [],
   accent: "#E4A66B",
   rating: 4.9,
   reviews: 289,
