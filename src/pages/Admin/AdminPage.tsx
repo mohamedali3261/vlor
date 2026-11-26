@@ -52,7 +52,8 @@ export function AdminPage() {
       const filtered = desired.filter(d => d.qty > 0 || products.some(p=>p.id===product.id));
       if (filtered.length > 0) {
         const invRes = await fetch('/api/admin/inventory');
-        const invRows: { product_id:string; size:number; quantity:number }[] = invRes.ok ? await invRes.json() : [];
+        if (!invRes.ok) throw new Error('Inventory unavailable');
+        const invRows: { product_id:string; size:number; quantity:number }[] = await invRes.json();
         const currentMap = new Map(invRows.filter(r=>r.product_id===product.id).map(r=>[r.size, r.quantity] as const));
         for (const d of filtered) {
           const current = currentMap.get(d.size) ?? 0;
