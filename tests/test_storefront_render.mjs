@@ -12,6 +12,9 @@ new Function('require', 'module', 'exports', compiled.outputFiles[0].text)(creat
 const storage = new Map();
 globalThis.window = { localStorage: { getItem: (key) => storage.get(key) ?? null, setItem: (key, value) => storage.set(key, value) } };
 const render = module.exports.renderParts;
+const logo = module.exports.renderLogo();
+assert.match(logo, /<img[^>]+vlor-supplied-logo\.webp/);
+assert.match(logo, /class="[^"]*brand-logo/);
 let html = render();
 assert.match(html, /تفاصيل المنتج/);
 assert.match(html, /قرفة/);

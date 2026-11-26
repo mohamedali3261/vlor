@@ -5,8 +5,13 @@ import { LanguageProvider } from '@/i18n/LanguageContext';
 import { ProductDetails } from '@/pages/Product/ProductDetails';
 import { AdminHeader } from '@/pages/Admin/AdminHeader';
 import { Gallery } from '@/pages/Product/Gallery';
+import { Logo } from '@/components/ui/Primitives';
 import type { Product } from '@/types';
 import products from '../worker/newProducts.json';
+
+export function renderLogo() {
+  return renderToStaticMarkup(<StoreProvider><LanguageProvider><Logo compact /></LanguageProvider></StoreProvider>);
+}
 
 export function renderParts() {
   const product = products.find((p) => p.id === 'khamrah') as Product;

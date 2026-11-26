@@ -33,7 +33,7 @@
   position: relative;
   width: min(78vw, 470px);
   max-height: 64svh;
-  aspect-ratio: 1297 / 1212;
+  aspect-ratio: 3 / 2;
   object-fit: contain;
   filter: drop-shadow(0 18px 42px rgb(235 155 24 / 22%));
   opacity: 1;

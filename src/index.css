@@ -110,5 +110,6 @@ html[data-theme="dark"] .bg-surface {
   background-color: var(--color-surface) !important;
 }
 
-/* No photographs are shown; saved image assets are left untouched. */
+/* Keep the image-free storefront, except for the supplied brand logo. */
 img, picture, video { display: none !important; }
+img.brand-logo { display: block !important; }

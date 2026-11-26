@@ -13,7 +13,6 @@ import {
 import { useCart } from "@/context/CartContext";
 import { useStore } from "@/context/StoreContext";
 import { useBodyLock, useScrolled } from "@/hooks/useUi";
-import { useBrand } from "@/hooks/useBrand";
 import { useLang } from "@/i18n/LanguageContext";
 import { messengerUrl, whatsappUrl } from "@/lib/messaging";
 import { Link, useRoute } from "@/lib/router";
@@ -30,7 +29,6 @@ const links = [
 
 export function Navbar() {
   const { lang, t, toggle, x } = useLang();
-  const { wordmark } = useBrand();
   const { path } = useRoute();
   const { count, open } = useCart();
   const { wishlist, settings } = useStore();
@@ -124,7 +122,7 @@ export function Navbar() {
             aria-label={x("VLOR home", "الرئيسية ڨلور")}
             className="nav-brand-center"
           >
-            <span className="relative z-10 font-display text-xl font-bold tracking-[0.16em] text-acid">{wordmark}</span>
+            <Logo compact className="nav-brand-wordmark" />
           </Link>
 
           <div className="flex items-center gap-1.5 sm:gap-2">

@@ -183,5 +183,5 @@ export function Accordion({
 /* ---------- Brand logo ---------- */
 export function Logo({ compact, className }: { light?: boolean; compact?: boolean; className?: string }) {
   const { wordmark } = useBrand();
-  return <span className={cn("inline-flex shrink-0 items-center font-display font-bold tracking-[0.16em]", compact ? "text-xl" : "text-3xl", className)}>{wordmark || "VLOR"}</span>;
+  return <img src="/images/brand/vlor-supplied-logo.webp" alt={wordmark || "VLOR"} draggable={false} decoding="async" className={cn("brand-logo shrink-0 object-contain", compact ? "h-12 w-20" : "h-20 w-32", className)} />;
 }
