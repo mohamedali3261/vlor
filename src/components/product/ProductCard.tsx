@@ -1,3 +1,4 @@
+import { primaryProductImage } from "@/lib/productImages";
 import { ProductPhoto } from "@/components/product/ProductPhoto";
 import { QuickView } from "@/components/product/QuickView";
 import { Check, Heart } from "@/components/ui/icons";
@@ -83,7 +84,7 @@ function ProductCardBase({ product, className }: ProductCardProps) {
 
       {/* Bottle — centred, then lifts to the top on hover. */}
       <Link to={`/product/${product.slug}`} aria-label={l(product.name)} className="pc-bottle-link">
-        <ProductPhoto src={product.cutout || product.images[0]} alt={l(product.name)} className="pc-user-image" fallback={<>
+        <ProductPhoto src={primaryProductImage(product)} alt={l(product.name)} className="pc-user-image" fallback={<>
           <span className="pc-fragrance-name">{l(product.name)}</span>
           <span className="pc-fragrance-tagline">{l(product.tagline)}</span>
         </>} />

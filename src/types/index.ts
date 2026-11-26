@@ -34,8 +34,7 @@ export interface Product {
   notes: ScentNotes;
   images: string[];
   /**
-   * Transparent-background PNG/WebP used by the product card. Falls back to
-   * images[0] when absent.
+   * Legacy image for older products without gallery images. New products use images[0].
    */
   cutout?: string;
   accent: string;

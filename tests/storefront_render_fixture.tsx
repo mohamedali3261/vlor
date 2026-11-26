@@ -57,3 +57,19 @@ export function renderGalleryWithImage() {
   return renderToStaticMarkup(<StoreProvider><LanguageProvider><Gallery product={product} /></LanguageProvider></StoreProvider>);
 }
 export { clearOldImageStorage } from '@/lib/clearOldImageStorage';
+
+import { ProductImagesEditor } from '@/pages/Admin/ProductImagesEditor';
+import { ProductPhoto } from '@/components/product/ProductPhoto';
+export { productImages, primaryProductImage, setPrimaryImage, removeProductImage, promoteProductImage } from '@/lib/productImages';
+export { shopHeroProducts } from '@/lib/shopHeroProducts';
+export function renderImageEditor() {
+  return renderToStaticMarkup(<StoreProvider><LanguageProvider>
+    <ProductImagesEditor images={['/api/images/first', '/api/images/second']} onChange={() => {}} uploading={false} setUploading={() => {}} />
+  </LanguageProvider></StoreProvider>);
+}
+export function renderProductPhotos() {
+  const product = { ...(products[0] as Product), images: ['/api/images/first', '/api/images/second'], cutout: '/api/images/legacy' };
+  return renderToStaticMarkup(<StoreProvider><LanguageProvider>
+    <Gallery product={product} /><ProductPhoto src={product.images[0]} alt="card" fallback={null} />
+  </LanguageProvider></StoreProvider>);
+}

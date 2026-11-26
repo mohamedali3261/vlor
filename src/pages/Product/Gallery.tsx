@@ -1,12 +1,15 @@
+import { SmartImage } from "@/components/ui/Primitives";
+import { productImages } from "@/lib/productImages";
 import { ProductPhoto } from "@/components/product/ProductPhoto";
 import { useLang } from "@/i18n/LanguageContext";
 import type { Product } from "@/types";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 export function Gallery({ product }: { product: Product }) {
   const { l, x } = useLang();
   const [index, setIndex] = useState(0);
-  const images = product.images.length ? product.images : product.cutout ? [product.cutout] : [];
+  const images = productImages(product);
+  useEffect(() => { setIndex(0); }, [product.id]);
   const src = images[Math.min(index, images.length - 1)];
   return (
     <div className="mx-auto w-full max-w-sm">
@@ -18,7 +21,7 @@ export function Gallery({ product }: { product: Product }) {
         </>} />
       </div>
       {images.length > 1 && <div className="mt-3 flex flex-wrap justify-center gap-2">{images.map((image, i) =>
-        <button type="button" key={`${image}-${i}`} onClick={() => setIndex(i)} aria-pressed={index === i} aria-label={`${x("Image", "الصورة")} ${i + 1}`} className="rounded-full border border-ink/20 px-3 py-1 text-xs aria-pressed:bg-ink aria-pressed:text-bone">{i + 1}</button>
+        <button type="button" key={`${image}-${i}`} onClick={() => setIndex(i)} aria-pressed={Math.min(index, images.length - 1) === i} aria-label={`${x("Image", "الصورة")} ${i + 1}`} className="h-16 w-16 overflow-hidden rounded-xl border-2 border-ink/20 aria-pressed:border-acid-deep"><SmartImage src={image} alt="" className="h-full w-full" /></button>
       )}</div>}
     </div>
   );

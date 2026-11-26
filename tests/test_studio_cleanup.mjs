@@ -24,8 +24,8 @@ assert.equal(mergeContent(JSON.parse(JSON.stringify(saved))).theme.productImageS
 const content = readFileSync('src/pages/Admin/ContentEditor.tsx', 'utf8');
 assert.doesNotMatch(content, /key: "story"/); assert.match(content, /next\.theme\.productImageScale = value/);
 const form = readFileSync('src/pages/Admin/ProductForm.tsx', 'utf8');
-assert.doesNotMatch(form, /if \(!draft\.images\.trim\(\)\)/); assert.match(form, /صور المنتج \(اختياري\)/);
-assert.match(form, /images: draft\.images\.split/);
+assert.doesNotMatch(form, /admin\.cutout/); assert.match(form, /<ProductImagesEditor/);
+assert.match(form, /images: draft\.images/);
 const css = readFileSync('src/styles/product-card.css', 'utf8');
 assert.match(css, /height: 350px/); assert.match(css, /max-width: 275px/); assert.match(css, /:focus-within/);
 assert.doesNotMatch(readFileSync('src/index.css','utf8'), /img, picture, video\s*\{\s*display:\s*none/);

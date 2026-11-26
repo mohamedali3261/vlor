@@ -1,3 +1,4 @@
+import { primaryProductImage } from "@/lib/productImages";
 import { useLang } from "@/i18n/LanguageContext";
 import { resolveAsset } from "@/lib/assets";
 import type { Product } from "@/types";
@@ -14,7 +15,7 @@ export function ProductImageScale({ products, value, onChange }: {
   const [selected, setSelected] = useState("");
   const [failedSrc, setFailedSrc] = useState("");
   const product = products.find((p) => p.id === selected) ?? products[0];
-  const src = product?.cutout || product?.images[0] || "";
+  const src = (product ? primaryProductImage(product) : undefined) || "";
   const scale = Number.isFinite(value) ? Math.min(150, Math.max(50, value)) : 100;
   return (
     <div className="grid gap-4 sm:grid-cols-2 sm:items-start">

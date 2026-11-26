@@ -1,3 +1,4 @@
+import { primaryProductImage } from "@/lib/productImages";
 import { SmartImage } from "@/components/ui/Primitives";
 import { Pencil, Search, Trash } from "@/components/ui/icons";
 import { useLang } from "@/i18n/LanguageContext";
@@ -89,7 +90,7 @@ export function ProductTable({
           {filtered.map((product) => (
             <div key={product.id} className="grid grid-cols-[1fr_auto] items-center gap-3 border-b border-ink/8 px-3 py-3 last:border-0 hover:bg-surface/60 md:grid-cols-[2.6fr_0.9fr_0.9fr_0.7fr] md:px-4">
               <div className="flex min-w-0 items-center gap-3">
-                <SmartImage src={product.images[0] ?? ""} alt={l(product.name)} className="h-12 w-10 shrink-0 rounded-lg" />
+                <SmartImage src={primaryProductImage(product) ?? ""} alt={l(product.name)} className="h-12 w-10 shrink-0 rounded-lg" />
                 <div className="min-w-0">
                   <p className="truncate text-[12px] font-bold">{product.name.en}</p>
                   <p className="truncate text-[10px] text-mist">{product.name.ar} · {formatPrice(product.price, lang)}</p>

@@ -1,3 +1,6 @@
+import { ProductPhoto } from "@/components/product/ProductPhoto";
+import { primaryProductImage } from "@/lib/productImages";
+import { shopHeroProducts } from "@/lib/shopHeroProducts";
 import { useBrand } from "@/hooks/useBrand";
 import { ArrowRight } from "@/components/ui/icons";
 import { useStore } from "@/context/StoreContext";
@@ -10,9 +13,12 @@ import { cn } from "@/utils/cn";
 import { useCallback, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent } from "react";
 import "@/styles/shop-slider.css";
 
-function Bottle({ product, active }: { product: Product; active: boolean; near: boolean }) {
+function Bottle({ product, active, near }: { product: Product; active: boolean; near: boolean }) {
   const { l } = useLang();
-  return <div aria-hidden="true" className={cn("absolute inset-0 grid place-items-center px-4 text-center transition-opacity", active ? "opacity-100" : "opacity-0")}><span className="font-display text-2xl font-bold text-ink/70 sm:text-3xl">{l(product.name)}</span></div>;
+  if (!near) return null;
+  return <div aria-hidden="true" className={cn("absolute inset-0 grid place-items-center overflow-hidden px-4 text-center transition-opacity", active ? "opacity-100" : "opacity-0")}>
+    <ProductPhoto src={primaryProductImage(product)} alt="" className="h-full w-full object-contain" fallback={<span className="font-display text-2xl font-bold text-ink/70 sm:text-3xl">{l(product.name)}</span>} />
+  </div>;
 }
 
 export function ShopHeroSlider() {
@@ -22,15 +28,7 @@ export function ShopHeroSlider() {
   const { products } = useStore();
   const rtl = dir === "rtl";
 
-  const slides = useMemo(() => {
-    const { scope, max } = c.shopHero;
-    const shopProducts = products.filter((product) => product.showOnShop !== false);
-    let pool = scope === "featured" ? shopProducts.filter((product) => product.featured) : shopProducts;
-    if (pool.length === 0) pool = shopProducts; // "featured only" with nothing featured must not blank the page
-    return [...pool]
-      .sort((a, b) => Number(Boolean(b.featured)) - Number(Boolean(a.featured)))
-      .slice(0, max);
-  }, [products, c.shopHero]);
+  const slides = useMemo(() => shopHeroProducts(products), [products]);
 
   const [index, setIndex] = useState(0);
   const drag = useRef<{ x: number; y: number } | null>(null);
@@ -46,7 +44,7 @@ export function ShopHeroSlider() {
     [count]
   );
 
-  if (!c.shopHero.enabled || count === 0) return null;
+  if (count === 0) return null;
 
   const current = slides[active];
   const accent = productAccent(current.accent, c.theme.accent);
@@ -164,7 +162,7 @@ export function ShopHeroSlider() {
 
         {/* dots */}
         {count > 1 && (
-          <div className="mt-3 flex items-center justify-center gap-2 lg:mt-4" role="tablist" aria-label={t("shop.slider.region")}>
+          <div className="mt-3 flex flex-wrap items-center justify-center gap-2 lg:mt-4" role="tablist" aria-label={t("shop.slider.region")}>
             {slides.map((product, position) => (
               <button
                 key={product.id}

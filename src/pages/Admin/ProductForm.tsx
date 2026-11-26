@@ -4,7 +4,8 @@ import { Select } from "@/components/ui/Select";
 import { Check, Plus, Trash, X } from "@/components/ui/icons";
 import { useBodyLock } from "@/hooks/useUi";
 import { useLang } from "@/i18n/LanguageContext";
-import { ImageError, uploadImageToD1 } from "@/lib/image";
+import { ProductImagesEditor } from "@/pages/Admin/ProductImagesEditor";
+import { productImages } from "@/lib/productImages";
 import type { Category, Gender, Localized, Mood, Product, SizeOption } from "@/types";
 import { cn } from "@/utils/cn";
 import { useEffect, useState, type FormEvent } from "react";
@@ -32,8 +33,8 @@ const emptyDraft = {
   heartAr: "",
   baseEn: "",
   baseAr: "",
-  images: "",
-  cutout: "",
+  images: [] as string[],
+  legacyCutout: "",
   accent: "#D4A035",
   showOnHome: true,
   showOnShop: true,
@@ -73,8 +74,8 @@ function toDraft(product: Product): Draft {
     heartAr: product.notes.heart.map((note) => note.ar).join(", "),
     baseEn: product.notes.base.map((note) => note.en).join(", "),
     baseAr: product.notes.base.map((note) => note.ar).join(", "),
-    images: product.images.join("\n"),
-    cutout: product.cutout ?? "",
+    images: productImages(product),
+    legacyCutout: product.images.length > 0 ? product.cutout ?? "" : "",
     accent: product.accent,
     showOnHome: product.showOnHome !== false,
     showOnShop: product.showOnShop !== false,
@@ -126,6 +127,9 @@ export function ProductForm({
   const [draft, setDraft] = useState<Draft>(emptyDraft);
   const [error, setError] = useState("");
   const [uploading, setUploading] = useState(false);
+  const [inventoryLoading, setInventoryLoading] = useState(false);
+  const [inventoryError, setInventoryError] = useState(false);
+  const [inventoryAttempt, setInventoryAttempt] = useState(0);
   useBodyLock(open);
 
   useEffect(() => {
@@ -133,13 +137,25 @@ export function ProductForm({
     setDraft(initial ? toDraft(initial) : emptyDraft);
     setError("");
     setUploading(false);
-    if (initial) {
-      fetch('/api/admin/inventory').then(r=>r.ok?r.json():[]).then((rows: {product_id:string,size:number,quantity:number}[])=>{
-        const map=new Map(rows.filter(r=>r.product_id===initial.id).map(r=>[r.size,r.quantity] as const));
-        setDraft(prev=>({...prev, stocks: prev.sizes.map(s=> map.get(s.ml) ?? 0)}));
-      }).catch(()=>{});
-    }
   }, [open, initial]);
+
+  // Do not submit zero stock if the existing quantities failed to load.
+  useEffect(() => {
+    if (!open || !initial) { setInventoryLoading(false); setInventoryError(false); return; }
+    let cancelled = false;
+    setInventoryLoading(true);
+    setInventoryError(false);
+    fetch('/api/admin/inventory').then(async (response) => {
+      if (!response.ok) throw new Error('Inventory unavailable');
+      return response.json() as Promise<{product_id: string; size: number; quantity: number}[]>;
+    }).then((rows) => {
+      if (cancelled) return;
+      const map = new Map(rows.filter((row) => row.product_id === initial.id).map((row) => [row.size, row.quantity] as const));
+      setDraft((prev) => ({ ...prev, stocks: prev.sizes.map((size) => map.get(size.ml) ?? 0) }));
+    }).catch(() => { if (!cancelled) setInventoryError(true); })
+      .finally(() => { if (!cancelled) setInventoryLoading(false); });
+    return () => { cancelled = true; };
+  }, [open, initial, inventoryAttempt]);
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
@@ -168,6 +184,7 @@ export function ProductForm({
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
+    if (uploading || inventoryLoading || inventoryError) return;
     if (!draft.nameEn.trim() || !draft.slug.trim()) {
       setError(lang === "ar" ? "الاسم الإنجليزي والرابط مطلوبان." : "English name and slug are required.");
       return;
@@ -198,8 +215,8 @@ export function ProductForm({
       gender: draft.gender,
       moods: draft.moods.length > 0 ? draft.moods : ["warm"],
       notes,
-      images: draft.images.split("\n").map((url) => url.trim()).filter(Boolean),
-      cutout: draft.cutout.trim() || undefined,
+      images: draft.images,
+      cutout: draft.images.length ? draft.legacyCutout || undefined : undefined,
       accent: draft.accent,
       showOnHome: draft.showOnHome,
       showOnShop: draft.showOnShop,
@@ -232,8 +249,8 @@ export function ProductForm({
     gender: draft.gender,
     moods: draft.moods,
     notes: { top: [], heart: [], base: [] },
-    images: draft.images.split("\n").map((url) => url.trim()).filter(Boolean),
-    cutout: draft.cutout.trim() || undefined,
+    images: draft.images,
+    cutout: draft.images.length ? draft.legacyCutout || undefined : undefined,
     accent: draft.accent,
     showOnHome: draft.showOnHome,
     showOnShop: draft.showOnShop,
@@ -322,7 +339,9 @@ export function ProductForm({
             <div className="sm:col-span-2">
               <span className="mb-1.5 block text-[9px] font-bold uppercase tracking-[0.14em] text-mist">{t("product.size")} · {lang === "ar" ? "المخزون" : "Stock"}</span>
               <p className="mb-2 text-[10px] leading-relaxed text-mist">{lang === "ar" ? "حدد الكمية الأولية لكل حجم. للمنتج الجديد تُضاف الكمية بعد الإنشاء. عند التعديل يتم تعديل الكمية للوصول للقيمة المطلوبة." : "Set initial quantity per size. For new products quantity is added after creation. When editing, stock is adjusted to reach the desired value."}</p>
-              <div className="space-y-2">
+              {inventoryLoading && <p role="status" className="mb-2 text-xs text-mist">{lang === "ar" ? "جاري تحميل المخزون…" : "Loading stock…"}</p>}
+              {inventoryError && <p role="alert" className="mb-2 text-xs text-rose-700">{lang === "ar" ? "تعذر تحميل المخزون؛ أعد المحاولة قبل الحفظ." : "Could not load stock; retry before saving."} <button type="button" className="font-bold underline" onClick={() => setInventoryAttempt((value) => value + 1)}>{lang === "ar" ? "إعادة المحاولة" : "Retry"}</button></p>}
+              <fieldset disabled={inventoryLoading || inventoryError} className="space-y-2 disabled:opacity-60">
                 {draft.sizes.map((size, index) => (
                   <div key={index} className="flex flex-wrap items-center gap-2 rounded-xl border border-ink/10 bg-surface/40 p-2">
                     <div className="flex items-center gap-1.5">
@@ -342,94 +361,14 @@ export function ProductForm({
                     </button>
                   </div>
                 ))}
-              </div>
-              <button type="button" onClick={() => { update("sizes", [...draft.sizes, { ml: 100, price: Math.round(draft.price * 1.4) }]); update("stocks", [...draft.stocks, 0]); }} className="mt-2 inline-flex items-center gap-1 text-[10px] font-bold text-plum">
+              </fieldset>
+              <button type="button" disabled={inventoryLoading || inventoryError} onClick={() => { update("sizes", [...draft.sizes, { ml: 100, price: Math.round(draft.price * 1.4) }]); update("stocks", [...draft.stocks, 0]); }} className="mt-2 inline-flex items-center gap-1 text-[10px] font-bold text-plum">
                 <Plus className="h-3 w-3" /> {lang === "ar" ? "إضافة حجم" : "Add size"}
               </button>
             </div>
 
-            <Field
-              label={lang === "ar" ? "صور المنتج (اختياري)" : "Product images (optional)"}
-              full
-              hint={
-                lang === "ar"
-                  ? "الصور المضافة تظهر للزوار. الرفع اختياري؛ الحد الأقصى ١ ميجابايت للصورة، أو الصق رابطًا مباشرًا."
-                  : "Added images are shown to visitors. Uploading is optional; max 1 MB per image, or paste a direct URL."
-              }
-            >
-              <input
-                type="file"
-                accept="image/jpeg,image/png,image/webp"
-                disabled={uploading}
-                onChange={async (event) => {
-                  const file = event.target.files?.[0];
-                  event.target.value = "";
-                  if (!file) return;
-                  setError("");
-                  setUploading(true);
-                  try {
-                    const result = await uploadImageToD1(file);
-                    update("images", [draft.images, result.url].filter(Boolean).join("\n"));
-                  } catch (err) {
-                    setError(
-                      err instanceof ImageError && err.code === "size"
-                        ? lang === "ar"
-                          ? "حجم الصورة يتجاوز ١ ميجابايت؛ اضغط الصورة قبل الرفع."
-                          : "Image exceeds 1 MB; compress it before uploading."
-                        : lang === "ar"
-                          ? "تعذر رفع الصورة"
-                          : "Image upload failed",
-                    );
-                  } finally {
-                    setUploading(false);
-                  }
-                }}
-              />
-              {uploading && (
-                <span className="mt-1 block text-[10px] text-plum">
-                  {lang === "ar" ? "جاري ضغط ورفع الصورة إلى D1…" : "Compressing and uploading image to D1…"}
-                </span>
-              )}
-              <textarea value={draft.images} onChange={(event) => update("images", event.target.value)} rows={3} className="field mt-1.5 resize-none text-[11px]" dir="ltr" placeholder="/api/images/… or https://…" />
-            </Field>
-
-            <Field label={t("admin.cutout")} full hint={t("admin.cutoutHint")}>
-              <input
-                type="file"
-                accept="image/png,image/webp"
-                disabled={uploading}
-                onChange={async (event) => {
-                  const file = event.target.files?.[0];
-                  event.target.value = "";
-                  if (!file) return;
-                  setError("");
-                  setUploading(true);
-                  try {
-                    const result = await uploadImageToD1(file);
-                    update("cutout", result.url);
-                  } catch (err) {
-                    setError(
-                      err instanceof ImageError && err.code === "size"
-                        ? lang === "ar"
-                          ? "حجم الصورة يتجاوز ١ ميجابايت؛ اضغط الصورة قبل الرفع."
-                          : "Image exceeds 1 MB; compress it before uploading."
-                        : lang === "ar"
-                          ? "تعذر رفع الصورة"
-                          : "Image upload failed",
-                    );
-                  } finally {
-                    setUploading(false);
-                  }
-                }}
-              />
-              <input
-                value={draft.cutout}
-                onChange={(event) => update("cutout", event.target.value)}
-                className="field mt-1.5 text-[11px]"
-                dir="ltr"
-                placeholder="/api/images/… or https://…"
-              />
-            </Field>
+            <ProductImagesEditor images={draft.images} uploading={uploading} setUploading={setUploading}
+              onChange={(images) => setDraft((prev) => ({ ...prev, images, legacyCutout: images.length ? prev.legacyCutout : "" }))} />
 
             <Field label={lang === "ar" ? "لون إبراز العطر (في صفحات العرض)" : "Product accent (showcase and product pages)"} hint={lang === "ar" ? "درجات البنفسجي تُعرض بلون تمييز الموقع." : "Purple tones are displayed using the site accent."}>
               <div className="flex items-center gap-2">
@@ -509,7 +448,7 @@ export function ProductForm({
 
           <div className="sticky bottom-0 mt-6 flex gap-2 border-t border-ink/10 bg-bone py-4">
             <Button type="button" variant="outline" onClick={onClose}>{t("admin.cancel")}</Button>
-            <Button type="submit" variant="acid" full icon={<Check className="h-4 w-4" />} iconPosition="start">
+            <Button type="submit" variant="acid" full disabled={uploading || inventoryLoading || inventoryError} icon={<Check className="h-4 w-4" />} iconPosition="start">
               {initial ? t("admin.update") : t("admin.create")}
             </Button>
           </div>
