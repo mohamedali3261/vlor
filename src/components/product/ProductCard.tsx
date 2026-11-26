@@ -1,3 +1,4 @@
+import { observeMobileProductCard } from "@/lib/mobileProductCardMotion";
 import { primaryProductImage } from "@/lib/productImages";
 import { ProductPhoto } from "@/components/product/ProductPhoto";
 import { QuickView } from "@/components/product/QuickView";
@@ -10,7 +11,7 @@ import { discountPercent, formatPrice } from "@/lib/format";
 import { Link } from "@/lib/router";
 import type { Product } from "@/types";
 import { cn } from "@/utils/cn";
-import { memo, useState } from "react";
+import { memo, useEffect, useRef, useState } from "react";
 import "@/styles/product-card.css";
 
 export interface ProductCardProps {
@@ -24,6 +25,12 @@ function ProductCardBase({ product, className }: ProductCardProps) {
   const { add, open } = useCart();
   const { toggleWishlist, isWished } = useStore();
   const { push } = useToast();
+
+  const cardRef = useRef<HTMLElement>(null);
+  useEffect(() => {
+    const card = cardRef.current;
+    return card ? observeMobileProductCard(card) : undefined;
+  }, []);
 
   const [quickOpen, setQuickOpen] = useState(false);
   const [added, setAdded] = useState(false);
@@ -51,8 +58,8 @@ function ProductCardBase({ product, className }: ProductCardProps) {
   };
 
   return (
-    <article className={cn("pc-card", className)}>
-      {/* Accent disc — expands out of the corner on hover (always open on touch). */}
+    <article ref={cardRef} className={cn("pc-card", className)}>
+      {/* Accent disc — expands on hover or when the mobile card enters view. */}
       <span aria-hidden="true" className="pc-disc" />
 
       {/* Oversized watermark of the scent's own name. */}
