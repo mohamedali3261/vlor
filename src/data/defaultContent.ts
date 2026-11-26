@@ -5,6 +5,7 @@ import { MAX_SHOWCASE_IMAGES, type DeepPartial, type SiteContent } from "@/types
 /** Factory so every consumer gets its own mutable copy. */
 export function createDefaultContent(): SiteContent {
   return {
+    studioDeliveryTab: true,
     announcements: [
       { en: "Complimentary delivery on orders over EGP 2,000", ar: "توصيل مجاني للطلبات فوق ٢٠٠٠ ج.م" },
     ],
@@ -27,7 +28,7 @@ export function createDefaultContent(): SiteContent {
     },
 
     showcase: {
-      eyebrow: { en: "Curated editions", ar: "إصدارات مختارة" },
+      eyebrow: { en: "Selected perfumes", ar: "عطور مختارة" },
       title: { en: "Icons of VLOR.", ar: "أيقوناتُ ڨلور." },
       lead: {
         en: "Swipe through our defining extraits — each flacon carries its own chapter.",
@@ -278,6 +279,7 @@ export function mergeContent(stored: DeepPartial<SiteContent> | null | undefined
   clean.sections = sections;
 
   const result = clean as unknown as SiteContent;
+  if (typeof result.studioDeliveryTab !== "boolean") result.studioDeliveryTab = base.studioDeliveryTab;
   // The cap holds even for hand-edited or imported data.
   // Also upgrade untouched legacy default wording stored in older localStorage snapshots.
   const replaceLegacyBrand = (val?: { en?: string; ar?: string }) =>
@@ -302,7 +304,8 @@ export function mergeContent(stored: DeepPartial<SiteContent> | null | undefined
     result.showcase?.title?.ar === "أيقوناتُ مليكة." ||
     result.showcase?.title?.en === "Icons of Malika.";
   const legacyShowcaseEyebrow =
-    result.showcase?.eyebrow?.ar === "التشكيلة" && result.showcase?.eyebrow?.en === "The lineup";
+    (result.showcase?.eyebrow?.ar === "التشكيلة" && result.showcase?.eyebrow?.en === "The lineup") ||
+    (result.showcase?.eyebrow?.ar === "إصدارات مختارة" && result.showcase?.eyebrow?.en === "Curated editions");
   const legacyShowcaseLead =
     result.showcase?.lead?.ar === "تصفّح الزجاجات التي تُعرّف الدار — وكل واحدة تفتح حكايتها.";
 

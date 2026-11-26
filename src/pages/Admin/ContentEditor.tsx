@@ -6,7 +6,6 @@ import { useLang } from "@/i18n/LanguageContext";
 import { Link } from "@/lib/router";
 import { siteBackground } from "@/lib/theme";
 import { Section } from "@/pages/Admin/ContentFields";
-import { ShowcaseEditor } from "@/pages/Admin/ShowcaseEditor";
 import { ProductCardColours } from "@/pages/Admin/ProductCardColours";
 import type { SiteContent } from "@/types/content";
 import { draftsChanged, registerDraft } from "@/lib/studioDrafts";
@@ -55,7 +54,6 @@ export function ContentEditor({ onManageProducts }: { onManageProducts?: () => v
 
   const sections: { key: keyof SiteContent["sections"]; label: string; hint: string }[] = [
     { key: "runwayLookbook", label: ar ? "منصّة العرض (Runway)" : "Runway lookbook", hint: ar ? "سلايدر المنتجات العلوي" : "Top product slider" },
-    { key: "showcase", label: ar ? "كارت الصور" : "Image card", hint: ar ? "حتى ٥ صور" : "Up to 5 images" },
     { key: "featured", label: ar ? "المنتجات المميزة" : "Featured products", hint: ar ? "المختارة" : "Picked" },
     { key: "story", label: ar ? "حكايتنا" : "Our story", hint: ar ? "قسم القصة" : "Story block" },
     { key: "contactCta", label: ar ? "دعوة التواصل" : "Contact CTA", hint: ar ? "آخر الصفحة" : "Bottom CTA" },
@@ -77,7 +75,7 @@ export function ContentEditor({ onManageProducts }: { onManageProducts?: () => v
 
       <div className="rounded-2xl border border-ink/10 bg-surface p-5">
         <h3 className="text-sm font-bold">{ar ? "إظهار / إخفاء أقسام الصفحة الرئيسية" : "Show / hide home sections"}</h3>
-        <p className="mt-1 text-xs leading-relaxed text-mist">{ar ? "أظهر أو أخفِ أقسام الرئيسية، وعدّل صور كارت العرض وبطاقات العطور من أدوات الإدارة أدناه." : "Show or hide home sections, then manage the image showcase and product cards with the tools below."}</p>
+        <p className="mt-1 text-xs leading-relaxed text-mist">{ar ? "أظهر أو أخفِ أقسام الرئيسية وعدّل ألوان بطاقات العطور من أدوات الإدارة أدناه." : "Show or hide home sections and manage product card colours below."}</p>
 
         <div className="mt-5 grid gap-2">
           {sections.map((s) => {
@@ -177,18 +175,14 @@ export function ContentEditor({ onManageProducts }: { onManageProducts?: () => v
         </Section>
       </div>
 
-      <div className="mt-3">
-        <Section
-          title={ar ? "بطاقات العرض المصوّرة في الرئيسية" : "Homepage image showcase cards"}
-          description={ar ? "أضف أو عدّل أو احذف الصور التي تظهر في كارت العرض." : "Add, edit or remove the images shown in the homepage showcase."}
-          badge={`${draft.showcase.images.length}/5`}
-        >
-          <ShowcaseEditor
-            value={draft.showcase}
-            products={products}
-            onChange={(value) => edit((next) => { next.showcase = value; })}
-          />
-        </Section>
+      <div className="mt-3 rounded-2xl border border-ink/10 bg-surface p-5">
+        <label className="flex cursor-pointer items-center justify-between gap-4">
+          <span>
+            <span className="block text-sm font-bold">{ar ? "إظهار تبويب الشحن في الاستوديو" : "Show the delivery tab in the studio"}</span>
+            <span className="mt-1 block text-xs text-mist">{ar ? "إخفاء التبويب لا يغيّر أسعار الشحن أو الطلبات. أعد إظهاره من هنا." : "Hiding the tab does not change shipping rates or orders. Restore it here."}</span>
+          </span>
+          <input type="checkbox" checked={draft.studioDeliveryTab} onChange={(event) => edit((next) => { next.studioDeliveryTab = event.target.checked; })} className="h-5 w-5 shrink-0 accent-ink" />
+        </label>
       </div>
 
       <div className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-ink/10 bg-surface p-4">

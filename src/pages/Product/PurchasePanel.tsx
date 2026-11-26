@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/Button";
-import { Badge, Stars } from "@/components/ui/Primitives";
+import { Badge } from "@/components/ui/Primitives";
+import { ProductDetails } from "@/pages/Product/ProductDetails";
 import { Check, Heart, Minus, Plus, Whatsapp } from "@/components/ui/icons";
 import { useCart } from "@/context/CartContext";
 import { useStore } from "@/context/StoreContext";
@@ -60,8 +61,8 @@ export function PurchasePanel({ product }: { product: Product }) {
           {l(product.name)}
         </h1>
         <p className="mt-1.5 text-[13px] leading-snug text-mist">{l(product.tagline)}</p>
-        <div className="mt-2.5">
-          <Stars value={product.rating} reviews={product.reviews} size={13} />
+        <div className="mt-4">
+          <ProductDetails product={product} />
         </div>
       </div>
 

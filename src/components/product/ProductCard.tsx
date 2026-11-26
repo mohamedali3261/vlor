@@ -4,12 +4,11 @@ import { useCart } from "@/context/CartContext";
 import { useStore } from "@/context/StoreContext";
 import { useToast } from "@/context/ToastContext";
 import { useLang } from "@/i18n/LanguageContext";
-import { resolveAsset } from "@/lib/assets";
 import { discountPercent, formatPrice } from "@/lib/format";
 import { Link } from "@/lib/router";
 import type { Product } from "@/types";
 import { cn } from "@/utils/cn";
-import { memo, useMemo, useState, type CSSProperties } from "react";
+import { memo, useState } from "react";
 import "@/styles/product-card.css";
 
 export interface ProductCardProps {
@@ -18,7 +17,7 @@ export interface ProductCardProps {
   className?: string;
 }
 
-function ProductCardBase({ product, priority, className }: ProductCardProps) {
+function ProductCardBase({ product, className }: ProductCardProps) {
   const { lang, t, l } = useLang();
   const { add, open } = useCart();
   const { toggleWishlist, isWished } = useStore();
@@ -32,19 +31,6 @@ function ProductCardBase({ product, priority, className }: ProductCardProps) {
   const wished = isWished(product.id);
   const selected = product.sizes.find((size) => size.ml === ml) ?? initial;
   const discount = discountPercent(selected?.price ?? product.price, product.compareAt);
-  const [cutoutFailed, setCutoutFailed] = useState(false);
-  // A broken cut-out path falls back to the product photograph instead of a hole.
-  const image = resolveAsset(cutoutFailed || !product.cutout ? product.images[0] : product.cutout);
-
-  /** Stable per-product tilt, derived from the slug. */
-  const tilt = useMemo(() => {
-    let hash = 0;
-    for (let i = 0; i < product.slug.length; i += 1) {
-      hash = (hash * 31 + product.slug.charCodeAt(i)) % 1000;
-    }
-    return { idle: -28 + (hash % 13), open: -18 + (hash % 9) };
-  }, [product.slug]);
-
   /** Watermark word behind the bottle — the product's own name. */
   const watermark = (lang === "ar" ? product.name.ar : product.name.en).split(" ")[0];
 
@@ -96,16 +82,8 @@ function ProductCardBase({ product, priority, className }: ProductCardProps) {
 
       {/* Bottle — centred, then lifts to the top on hover. */}
       <Link to={`/product/${product.slug}`} aria-label={l(product.name)} className="pc-bottle-link">
-        <img
-          src={image}
-          alt={l(product.name)}
-          loading={priority ? "eager" : "lazy"}
-          decoding="async"
-          draggable={false}
-          onError={() => setCutoutFailed(true)}
-          style={{ "--tilt": `${tilt.idle}deg`, "--tilt-open": `${tilt.open}deg` } as CSSProperties}
-          className="pc-bottle-img"
-        />
+        <span className="pc-fragrance-name">{l(product.name)}</span>
+        <span className="pc-fragrance-tagline">{l(product.tagline)}</span>
       </Link>
 
       {/* Content panel — grows on hover to reveal the details. */}

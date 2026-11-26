@@ -132,6 +132,8 @@ export interface ShowcaseContent {
 }
 
 export interface SiteContent {
+  /** Presentation only; hiding this tab does not disable shipping or its API. */
+  studioDeliveryTab: boolean;
   announcements: Localized[];
   hero: {
     eyebrow: Localized;

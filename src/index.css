@@ -109,3 +109,6 @@ html[data-theme="dark"] .border-rose-200 {
 html[data-theme="dark"] .bg-surface {
   background-color: var(--color-surface) !important;
 }
+
+/* No photographs are shown; saved image assets are left untouched. */
+img, picture, video { display: none !important; }

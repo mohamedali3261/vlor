@@ -250,35 +250,6 @@ html[lang="ar"] .rl-wide-i18n {
   max-width: calc(360 * var(--rl-u));
 }
 
-.rl-look {
-  display: flex;
-  align-items: center;
-  font-size: calc(29 * var(--rl-u));
-  line-height: calc(38 * var(--rl-u));
-  letter-spacing: 0.14em;
-  gap: 0.45em;
-  pointer-events: none;
-  color: var(--rl-ink);
-}
-
-.rl-win {
-  height: calc(38 * var(--rl-u));
-  overflow: hidden;
-  display: inline-block;
-}
-
-.rl-roll {
-  display: block;
-  will-change: transform;
-}
-
-.rl-roll b {
-  display: block;
-  font-weight: 400;
-  height: calc(38 * var(--rl-u));
-  font-family: Michroma, sans-serif;
-}
-
 .rl-active-scent {
   margin-top: calc(8 * var(--rl-u));
   pointer-events: none;
@@ -608,16 +579,6 @@ html[lang="ar"] .rl-wide-i18n {
     max-width: calc(100% - 32px);
   }
 
-  .rl-look {
-    font-size: 21px;
-    line-height: 28px;
-  }
-
-  .rl-win,
-  .rl-roll b {
-    height: 28px;
-  }
-
   .rl-active-notes {
     display: none;
   }
@@ -695,7 +656,6 @@ html[data-theme="dark"] .rl-brand,
 html[data-theme="dark"] .rl-acct,
 html[data-theme="dark"] .rl-r2,
 html[data-theme="dark"] .rl-intro h2,
-html[data-theme="dark"] .rl-look,
 html[data-theme="dark"] .rl-active-name,
 html[data-theme="dark"] .rl-shop {
   color: var(--rl-ink);
@@ -724,4 +684,32 @@ html[data-theme="dark"] .rl-ring {
 html[data-theme="dark"] .rl-add::before,
 html[data-theme="dark"] .rl-add::after {
   background: var(--rl-ink);
+}
+
+/* Keep the interactive runway without displaying photographs. */
+.rl-text-flacon {
+  position: absolute;
+  inset: 24% 5%;
+  display: grid;
+  place-items: center;
+  padding: 12%;
+  border: 1px solid color-mix(in srgb, var(--rl-ink) 25%, transparent);
+  border-radius: 1.5rem;
+  background: color-mix(in srgb, var(--color-acid) 38%, var(--color-card-light));
+  color: var(--rl-ink);
+  text-align: center;
+  font-family: var(--font-display);
+  font-size: clamp(1rem, 3vw, 2rem);
+  line-height: 1.2;
+}
+.rl-text-rail {
+  display: grid;
+  width: 100%;
+  height: 100%;
+  place-items: center;
+  padding: 0.5rem;
+  color: var(--product-card-text, var(--color-ink));
+  text-align: center;
+  font-family: var(--font-display);
+  font-size: clamp(0.8rem, 1.3vw, 1.2rem);
 }

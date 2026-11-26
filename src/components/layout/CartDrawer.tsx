@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/Button";
-import { Portal, SmartImage } from "@/components/ui/Primitives";
+import { Portal } from "@/components/ui/Primitives";
 import { ArrowRight, Bag, Check, Minus, Plus, Sparkle, Trash, Whatsapp, X } from "@/components/ui/icons";
 import { useCart } from "@/context/CartContext";
 import { useStore } from "@/context/StoreContext";
@@ -123,9 +123,6 @@ export function CartDrawer() {
             <div className="min-h-0 flex-1 space-y-3 overflow-y-auto bg-bone-2/40 p-3">
               {lines.map((line) => (
                 <div key={line.key} className="flex gap-3 rounded-2xl border border-ink/6 bg-surface p-3 shadow-[0_8px_24px_-16px_rgba(77,51,8,0.15)]">
-                  <Link to={`/product/${line.slug}`} onClick={close} className="w-[84px] shrink-0 overflow-hidden rounded-xl bg-bone-2/60">
-                    <SmartImage src={line.image} alt={line.name[lang]} className="aspect-[3/4] w-full" />
-                  </Link>
                   <div className="flex min-w-0 flex-1 flex-col">
                     <div className="flex items-start justify-between gap-2">
                       <Link to={`/product/${line.slug}`} onClick={close} className="line-clamp-2 text-[13px] font-bold leading-tight hover:underline">

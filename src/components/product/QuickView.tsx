@@ -1,4 +1,5 @@
-import { Badge, Portal, SmartImage, Stars } from "@/components/ui/Primitives";
+import { Portal } from "@/components/ui/Primitives";
+import { ProductDetails } from "@/pages/Product/ProductDetails";
 import { Button } from "@/components/ui/Button";
 import { ArrowUpRight, Check, Whatsapp, X } from "@/components/ui/icons";
 import { useCart } from "@/context/CartContext";
@@ -6,10 +7,9 @@ import { useStore } from "@/context/StoreContext";
 import { useToast } from "@/context/ToastContext";
 import { useBodyLock } from "@/hooks/useUi";
 import { useLang } from "@/i18n/LanguageContext";
-import { formatPrice, discountPercent } from "@/lib/format";
+import { formatPrice } from "@/lib/format";
 import { openChannel, productMessage, whatsappUrl } from "@/lib/messaging";
 import { Link } from "@/lib/router";
-import { productAccent } from "@/lib/theme";
 import { emitBagPulse } from "@/motion";
 import type { Product } from "@/types";
 import { cn } from "@/utils/cn";
@@ -49,7 +49,6 @@ export function QuickView({
   }, [open, product]);
 
   const selected = product.sizes.find((size) => size.ml === ml) ?? product.sizes[0];
-  const discount = discountPercent(selected?.price ?? product.price, product.compareAt);
 
   const addToBag = () => {
     add(product, selected.ml, selected.price);
@@ -74,30 +73,14 @@ export function QuickView({
           <X className="h-4 w-4" />
         </button>
 
-        <div className="grid sm:grid-cols-[0.9fr_1.1fr]">
-          <div className="relative p-4 sm:p-5" style={{ background: `linear-gradient(160deg, color-mix(in srgb, ${productAccent(product.accent, "var(--color-acid)")} 30%, transparent), var(--color-bone-2))` }}>
-            <SmartImage
-              src={product.images[0]}
-              alt={l(product.name)}
-              priority
-              className="aspect-[4/5] w-full rounded-[1.4rem]"
-            />
-            <div className="absolute start-7 top-7 flex flex-col gap-1.5">
-              {product.isNew && <Badge tone="ink">{t("product.new")}</Badge>}
-              {discount && <Badge tone="lilac" className="dir-ltr">−{discount}%</Badge>}
-            </div>
-          </div>
-
+        <div>
           <div className="flex flex-col p-6 sm:p-8">
             <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.2em] text-mist">
               <span>{t(`shop.${product.gender}`)}</span>
             </div>
             <h3 className="font-display mt-2 text-4xl leading-none">{l(product.name)}</h3>
             <p className="mt-1.5 text-[12px] text-mist">{l(product.tagline)}</p>
-            <div className="mt-3">
-              <Stars value={product.rating} reviews={product.reviews} />
-            </div>
-            <p className="mt-4 text-[13px] leading-relaxed text-ink/70">{l(product.description)}</p>
+            <div className="mt-4"><ProductDetails product={product} /></div>
 
             <div className="mt-5">
               <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-mist">{t("product.size")}</p>

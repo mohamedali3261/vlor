@@ -31,7 +31,7 @@ export function WishlistPage() {
     () =>
       products
         .filter((p) => !wishlist.includes(p.id))
-        .sort((a, b) => Number(Boolean(b.featured)) - Number(Boolean(a.featured)) || b.rating - a.rating)
+        .sort((a, b) => Number(Boolean(b.featured)) - Number(Boolean(a.featured)))
         .slice(0, 3),
     [products, wishlist]
   );

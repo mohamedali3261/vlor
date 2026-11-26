@@ -1,10 +1,8 @@
 import { Gallery } from "@/pages/Product/Gallery";
-import { ProductDetails } from "@/pages/Product/ProductDetails";
 import { PurchaseBar } from "@/pages/Product/PurchaseBar";
 import { PurchasePanel } from "@/pages/Product/PurchasePanel";
 import { RelatedScents } from "@/pages/Product/RelatedScents";
 import { Button } from "@/components/ui/Button";
-import { Reveal } from "@/components/ui/Reveal";
 import { ArrowUpRight, Sparkle } from "@/components/ui/icons";
 import { getProductBySlug } from "@/data/products";
 import { useStore } from "@/context/StoreContext";
@@ -55,16 +53,6 @@ export function ProductPage() {
             </div>
             <PurchasePanel product={product} />
           </div>
-        </div>
-      </section>
-
-      <section className="pb-12 lg:pb-16">
-        <div className="mx-auto max-w-[1400px] px-4 sm:px-6 lg:px-10">
-          <Reveal>
-            <div className="rounded-[1.8rem] border border-ink/10 bg-surface/40 p-6 sm:p-8">
-              <ProductDetails product={product} />
-            </div>
-          </Reveal>
         </div>
       </section>
 
