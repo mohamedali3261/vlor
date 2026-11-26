@@ -27,7 +27,14 @@ for (const path of ['src/pages/Product/PurchasePanel.tsx', 'src/components/produ
   assert.doesNotMatch(page, /<Stars|product\.rating|product\.reviews/);
 }
 assert.doesNotMatch(await read('src/pages/Shop/FilterBar.tsx'), /sortRating/);
-assert.match(await read('src/index.css'), /img, picture, video\s*\{\s*display:\s*none/);
+const css = await read('src/index.css');
+assert.match(css, /img, picture, video\s*\{\s*display:\s*none/);
+assert.match(css, /img\.brand-logo\s*\{\s*display:\s*block/);
+assert.match(await read('src/components/layout/Navbar.tsx'), /<Logo compact className="nav-brand-wordmark"/);
+assert.match(await read('src/components/layout/HomeLoader.tsx'), /brand-logo home-loader__emblem/);
+assert.match(await read('src/pages/Home/RunwayLookbook.tsx'), /<Logo compact className="rl-brand"/);
+assert.match(await read('src/components/layout/Footer.tsx'), /<Logo light/);
+assert.match(await read('index.html'), /vlor-supplied-favicon\.png/);
 assert.match(await read('src/pages/Admin/ContentEditor.tsx'), /next\.studioDeliveryTab = event\.target\.checked/);
 assert.match(await read('src/pages/Admin/AdminHeader.tsx'), /item\.key !== "delivery" \|\| content\.studioDeliveryTab/);
 assert.match(await read('src/pages/Admin/AdminPage.tsx'), /tab === "delivery" && content\.studioDeliveryTab && <Delivery/);

@@ -157,16 +157,47 @@ async function applyVlorBrandMigration(db: D1Database): Promise<void> {
   await db.batch(updates);
 }
 
+// Some installations deploy the Worker without running D1 migrations. Add the
+// requested scents once there as well, without changing owner-managed products,
+// including archived items. D1 batch is atomic; the marker prevents later
+// requests from re-adding a product the owner has deliberately removed.
+async function ensureRequestedScents(db: D1Database): Promise<void> {
+  const marker = await db.prepare("SELECT value FROM store_meta WHERE key='requested_scents_v1'").first<{ value: string }>();
+  if (marker?.value === '1') return;
+
+  const inserts = NEW_PRODUCTS.map((p) => db.prepare(`
+    INSERT OR IGNORE INTO products (id, slug, category_id, data)
+    SELECT ?, ?, ?, ?
+    WHERE NOT EXISTS (SELECT 1 FROM store_meta WHERE key='requested_scents_v1' AND value='1')
+      AND NOT EXISTS (
+        SELECT 1 FROM products existing
+        WHERE existing.id = ? OR existing.slug = ?
+          OR CASE WHEN json_valid(existing.data) THEN
+            lower(json_extract(existing.data, '$.name.en')) = lower(?)
+            OR json_extract(existing.data, '$.name.ar') = ?
+          ELSE 0 END
+      )
+  `).bind(p.id, p.slug, p.category, JSON.stringify(p), p.id, p.slug, p.name.en, p.name.ar));
+
+  await db.batch([
+    ...inserts,
+    db.prepare("INSERT INTO store_meta(key, value) VALUES ('requested_scents_v1', '1') ON CONFLICT(key) DO UPDATE SET value=excluded.value"),
+  ]);
+}
+
 async function initialize(db: D1Database): Promise<void> {
+  let initialized = false;
   try {
     const meta = await db.prepare("SELECT value FROM store_meta WHERE key='seed_v2'").first<{ value: string }>();
-    if (meta?.value === '1') {
-      await applyVlorBrandMigration(db);
-      readyDb = db;
-      return;
-    }
+    initialized = meta?.value === '1';
   } catch {
     // Base tables or store_meta do not exist yet.
+  }
+  if (initialized) {
+    await applyVlorBrandMigration(db);
+    await ensureRequestedScents(db);
+    readyDb = db;
+    return;
   }
 
   for (const sql of DDL_STATEMENTS) {
@@ -247,6 +278,7 @@ async function initialize(db: D1Database): Promise<void> {
     db.prepare("INSERT OR REPLACE INTO store_meta(key, value) VALUES ('seed_v2', '1')"),
     db.prepare("INSERT OR REPLACE INTO store_meta(key, value) VALUES ('rebrand_vlor_v2', '1')"),
   ]);
+  await ensureRequestedScents(db);
   readyDb = db;
 }
 
