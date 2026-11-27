@@ -5,7 +5,7 @@ import { useCart } from "@/context/CartContext";
 import { useStore } from "@/context/StoreContext";
 import { useBodyLock } from "@/hooks/useUi";
 import { useLang } from "@/i18n/LanguageContext";
-import { formatPrice } from "@/lib/format";
+import { formatPrice, latinDigits } from "@/lib/format";
 import { cartMessage, whatsappUrl } from "@/lib/messaging";
 import { Link } from "@/lib/router";
 import { cn } from "@/utils/cn";
@@ -95,7 +95,7 @@ export function CartDrawer() {
               {t("cart.browse")}
             </Button>
             <p className="flex items-center gap-1.5 text-[10px] text-mist">
-              <Sparkle className="h-3 w-3" /> {lang === "ar" ? "توصيل خلال ١–٤ أيام لكل المحافظات" : "Delivery 1–4 days across Egypt"}
+              <Sparkle className="h-3 w-3" /> {lang === "ar" ? "توصيل خلال 1–4 أيام لكل المحافظات" : "Delivery 1–4 days across Egypt"}
             </p>
           </div>
         ) : (
@@ -126,7 +126,7 @@ export function CartDrawer() {
                   <div className="flex min-w-0 flex-1 flex-col">
                     <div className="flex items-start justify-between gap-2">
                       <Link to={`/product/${line.slug}`} onClick={close} className="line-clamp-2 text-[13px] font-bold leading-tight hover:underline">
-                        {line.name[lang]}
+                        {latinDigits(line.name[lang])}
                       </Link>
                       <button data-analytics="remove-from-cart" onClick={() => remove(line.key)} className="grid h-7 w-7 place-items-center rounded-full bg-ink/5 text-mist transition hover:bg-rose-50 hover:text-rose-500" aria-label={t("cart.remove")}>
                         <Trash className="h-3.5 w-3.5" />

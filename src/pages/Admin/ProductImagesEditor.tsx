@@ -33,7 +33,7 @@ export function ProductImagesEditor({ images, onChange, uploading, setUploading 
     if (!values.length) return;
     if (values.some((value) => value.length > 2048)) { setError(ar ? "رابط الصورة طويل جداً." : "An image URL is too long."); return; }
     const next = main ? setPrimaryImage(current.current, values[0]) : [...current.current, ...values];
-    if (next.length > MAX_PRODUCT_IMAGES) { setError(ar ? "الحد الأقصى ٢٠ صورة للمنتج." : "Maximum 20 images per product."); return; }
+    if (next.length > MAX_PRODUCT_IMAGES) { setError(ar ? "الحد الأقصى 20 صورة للمنتج." : "Maximum 20 images per product."); return; }
     commit(next); setError("");
     if (main) setMainUrl(""); else setExtraUrls("");
   };
@@ -41,7 +41,7 @@ export function ProductImagesEditor({ images, onChange, uploading, setUploading 
   const upload = async (files: File[], main: boolean) => {
     if (!files.length) return;
     const capacity = MAX_PRODUCT_IMAGES - current.current.length;
-    if (!main && files.length > capacity) { setError(ar ? "الحد الأقصى ٢٠ صورة للمنتج." : "Maximum 20 images per product."); return; }
+    if (!main && files.length > capacity) { setError(ar ? "الحد الأقصى 20 صورة للمنتج." : "Maximum 20 images per product."); return; }
     setError(""); setUploading(true);
     try {
       for (const file of files) {
@@ -52,9 +52,9 @@ export function ProductImagesEditor({ images, onChange, uploading, setUploading 
       }
     } catch (err) {
       if (alive.current) setError(err instanceof ImageError && err.code === "input-size"
-        ? (ar ? "حجم الصورة الأصلية يتجاوز ١٥ ميجابايت." : "The original image exceeds 15 MB.")
+        ? (ar ? "حجم الصورة الأصلية يتجاوز 15 ميجابايت." : "The original image exceeds 15 MB.")
         : err instanceof ImageError && err.code === "size"
-        ? (ar ? "الصورة أكبر من ١ ميجابايت بعد الضغط." : "Image exceeds 1 MB after compression.")
+        ? (ar ? "الصورة أكبر من 1 ميجابايت بعد الضغط." : "Image exceeds 1 MB after compression.")
         : (ar ? "تعذر رفع إحدى الصور. الصور التي رُفعت بنجاح محفوظة في القائمة." : "An image could not be uploaded. Successfully uploaded images remain in the list."));
     } finally { if (alive.current) setUploading(false); }
   };
@@ -62,7 +62,7 @@ export function ProductImagesEditor({ images, onChange, uploading, setUploading 
   return (
     <div className="product-images-editor sm:col-span-2 rounded-2xl border border-ink/10 bg-surface/45 p-4">
       <h3 className="text-sm font-bold">{ar ? "صور المنتج" : "Product images"}</h3>
-      <p className="mt-1 text-xs leading-relaxed text-mist">{ar ? "الصورة الأساسية تظهر على الكارت وفي المتجر والتفاصيل. الصور الإضافية تظهر في صفحة التفاصيل. يمكنك إضافة حتى ٢٠ صورة." : "The main image appears on the card, in the shop and on the product page. Extra images appear in the gallery. Up to 20 images."}</p>
+      <p className="mt-1 text-xs leading-relaxed text-mist">{ar ? "الصورة الأساسية تظهر على الكارت وفي المتجر والتفاصيل. الصور الإضافية تظهر في صفحة التفاصيل. يمكنك إضافة حتى 20 صورة." : "The main image appears on the card, in the shop and on the product page. Extra images appear in the gallery. Up to 20 images."}</p>
       <p className="product-images-editor__tip">{ar ? "نضغط الصور تلقائياً قبل رفعها لتسريع التحميل، مع الحفاظ على الخلفية الشفافة. الصور المضافة بروابط خارجية لا تُضغط." : "Uploaded photos are optimised for faster loading while keeping transparency. External image links are not compressed."}</p>
       <p className="mt-2 text-[11px] text-mist">{ar ? "يظهر حجم كل صورة قبل الضغط وبعده لهذه الرفعة فقط." : "Before and after sizes are shown for images uploaded in this session."}</p>
       <fieldset disabled={uploading} className="mt-4 space-y-4 disabled:opacity-60">

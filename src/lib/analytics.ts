@@ -2,6 +2,7 @@ const VISITOR_STORAGE_KEY = "vlor.analytics.visitor.v1";
 const VISITOR_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 let fallbackVisitorId: string | null = null;
+let cachedVisitorId: string | null = null;
 
 function createVisitorId(): string {
   if (typeof crypto.randomUUID === "function") return crypto.randomUUID();
@@ -14,17 +15,18 @@ function createVisitorId(): string {
 }
 
 function getVisitorId(): string {
+  if (cachedVisitorId) return cachedVisitorId;
   try {
     const stored = window.localStorage.getItem(VISITOR_STORAGE_KEY);
-    if (stored && VISITOR_ID_PATTERN.test(stored)) return stored;
+    if (stored && VISITOR_ID_PATTERN.test(stored)) return (cachedVisitorId = stored);
 
     const next = createVisitorId();
     window.localStorage.setItem(VISITOR_STORAGE_KEY, next);
-    return next;
+    return (cachedVisitorId = next);
   } catch {
     // Keep the page usable when storage is disabled; the identifier is session-only in this case.
     fallbackVisitorId ??= createVisitorId();
-    return fallbackVisitorId;
+    return (cachedVisitorId = fallbackVisitorId);
   }
 }
 
@@ -45,24 +47,41 @@ type AnalyticsEvent =
   | { type: "heartbeat"; pagePath: string }
   | { type: "interaction"; pagePath: string; action: string };
 
-function send(event: AnalyticsEvent): void {
-  if (typeof window === "undefined") return;
-  const pagePath = normalizePagePath(event.pagePath);
-  if (!pagePath) return;
-
+// A small, bounded, best-effort queue keeps rapid clicks from flooding the network
+// or doing storage/serialization work in the click handler. Shopping never awaits it.
+const queue: AnalyticsEvent[] = [];
+let scheduled = false;
+function schedule(): void {
+  if (scheduled || !queue.length) return;
+  scheduled = true;
+  setTimeout(() => { void flush(); }, 200);
+}
+async function flush(): Promise<void> {
+  const event = queue.shift();
+  if (!event) { scheduled = false; return; }
+  const controller = new AbortController();
+  let timeout: ReturnType<typeof setTimeout> | undefined;
   try {
-    const body = { ...event, pagePath, visitorId: getVisitorId() };
-    void fetch("/api/analytics/event", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-      keepalive: true,
-    }).catch(() => {
-      // Analytics is best-effort and must never interrupt shopping.
-    });
-  } catch {
-    // Ignore browser/network failures.
+    const body = { ...event, visitorId: getVisitorId() };
+    await Promise.race([
+      fetch('/api/analytics/event', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body), signal:controller.signal, keepalive:true }),
+      new Promise<void>(resolve => { timeout = setTimeout(() => { controller.abort(); resolve(); }, 4000); }),
+    ]);
+  } catch { /* Analytics is best effort, including blocked storage or network. */ }
+  finally {
+    if (timeout !== undefined) clearTimeout(timeout);
+    scheduled = false;
+    schedule();
   }
+}
+function send(event: AnalyticsEvent): void {
+  if (typeof window === 'undefined') return;
+  try {
+    const pagePath = normalizePagePath(event.pagePath);
+    if (!pagePath || queue.length >= 40) return;
+    queue.push({ ...event, pagePath });
+    schedule();
+  } catch { /* Never interrupt browsing. */ }
 }
 
 export function trackPageView(pagePath: string): void {
@@ -108,9 +127,11 @@ export function startAnalyticsTracking(pagePath: string): () => void {
   if (!normalizePagePath(pagePath)) return () => {};
   const beat = () => { if (document.visibilityState === "visible") send({ type: "heartbeat", pagePath }); };
   const click = (event: MouseEvent) => {
-    if (!(event.target instanceof Element)) return;
-    const action = interactionAction(event.target);
-    if (action) send({ type: "interaction", pagePath, action });
+    try {
+      if (!(event.target instanceof Element)) return;
+      const action = interactionAction(event.target);
+      if (action) send({ type: "interaction", pagePath, action });
+    } catch { /* A tracking error must not affect the interaction. */ }
   };
   beat();
   const timer = window.setInterval(beat, 60_000);

@@ -20,11 +20,11 @@ export const dict = {
   // Announcement
   "ann.1": {
     en: "Complimentary delivery on orders over EGP 2,000",
-    ar: "توصيل مجاني للطلبات فوق ٢٠٠٠ ج.م",
+    ar: "توصيل مجاني للطلبات فوق 2000 ج.م",
   },
 
   // Hero
-  "hero.eyebrow": { en: "Independent perfume house · Est. 2021", ar: "دار عطور مستقلة · تأسست ٢٠٢١" },
+  "hero.eyebrow": { en: "Independent perfume house · Est. 2021", ar: "دار عطور مستقلة · تأسست 2021" },
   "hero.title1": { en: "Arrive like", ar: "حضورٌ" },
   "hero.title2": { en: "royalty.", ar: "ملكي." },
   "hero.lead": {
@@ -33,7 +33,7 @@ export const dict = {
   },
   "hero.cta": { en: "Discover the collection", ar: "اكتشف المجموعة" },
   "hero.cta2": { en: "Contact us", ar: "تواصل معنا" },
-  "hero.stamp": { en: "Extrait de parfum · 30% concentration", ar: "إكستريه دو بارفان · تركيز ٣٠٪" },
+  "hero.stamp": { en: "Extrait de parfum · 30% concentration", ar: "إكستريه دو بارفان · تركيز 30٪" },
   "hero.featured": { en: "The signature", ar: "التوقيع" },
   "hero.stat1": { en: "rated by clients", ar: "تقييم عملائنا" },
   "hero.stat2": { en: "signature scents", ar: "عطراً بتوقيعنا" },
@@ -74,7 +74,7 @@ export const dict = {
   "product.reviews": { en: "reviews", ar: "تقييم" },
   "product.longevity": { en: "Longevity", ar: "الثبات" },
   "product.sillage": { en: "Sillage", ar: "الانتشار" },
-  "product.inStock": { en: "In stock · ships within 48h", ar: "متوفر · يُشحن خلال ٤٨ ساعة" },
+  "product.inStock": { en: "In stock · ships within 48h", ar: "متوفر · يُشحن خلال 48 ساعة" },
   "product.saved": { en: "Saved to your list", ar: "أُضيف إلى قائمتك" },
   "product.unsaved": { en: "Removed from your list", ar: "أُزيل من قائمتك" },
   "product.wear": { en: "How to wear it", ar: "كيف تستخدمه" },
@@ -84,7 +84,7 @@ export const dict = {
   "product.notFoundCta": { en: "Back to the collection", ar: "عودة إلى المجموعة" },
 
   // Shop
-  "shop.eyebrow": { en: "The collection · 2026", ar: "المجموعة · ٢٠٢٦" },
+  "shop.eyebrow": { en: "The collection · 2026", ar: "المجموعة · 2026" },
   "shop.title": { en: "Twelve ways to be remembered.", ar: "اثنتا عشرة طريقة لتُذكَر." },
   "shop.lead": {
     en: "Every bottle is blended, macerated and hand-filled with care in our atelier. Filter by mood, family or price — then let your skin decide.",
@@ -125,7 +125,7 @@ export const dict = {
   "story.title": { en: "Built slowly. Worn quietly.", ar: "يُصنع ببطء. ويُلبَس بهدوء." },
   "story.lead": {
     en: "VLOR began with one question: why do some scents vanish while others become part of your memory? We spent two years, 214 trials and many quiet nights looking for the answer.",
-    ar: "بدأت ڨلور بسؤال واحد: لماذا تختفي بعض العطور بينما تصبح أخرى جزءاً من ذاكرتك؟ قضينا عامين و٢١٤ محاولة وكثيراً من الليالي الهادئة بحثاً عن الإجابة.",
+    ar: "بدأت ڨلور بسؤال واحد: لماذا تختفي بعض العطور بينما تصبح أخرى جزءاً من ذاكرتك؟ قضينا عامين و214 محاولة وكثيراً من الليالي الهادئة بحثاً عن الإجابة.",
   },
   "story.cta": { en: "Read our story", ar: "اقرأ حكايتنا" },
   "story.quote": {
@@ -144,7 +144,7 @@ export const dict = {
   "pillars.1.title": { en: "Small batch, always", ar: "كميات صغيرة دائماً" },
   "pillars.1.body": {
     en: "We blend 40 litres at a time. Enough to care about every bottle, never enough to cut a corner.",
-    ar: "نركّب ٤٠ لتراً في المرة. كفاية للاهتمام بكل زجاجة، وليست كفاية للتفريط في الجودة.",
+    ar: "نركّب 40 لتراً في المرة. كفاية للاهتمام بكل زجاجة، وليست كفاية للتفريط في الجودة.",
   },
   "pillars.2.title": { en: "Skin-first chemistry", ar: "كيمياء تبدأ من البشرة" },
   "pillars.2.body": {
@@ -154,13 +154,13 @@ export const dict = {
   "pillars.3.title": { en: "Refill, don't replace", ar: "أعد التعبئة، لا تستبدل" },
   "pillars.3.body": {
     en: "Keep the heavy glass. Order a refill for 25% less and we'll plant a tree in your name.",
-    ar: "احتفظ بالزجاجة الثقيلة. اطلب إعادة تعبئة بخصم ٢٥٪ وسنزرع شجرة باسمك.",
+    ar: "احتفظ بالزجاجة الثقيلة. اطلب إعادة تعبئة بخصم 25٪ وسنزرع شجرة باسمك.",
   },
 
   // Testimonials
   "testi.eyebrow": { en: "Worn & loved", ar: "مُجرَّب ومحبوب" },
   "testi.title": { en: "The trail people leave.", ar: "الأثر الذي يتركونه خلفهم." },
-  "testi.lead": { en: "4.9/5 from 1,842 verified reviews. These are a few of our favourites.", ar: "٤٫٩/٥ من ١٨٤٢ تقييماً موثقاً. هذه بعض المفضلة لدينا." },
+  "testi.lead": { en: "4.9/5 from 1,842 verified reviews. These are a few of our favourites.", ar: "4.9/5 من 1842 تقييماً موثقاً. هذه بعض المفضلة لدينا." },
 
   // Personal scent consultation CTA
   "cta.eyebrow": { en: "Your scent, thoughtfully chosen", ar: "عطرك، نختاره معك" },
@@ -192,14 +192,14 @@ export const dict = {
   "contact.choose3": { en: "Gift & bulk orders", ar: "الهدايا والطلبات الكبيرة" },
   "contact.choose4": { en: "Something else", ar: "شيء آخر" },
   "contact.wa": { en: "WhatsApp", ar: "واتساب" },
-  "contact.wa.desc": { en: "Fastest · 9am – 10pm, every day", ar: "الأسرع · ٩ص – ١٠م، كل يوم" },
+  "contact.wa.desc": { en: "Fastest · 9am – 10pm, every day", ar: "الأسرع · 9ص – 10م، كل يوم" },
   "contact.messenger": { en: "Messenger", ar: "ماسنجر" },
   "contact.messenger.desc": { en: "Voice notes welcome", ar: "نرحب بالرسائل الصوتية" },
   "contact.instagram": { en: "Instagram", ar: "إنستجرام" },
   "contact.instagram.desc": { en: "New scents & atelier days", ar: "عطور جديدة وأيام الورشة" },
   "contact.email.desc": { en: "For press & partnerships", ar: "للصحافة والشراكات" },
   "contact.hours.title": { en: "Atelier hours", ar: "مواعيد الورشة" },
-  "contact.hours.body": { en: "Online — daily 11:00 – 22:00. Shipping across Egypt.", ar: "أونلاين — يومياً ١١:٠٠ – ٢٢:٠٠. شحن لكل محافظات مصر." },
+  "contact.hours.body": { en: "Online — daily 11:00 – 22:00. Shipping across Egypt.", ar: "أونلاين — يومياً 11:00 – 22:00. شحن لكل محافظات مصر." },
   "contact.visit": { en: "Book a scent consultation", ar: "احجز استشارة عطرية" },
   "contact.required": { en: "Please add your name and a short message.", ar: "أضف اسمك ورسالة قصيرة." },
   "faq.title": { en: "Questions, answered.", ar: "أسئلتك، والإجابات." },
@@ -211,21 +211,21 @@ export const dict = {
   "faq.2q": { en: "How long does delivery take?", ar: "كم يستغرق التوصيل؟" },
   "faq.2a": {
     en: "Cairo and Giza: 1–2 working days. Other governorates: 2–4 working days. Orders above EGP 2,000 ship free.",
-    ar: "القاهرة والجيزة: ١–٢ يوم عمل. المحافظات الأخرى: ٢–٤ أيام عمل. الطلبات فوق ٢٠٠٠ ج.م توصيلها مجاني.",
+    ar: "القاهرة والجيزة: 1–2 يوم عمل. المحافظات الأخرى: 2–4 أيام عمل. الطلبات فوق 2000 ج.م توصيلها مجاني.",
   },
   "faq.3q": { en: "Can I try before buying?", ar: "هل يمكنني التجربة قبل الشراء؟" },
   "faq.3a": {
     en: "Yes. Order a discovery set of five 2ml samples for EGP 350, and we'll deduct it from your first full bottle.",
-    ar: "نعم. اطلب طقم اكتشاف من خمس عينات ٢ مل بـ٣٥٠ ج.م، وسنخصم قيمته من أول زجاجة كاملة.",
+    ar: "نعم. اطلب طقم اكتشاف من خمس عينات 2 مل بـ350 ج.م، وسنخصم قيمته من أول زجاجة كاملة.",
   },
   "faq.4q": { en: "Do you make custom scents?", ar: "هل تصنعون عطوراً مخصصة؟" },
   "faq.4a": {
     en: "We do — for weddings, hotels and brands. A bespoke composition starts at EGP 12,000 and takes 4–6 weeks.",
-    ar: "نعم — للأعراس والفنادق والعلامات التجارية. التركيبة المخصصة تبدأ من ١٢٠٠٠ ج.م وتستغرق ٤–٦ أسابيع.",
+    ar: "نعم — للأعراس والفنادق والعلامات التجارية. التركيبة المخصصة تبدأ من 12000 ج.م وتستغرق 4–6 أسابيع.",
   },
 
   // About page
-  "about.eyebrow": { en: "Since 2021 · Online", ar: "منذ ٢٠٢١ · أونلاين" },
+  "about.eyebrow": { en: "Since 2021 · Online", ar: "منذ 2021 · أونلاين" },
   "about.title1": { en: "We make scent", ar: "نصنع عطراً" },
   "about.title2": { en: "for the in-between.", ar: "للّحظات التي تبقى." },
   "about.lead": {
@@ -240,7 +240,7 @@ export const dict = {
   },
   "about.story2": {
     en: "VLOR is that notebook, distilled. Today we are a team of seven — two perfumers, three hands in the atelier, one photographer, one person who answers your messages. We still blend in 40-litre batches and we still keep notes.",
-    ar: "ڨلور هي ذلك الدفتر بعد التقطير. اليوم نحن فريق من سبعة — عطّاران، وثلاثة أيدٍ في الورشة، ومصور، وشخص يرد على رسائلكم. ما زلنا نركّب ٤٠ لتراً في المرة وما زلنا ندون الملاحظات.",
+    ar: "ڨلور هي ذلك الدفتر بعد التقطير. اليوم نحن فريق من سبعة — عطّاران، وثلاثة أيدٍ في الورشة، ومصور، وشخص يرد على رسائلكم. ما زلنا نركّب 40 لتراً في المرة وما زلنا ندون الملاحظات.",
   },
   "about.valuesTitle": { en: "What we believe.", ar: "ما نؤمن به." },
   "about.v1": { en: "Honest composition", ar: "تركيبة صادقة" },
@@ -262,9 +262,9 @@ export const dict = {
   "about.p1": { en: "Source", ar: "المصادر" },
   "about.p1b": { en: "We buy small lots of iris, oud and jasmine directly from growers.", ar: "نشتري دفعات صغيرة من السوسن والعود والياسمين مباشرة من المزارعين." },
   "about.p2": { en: "Blend", ar: "التركيب" },
-  "about.p2b": { en: "Between 24 and 41 raw materials, balanced by hand over 6 weeks.", ar: "بين ٢٤ و٤١ مادة خام، تُوازن يدوياً على مدار ٦ أسابيع." },
+  "about.p2b": { en: "Between 24 and 41 raw materials, balanced by hand over 6 weeks.", ar: "بين 24 و41 مادة خام، تُوازن يدوياً على مدار 6 أسابيع." },
   "about.p3": { en: "Rest", ar: "التعتيق" },
-  "about.p3b": { en: "A minimum of 200 hours in dark glass. Patience is an ingredient.", ar: "٢٠٠ ساعة على الأقل في زجاج معتم. الصبر مكوّن أساسي." },
+  "about.p3b": { en: "A minimum of 200 hours in dark glass. Patience is an ingredient.", ar: "200 ساعة على الأقل في زجاج معتم. الصبر مكوّن أساسي." },
   "about.p4": { en: "Bottle", ar: "التعبئة" },
   "about.p4b": { en: "Hand-filled, numbered and wrapped in the atelier. Only then does it leave.", ar: "تُعبأ وتُرقّم وتُغلف يدوياً في الورشة. بعدها فقط تخرج." },
 
@@ -332,7 +332,7 @@ export const dict = {
   "admin.analytics.clicks": { en: "Clicks", ar: "النقرات" },
   "admin.analytics.uniqueClickers": { en: "Unique clickers", ar: "زوار فريدون" },
   "admin.analytics.archived": { en: "Archived", ar: "مؤرشف" },
-  "admin.analytics.privacy": { en: "Analytics uses a random browser ID, hashed before storage; no IP addresses or customer/order details are saved. Studio pages are excluded, online visitors are estimated over five minutes, and records expire after 400 days.", ar: "تستخدم التحليلات معرّفاً عشوائياً للمتصفح يُحوّل إلى بصمة قبل التخزين؛ لا تُحفظ عناوين IP أو بيانات العملاء والطلبات. صفحات الاستوديو مستثناة، والزوار الحاليون تقدير لآخر ٥ دقائق، وتُحذف السجلات بعد ٤٠٠ يوم." },
+  "admin.analytics.privacy": { en: "Analytics uses a random browser ID, hashed before storage; no IP addresses or customer/order details are saved. Studio pages are excluded, online visitors are estimated over five minutes, and records expire after 400 days.", ar: "تستخدم التحليلات معرّفاً عشوائياً للمتصفح يُحوّل إلى بصمة قبل التخزين؛ لا تُحفظ عناوين IP أو بيانات العملاء والطلبات. صفحات الاستوديو مستثناة، والزوار الحاليون تقدير لآخر 5 دقائق، وتُحذف السجلات بعد 400 يوم." },
   "admin.analytics.error": { en: "Could not load analytics. Check your connection and studio access.", ar: "تعذر تحميل التحليلات. تحقق من الاتصال وصلاحية دخول الاستوديو." },
   "admin.analytics.retry": { en: "Try again", ar: "أعد المحاولة" },
   "admin.tab.github": { en: "GitHub publish", ar: "النشر على جتهاب" },
@@ -520,7 +520,7 @@ export const dict = {
   "cart.fullName": { en: "Full name", ar: "الاسم بالكامل" },
   "cart.namePh": { en: "e.g. Nour El-Sayed", ar: "مثال: نور السيد" },
   "cart.phone": { en: "Mobile number", ar: "رقم الموبيل" },
-  "cart.phonePh": { en: "010 1234 5678", ar: "٠١٠ ١٢٣٤ ٥٦٧٨" },
+  "cart.phonePh": { en: "010 1234 5678", ar: "010 1234 5678" },
   "cart.city": { en: "Governorate", ar: "المحافظة" },
   "cart.cityPh": { en: "Choose your governorate", ar: "اختر محافظتك" },
   "cart.address": { en: "Street address", ar: "العنوان بالتفصيل" },
@@ -535,7 +535,7 @@ export const dict = {
   "cart.cod": { en: "Cash on delivery", ar: "الدفع عند الاستلام" },
   "cart.deliveryEstimate": {
     en: "Cairo & Giza 1–2 days · other governorates 2–4 days",
-    ar: "القاهرة والجيزة ١–٢ يوم · باقي المحافظات ٢–٤ أيام",
+    ar: "القاهرة والجيزة 1–2 يوم · باقي المحافظات 2–4 أيام",
   },
   "cart.required": { en: "Please add a name, a valid phone number, and an address.", ar: "أضف الاسم ورقم هاتف صحيح والعنوان." },
   "cart.phoneInvalid": { en: "That phone number looks too short.", ar: "رقم الهاتف أقصر من اللازم." },
@@ -572,7 +572,7 @@ export const dict = {
     en: "Distinctive extraits, crafted to linger — memorable from the first spray.",
     ar: "إكستريه مميز، مصمم ليثبت ويبقى في الذاكرة من أول رشة.",
   },
-  "shop.trust1": { en: "Free delivery over EGP 2,000", ar: "توصيل مجاني فوق ٢٠٠٠ ج.م" },
+  "shop.trust1": { en: "Free delivery over EGP 2,000", ar: "توصيل مجاني فوق 2000 ج.م" },
   "shop.trust2": { en: "Cash on delivery", ar: "الدفع عند الاستلام" },
   "shop.activeFilters": { en: "Active filters", ar: "الفلاتر المفعّلة" },
   "shop.removeFilter": { en: "Remove filter", ar: "إزالة الفلتر" },
@@ -602,11 +602,11 @@ export const dict = {
   "lock.attemptsLeft": { en: "attempts left before a cooldown", ar: "محاولات متبقية قبل الحظر المؤقت" },
   "lock.security": {
     en: "PBKDF2-SHA256 · 310,000 iterations · the password is never stored",
-    ar: "PBKDF2-SHA256 · ٣١٠٬٠٠٠ دورة · كلمة المرور لا تُحفظ إطلاقاً",
+    ar: "PBKDF2-SHA256 · 310,000 دورة · كلمة المرور لا تُحفظ إطلاقاً",
   },
   "lock.session": {
     en: "Session ends after 8 hours or 30 minutes of inactivity.",
-    ar: "تنتهي الجلسة بعد ٨ ساعات أو ٣٠ دقيقة من الخمول.",
+    ar: "تنتهي الجلسة بعد 8 ساعات أو 30 دقيقة من الخمول.",
   },
   "lock.showPass": { en: "Show password", ar: "إظهار كلمة المرور" },
   "lock.hidePass": { en: "Hide password", ar: "إخفاء كلمة المرور" },

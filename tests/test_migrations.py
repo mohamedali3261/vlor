@@ -55,3 +55,25 @@ class OrderContactsMigrationTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+class AutomaticDiscountMigrationTests(unittest.TestCase):
+    def test_preserves_historical_orders_and_is_safe_after_bootstrap(self):
+        db = sqlite3.connect(':memory:')
+        for migration in sorted((ROOT / 'migrations').glob('*.sql')):
+            if migration.name == '0019_automatic_discounts.sql': break
+            db.executescript(migration.read_text())
+        db.execute("INSERT INTO orders(id,customer_name,phone,city,address,note,subtotal,discount,coupon_code) VALUES('old','n','p','Cairo','a','',100,10,'OLD')")
+        sql=(ROOT / 'migrations' / '0019_automatic_discounts.sql').read_text()
+        db.executescript(sql)
+        # Old workers can still place full-price orders during the deploy window.
+        db.execute("INSERT INTO shipping_rates VALUES ('Cairo',30,NULL)")
+        db.execute("INSERT INTO orders(id,customer_name,phone,city,address,note,subtotal,shipping,discount,tracking_hash) VALUES('during-deploy','n','p','Cairo','a','',100,30,0,'hash')")
+        db.execute("INSERT INTO discount_rules VALUES('r','amount',100,15,1)")
+        with self.assertRaises(sqlite3.IntegrityError):
+            db.execute("INSERT INTO orders(id,customer_name,phone,city,address,note,subtotal,shipping,discount,tracking_hash) VALUES('stale','n','p','Cairo','a','',100,30,0,'hash2')")
+        db.commit()
+        db.executescript(sql)  # the app's bootstrap may already have created these objects
+        self.assertEqual(db.execute("SELECT subtotal,discount,coupon_code FROM orders WHERE id='old'").fetchone(),(100,10,'OLD'))
+        self.assertEqual(db.execute('SELECT percent FROM discount_rules').fetchone()[0],15)
+        self.assertIsNone(db.execute("SELECT name FROM sqlite_master WHERE type='trigger' AND name='consume_coupon'").fetchone())
+        db.close()

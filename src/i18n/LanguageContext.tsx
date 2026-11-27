@@ -1,3 +1,4 @@
+import { latinDigits } from "@/lib/format";
 import { translate, type TranslationKey } from "@/i18n/translations";
 import { localized } from "@/i18n/translations";
 import type { Lang, Localized } from "@/types";
@@ -45,18 +46,18 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   const t = useCallback(
     (key: TranslationKey) => {
       const edited = /^(admin|gh|lock)\./.test(key) ? undefined : overrides[key]?.[lang];
-      return edited && edited.trim() ? edited : translate(key, lang);
+      return latinDigits(edited && edited.trim() ? edited : translate(key, lang));
     },
     [lang, overrides]
   );
   const x = useCallback(
     (en: string, ar: string) => {
       const edited = overrides["i:" + en]?.[lang];
-      return edited && edited.trim() ? edited : lang === "ar" ? ar : en;
+      return latinDigits(edited && edited.trim() ? edited : lang === "ar" ? ar : en);
     },
     [lang, overrides]
   );
-  const l = useCallback((value: Localized) => localized(value, lang), [lang]);
+  const l = useCallback((value: Localized) => latinDigits(localized(value, lang)), [lang]);
 
   const value = useMemo<LanguageValue>(
     () => ({ lang, dir, isArabic: lang === "ar", setLang, toggle, t, x, l }),

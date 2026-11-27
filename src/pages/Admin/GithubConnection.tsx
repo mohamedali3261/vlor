@@ -230,7 +230,7 @@ export function GithubConnection({
       {/* OAuth app setup */}
       <div className="rounded-2xl border border-ink/10 bg-ink p-5 text-bone">
         <h4 className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.14em] text-acid">
-          <Sparkle className="h-3.5 w-3.5" /> {lang === "ar" ? "إعداد OAuth في ٤ خطوات" : "OAuth in four steps"}
+          <Sparkle className="h-3.5 w-3.5" /> {lang === "ar" ? "إعداد OAuth في 4 خطوات" : "OAuth in four steps"}
         </h4>
         <ol className="mt-3 space-y-2.5">
           {[t("gh.os1"), t("gh.os2"), t("gh.os3"), t("gh.os4")].map((step, index) => (

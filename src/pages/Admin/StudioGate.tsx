@@ -27,7 +27,7 @@ function FirstPasswordSetup({ onDone, onLogout }: { onDone: () => void; onLogout
     if (newPassword.length < 8) {
       setError(
         lang === "ar"
-          ? "كلمة المرور الجديدة يجب أن تكون ٨ أحرف أو أرقام على الأقل."
+          ? "كلمة المرور الجديدة يجب أن تكون 8 أحرف أو أرقام على الأقل."
           : "New password must be at least 8 characters.",
       );
       return;
@@ -86,7 +86,7 @@ function FirstPasswordSetup({ onDone, onLogout }: { onDone: () => void; onLogout
           </h1>
           <p className="mx-auto mt-2.5 max-w-xs text-[12px] leading-relaxed text-bone/55">
             {lang === "ar"
-              ? "اختر كلمة مرور جديدة خاصة بك (٨ أحرف على الأقل). سيتم إلغاء الباسورد المؤقت فوراً بعد الحفظ."
+              ? "اختر كلمة مرور جديدة خاصة بك (8 أحرف على الأقل). سيتم إلغاء الباسورد المؤقت فوراً بعد الحفظ."
               : "Choose your new private password (at least 8 characters). The temporary login will be disabled immediately."}
           </p>
         </div>

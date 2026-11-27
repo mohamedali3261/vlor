@@ -50,7 +50,7 @@ export function PublishDock({ onLock }: { onLock: () => void }) {
   }, [p, working]);
 
   const repoUrl = p.config.owner && p.config.repo ? `https://github.com/${p.config.owner}/${p.config.repo}` : "";
-  const fmt = new Intl.NumberFormat(lang === "ar" ? "ar-EG" : "en-US");
+  const fmt = new Intl.NumberFormat(lang === "ar" ? "ar-EG-u-nu-latn" : "en-US");
 
   const label = working
     ? p.step === "saving"
@@ -178,7 +178,7 @@ export function PublishDock({ onLock }: { onLock: () => void }) {
                       <p>
                         {x(
                           "The commit is on GitHub, but this page did not change in 6 minutes. Usually the host is not connected to the repository, or its build is still running or failed.",
-                          "الكوميت موجود على GitHub لكن هذه الصفحة لم تتغير خلال ٦ دقائق. غالباً الاستضافة غير مربوطة بالمستودع، أو أن البناء ما زال يعمل أو فشل."
+                          "الكوميت موجود على GitHub لكن هذه الصفحة لم تتغير خلال 6 دقائق. غالباً الاستضافة غير مربوطة بالمستودع، أو أن البناء ما زال يعمل أو فشل."
                         )}
                       </p>
                     </div>

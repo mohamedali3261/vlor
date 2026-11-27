@@ -1,3 +1,4 @@
+import { latinDigits } from '@/lib/format';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useLang } from '@/i18n/LanguageContext';
 
@@ -171,7 +172,7 @@ export function Inventory() {
               >
                 <div className="min-w-0 flex-1">
                   <p className="flex flex-wrap items-center gap-2 font-bold leading-tight">
-                    <span className="text-[15px] text-ink">{row.name[lang] || row.name.en}</span>
+                    <span className="text-[15px] text-ink">{latinDigits(row.name[lang] || row.name.en)}</span>
                     <span className="rounded-full bg-ink px-2.5 py-1 text-xs font-bold text-bone" dir="ltr">
                       {row.size} ml
                     </span>

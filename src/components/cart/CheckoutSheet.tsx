@@ -59,12 +59,11 @@ export function CheckoutSheet({ open, onClose }: CheckoutSheetProps) {
   const [submitting, setSubmitting] = useState(false);
   const submittingRef = useRef(false);
   const pendingRef = useRef<{digest:string; key:string} | null>(null);
-  const [coupon, setCoupon] = useState("");
   const [quote, setQuote] = useState<Quote | null>(null);
   const [quoteState, setQuoteState] = useState<"idle" | "loading" | "error" | "ready">("idle");
   const [quoteAttempt, setQuoteAttempt] = useState(0);
   const [confirmation, setConfirmation] = useState<{ id: string; tracking: string; total: number; message: string } | null>(null);
-  const quoteInput = { city: customer.city, ...(coupon.trim() ? { coupon: coupon.trim().toUpperCase() } : {}), items: lines.map(({ productId, ml, qty }) => ({ productId, ml, qty })) };
+  const quoteInput = { city: customer.city, items: lines.map(({ productId, ml, qty }) => ({ productId, ml, qty })) };
   const quoteSignature = JSON.stringify(quoteInput);
   const activeQuote = quote?.signature === quoteSignature ? quote : null;
   const displayedSubtotal = lines.reduce((sum, line) => sum + line.price * line.qty, 0);
@@ -116,7 +115,7 @@ export function CheckoutSheet({ open, onClose }: CheckoutSheetProps) {
     if (submittingRef.current || !validate() || !activeQuote || quoteState !== "ready" || !lines.length) return;
     submittingRef.current = true; setSubmitting(true);
     try {
-      const body = JSON.stringify({ customer, ...(coupon.trim() ? { coupon: coupon.trim().toUpperCase() } : {}), expectedShipping: activeQuote.shipping, expectedDiscount: activeQuote.discount, items: lines.map(({ productId, ml, qty }) => ({ productId, ml, qty, expectedPrice: activeQuote.prices.find((p) => p.productId === productId && p.ml === ml)!.price })) });
+      const body = JSON.stringify({ customer, expectedShipping: activeQuote.shipping, expectedDiscount: activeQuote.discount, items: lines.map(({ productId, ml, qty }) => ({ productId, ml, qty, expectedPrice: activeQuote.prices.find((p) => p.productId === productId && p.ml === ml)!.price })) });
       const digest = Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(body))), (byte) => byte.toString(16).padStart(2, "0")).join("");
       let pending = pendingRef.current;
       try { pending = pending ?? JSON.parse(sessionStorage.getItem("malika.pendingOrder") || "null"); } catch { /* memory fallback */ }
@@ -146,20 +145,20 @@ export function CheckoutSheet({ open, onClose }: CheckoutSheetProps) {
   return <Portal>
     <div className="fixed inset-0 z-[125] flex items-end justify-center sm:items-center sm:p-6" role="dialog" aria-modal="true" aria-labelledby="checkout-title">
       <div onClick={close} className="anim-fade absolute inset-0 bg-ink/55 backdrop-blur-sm" />
-      <div className="checkout-sheet anim-pop relative flex max-h-[94dvh] w-full flex-col overflow-hidden rounded-t-[1.6rem] bg-bone shadow-2xl sm:max-h-[90vh] sm:max-w-xl sm:rounded-[1.8rem]">
-        <div className="checkout-header flex items-start justify-between gap-3 border-b border-ink/10 px-5 py-4">
-          <div><p className="flex items-center gap-2 text-xs font-bold text-mist"><Truck className="h-4 w-4" /> {ar ? "بيانات التوصيل" : "Delivery details"}</p><h2 id="checkout-title" className="font-display mt-1 text-3xl">{step === "details" ? t("cart.detailsTitle") : (ar ? "تم تسجيل طلبك" : "Order placed")}</h2></div>
+      <div className="checkout-sheet anim-pop relative flex max-h-[94dvh] w-full flex-col overflow-hidden rounded-t-[1.6rem] bg-bone shadow-2xl sm:max-h-[94dvh] sm:max-w-5xl sm:rounded-[1.8rem]">
+        <div className="checkout-header flex items-start justify-between gap-3 border-b border-ink/10 px-5 py-5 sm:px-8">
+          <div><p className="flex items-center gap-2 text-xs font-bold text-mist"><Truck className="h-4 w-4" /> {ar ? "بيانات التوصيل" : "Delivery details"}</p><h2 id="checkout-title" className="font-display mt-1 text-3xl sm:text-4xl">{step === "details" ? t("cart.detailsTitle") : (ar ? "تم تسجيل طلبك" : "Order placed")}</h2></div>
           <button type="button" onClick={close} disabled={submitting} className="grid h-10 w-10 shrink-0 place-items-center rounded-full border border-ink/15 transition hover:bg-ink hover:text-bone disabled:opacity-50" aria-label={t("common.close")}><X className="h-4 w-4" /></button>
         </div>
-        {step === "details" ? <form onSubmit={submitOrder} className="flex-1 overflow-y-auto px-4 py-4 sm:px-5">
-          <section className="checkout-section" aria-label={ar ? "منتجات طلبك" : "Your order items"}>
+        {step === "details" ? <form onSubmit={submitOrder} className="checkout-form flex-1 overflow-y-auto px-4 py-5 sm:px-8 sm:py-6">
+          <section className="checkout-section checkout-products" aria-label={ar ? "منتجات طلبك" : "Your order items"}>
             <div className="flex items-center justify-between gap-2"><h3 className="checkout-heading">{ar ? "منتجات طلبك" : "Your items"}</h3><span className="checkout-count">{count} {t("cart.items")}</span></div>
             <div className="mt-3 space-y-2">{lines.map((line) => {
               const price = activeQuote?.prices.find((item) => item.productId === line.productId && item.ml === line.ml)?.price ?? line.price;
               return <div key={line.key} className="checkout-item"><SmartImage src={line.image} alt={l(line.name)} className="checkout-item__photo" /><div className="min-w-0 flex-1"><p className="checkout-item__name">{l(line.name)}</p><p className="mt-1 text-xs text-mist"><bdi>{line.ml} {ar ? "مل" : "ml"}</bdi> · {ar ? "الكمية" : "Qty"}: {line.qty}</p></div><strong className="checkout-item__price">{formatPrice(price * line.qty, lang)}</strong></div>;
             })}</div>
           </section>
-          <fieldset disabled={submitting} className="checkout-section mt-4 space-y-3 disabled:opacity-70">
+          <fieldset disabled={submitting} className="checkout-section checkout-details mt-4 space-y-3 disabled:opacity-70">
             <legend className="sr-only">{ar ? "بيانات التوصيل" : "Delivery details"}</legend>
             <h3 className="checkout-heading">{ar ? "بيانات التوصيل" : "Delivery details"}</h3>
             <label className="checkout-field"><span>{t("cart.fullName")} *</span><input value={customer.name} onChange={(e) => set("name", e.target.value)} className={cn("field", errors.name && "border-rose-400 bg-rose-50")} autoComplete="name" aria-invalid={!!errors.name} /></label>
@@ -170,9 +169,8 @@ export function CheckoutSheet({ open, onClose }: CheckoutSheetProps) {
             <label className="checkout-field"><span>{t("cart.city")} *</span><select value={customer.city} onChange={(e) => set("city", e.target.value)} className={cn("field", errors.city && "border-rose-400 bg-rose-50")} aria-invalid={!!errors.city}><option value="">{t("cart.cityPh")}</option>{governorates.map((governorate) => <option key={governorate.en} value={governorate.en}>{l(governorate)}</option>)}</select></label>
             <label className="checkout-field"><span>{t("cart.address")} *</span><textarea value={customer.address} onChange={(e) => set("address", e.target.value)} rows={2} className={cn("field resize-y", errors.address && "border-rose-400 bg-rose-50")} placeholder={t("cart.addressPh")} autoComplete="street-address" aria-invalid={!!errors.address} /></label>
             <label className="checkout-field"><span>{t("cart.noteField")}</span><input value={customer.note} onChange={(e) => set("note", e.target.value)} className="field" placeholder={t("cart.notePh")} /></label>
-            <label className="checkout-field"><span>{ar ? "كود الخصم (اختياري)" : "Coupon code (optional)"}</span><input className="field" value={coupon} maxLength={40} onChange={(e) => setCoupon(e.target.value)} dir="ltr" /></label>
           </fieldset>
-          <section className="checkout-section mt-4" aria-label={ar ? "ملخص الحساب" : "Order summary"}>
+          <section className="checkout-section checkout-summary mt-4" aria-label={ar ? "ملخص الحساب" : "Order summary"}>
             <h3 className="checkout-heading">{ar ? "ملخص الحساب" : "Order summary"}</h3>
             <div className="checkout-totals mt-3"><div><span>{ar ? "المنتجات" : "Subtotal"}</span><b>{formatPrice(activeQuote?.subtotal ?? displayedSubtotal, lang)}</b></div>
               {activeQuote && activeQuote.discount > 0 && <div><span>{ar ? "الخصم" : "Discount"}</span><b>− {formatPrice(activeQuote.discount, lang)}</b></div>}
@@ -180,7 +178,7 @@ export function CheckoutSheet({ open, onClose }: CheckoutSheetProps) {
               {activeQuote && <div className="checkout-total"><span>{ar ? "الإجمالي" : "Total"}</span><b>{formatPrice(activeQuote.total, lang)}</b></div>}
             </div>
             {quoteState === "loading" && <p role="status" className="mt-2 text-xs text-mist">{ar ? "جاري حساب الشحن والإجمالي…" : "Calculating shipping and total…"}</p>}
-            {quoteState === "error" && <p role="alert" className="mt-2 text-xs text-rose-700">{ar ? "تعذر حساب الشحن أو الكوبون غير صالح. راجع المحافظة والكود." : "Could not calculate shipping or the coupon is invalid. Check the governorate and code."}</p>}
+            {quoteState === "error" && <p role="alert" className="mt-2 text-xs text-rose-700">{ar ? "تعذر حساب الشحن والإجمالي. راجع المحافظة وحاول مجددًا." : "Could not calculate the total. Check the governorate and try again."}</p>}
             <p className="checkout-payment"><Check className="h-4 w-4 shrink-0" /> {ar ? "الدفع عند الاستلام" : "Cash on delivery"}</p>
           </section>
           <div className="checkout-actions sticky bottom-0 -mx-4 mt-4 grid gap-2 border-t border-ink/10 bg-bone/95 px-4 pb-3 pt-3 backdrop-blur sm:-mx-5 sm:px-5">

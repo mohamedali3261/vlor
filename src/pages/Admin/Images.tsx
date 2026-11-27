@@ -61,7 +61,7 @@ export function Images() {
           <h2 className="font-display text-3xl">{lang === "ar" ? "صور المنتجات (D1)" : "Product images (D1)"}</h2>
           <p className="my-2 text-sm text-ink/75">
             {lang === "ar"
-              ? "تُخزّن الصور في D1 بحد أقصى ١ ميجابايت للصورة (تُضغط الصور الكبيرة تلقائيًا). لا يمكن حذف الصور المستخدمة في المنتجات."
+              ? "تُخزّن الصور في D1 بحد أقصى 1 ميجابايت للصورة (تُضغط الصور الكبيرة تلقائيًا). لا يمكن حذف الصور المستخدمة في المنتجات."
               : "Images are stored in D1 with a 1 MB max per image (large photos are compressed automatically). Images referenced by products cannot be deleted."}
           </p>
         </div>
@@ -91,7 +91,7 @@ export function Images() {
                 setMessage(
                   err instanceof ImageError && err.code === "size"
                     ? lang === "ar"
-                      ? "حجم الصورة يتجاوز ١ ميجابايت؛ اضغط الصورة قبل الرفع."
+                      ? "حجم الصورة يتجاوز 1 ميجابايت؛ اضغط الصورة قبل الرفع."
                       : "Image exceeds 1 MB; compress it before uploading."
                     : lang === "ar"
                       ? "تعذر رفع الصورة"

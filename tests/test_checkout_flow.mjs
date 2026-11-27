@@ -41,9 +41,10 @@ await change('cart.fullName','Test User');await change('رقم الموبيل','
 await quote(); assert.equal(button().props.disabled,false);assert.equal(posts[0].url,'/api/quote');
 // Copy uses server prices and includes the optional phone.
 await act(async()=>root.findAllByType('button').find(x=>x.children.includes('نسخ الطلب')).props.onClick());
-assert.ok(copied.includes('01112345678'));assert.ok(copied.includes('٢٧٠'));assert.ok(copied.includes('120'));
-// A changed quote disables submission until the fresh total is ready.
-await change('كود الخصم','PROMO');assert.equal(button().props.disabled,true);await quote();
+assert.ok(copied.includes('01112345678'));assert.ok(copied.includes('270'));assert.ok(copied.includes('120'));
+// There is no coupon field or coupon value in the quote.
+assert.equal(root.findAllByType('input').some(x=>x.props.maxLength===40),false);
+assert.equal('coupon' in posts[0].body,false);
 // A conflict never clears the cart and refreshes the quote before retry.
 pendingResponse={ok:false,status:409,json:async()=>({error:'Prices changed'})};
 await act(async()=>root.findByType('form').props.onSubmit({preventDefault(){}}));assert.equal(cleared,false);assert.equal(button().props.disabled,true);await quote();
@@ -51,6 +52,6 @@ pendingResponse=null;
 await act(async()=>root.findByType('form').props.onSubmit({preventDefault(){}}));
 const orderPosts=posts.filter(x=>x.url==='/api/orders');assert.equal(orderPosts.length,2);assert.equal(orderPosts[1].body.customer.additionalPhone,'01112345678');assert.equal(orderPosts[1].body.expectedShipping,30);assert.equal(orderPosts[1].body.items[0].expectedPrice,120);assert.equal(orderPosts[0].key,orderPosts[1].key);assert.equal(cleared,true);
 assert.equal(root.findByType('a').props.href,'#/track/track1');
-await act(async()=>root.findAllByType('button').find(x=>x.children.includes('نسخ الطلب')).props.onClick());assert.ok(copied.includes('01112345678'));assert.ok(copied.includes('order1'));assert.ok(copied.includes('٢٧٠'));
+await act(async()=>root.findAllByType('button').find(x=>x.children.includes('نسخ الطلب')).props.onClick());assert.ok(copied.includes('01112345678'));assert.ok(copied.includes('order1'));assert.ok(copied.includes('270'));
 await act(async()=>renderer.unmount());
 console.log('Checkout: item details, automatic quote, optional phone, copy, conflict, one-click submission and tracking passed.');

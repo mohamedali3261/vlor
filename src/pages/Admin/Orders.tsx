@@ -1,3 +1,4 @@
+import { latinDigits } from '@/lib/format';
 import { useEffect, useRef, useState } from 'react';
 import { Select } from '@/components/ui/Select';
 import { useLang } from '@/i18n/LanguageContext';
@@ -140,7 +141,7 @@ export function Orders() {
                   {o.additional_phone && <span className="text-xs text-mist">{ar ? 'رقم إضافي:' : 'Additional phone:'} <a href={`tel:${o.additional_phone}`} className="font-medium text-plum underline" dir="ltr">{o.additional_phone}</a></span>}
                   <StatusBadge status={o.status} ar={ar} />
                 </div>
-                <span className="text-[11px] text-mist">{new Date(o.created_at).toLocaleString(ar?'ar-EG':'en-GB')} · {o.id.slice(0,8)}</span>
+                <span className="text-[11px] text-mist">{new Date(o.created_at).toLocaleString(ar?'ar-EG-u-nu-latn':'en-GB')} · {o.id.slice(0,8)}</span>
               </div>
               <div className="px-4 py-3">
                 <p className="text-sm text-ink/80">{o.city} · {o.address}</p>
@@ -148,7 +149,7 @@ export function Orders() {
                 <ul className="mt-3 divide-y divide-ink/5 rounded-xl border border-ink/10">
                   {orderItems.map(i=>{
                     let name: string = i.name;
-                    try { const parsed = JSON.parse(i.name); name = parsed[lang] || parsed.en || i.name; } catch {}
+                    try { const parsed = JSON.parse(i.name); name = latinDigits(parsed[lang] || parsed.en || i.name); } catch {}
                     return <li key={i.id} className="flex items-center justify-between px-3 py-2 text-sm"><span>{name} · {i.size} {ar ? 'مل' : 'ml'} × {i.quantity}</span><span className="font-bold">{i.unit_price} {ar ? 'ج.م' : 'EGP'}</span></li>;
                   })}
                 </ul>

@@ -1,4 +1,5 @@
 import { Analytics } from "@/pages/Admin/Analytics";
+import { DiscountRules } from "@/pages/Admin/DiscountRules";
 import { Delivery } from "@/pages/Admin/Delivery";
 import { Security } from "@/pages/Admin/Security";
 import { Orders } from "@/pages/Admin/Orders";
@@ -201,6 +202,7 @@ export function AdminPage() {
           {tab === "analytics" && <Analytics />}
           {tab === "orders" && <Orders />}
           {tab === "delivery" && content.studioDeliveryTab && <Delivery />}
+          {tab === "discounts" && <DiscountRules />}
           {tab === "security" && <Security />}
           {tab === "content" && (
             <>
