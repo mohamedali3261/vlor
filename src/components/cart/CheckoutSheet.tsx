@@ -37,7 +37,7 @@ export function CheckoutSheet({ open, onClose }: CheckoutSheetProps) {
   const [quote, setQuote] = useState<Quote | null>(null);
   const [quoteState, setQuoteState] = useState<"idle" | "loading" | "error" | "ready">("idle");
   const [quoteAttempt, setQuoteAttempt] = useState(0);
-  const [confirmation, setConfirmation] = useState<{ id: string; tracking: string; total: number; message: string } | null>(null);
+  const [confirmation, setConfirmation] = useState<{ id: string; tracking: string; total: number; message: string; profileName: string | null } | null>(null);
   const quoteInput = { city: customer.city, items: lines.map(({ productId, ml, qty }) => ({ productId, ml, qty })) };
   const quoteSignature = JSON.stringify(quoteInput);
   const activeQuote = quote?.signature === quoteSignature ? quote : null;
@@ -122,7 +122,8 @@ export function CheckoutSheet({ open, onClose }: CheckoutSheetProps) {
         if (!ok) push(ar ? "تم الطلب، لكن تعذر حفظ البروفيل على هذا المتصفح. احفظ رابط التتبع." : "Order placed, but this browser could not save the profile. Save your tracking link.", "error");
       }
       const message = `${ar ? "رقم الطلب" : "Order"}: ${result.id}\n${orderText()}`;
-      setConfirmation({ id: result.id, tracking: result.trackingToken, total: result.total, message });
+      const profileName = loadProfile()?.displayName?.trim() || null;
+      setConfirmation({ id: result.id, tracking: result.trackingToken, total: result.total, message, profileName });
       setStep("sent"); closeCart(); clear();
       pendingRef.current = null; try { sessionStorage.removeItem("malika.pendingOrder"); } catch { /* no action needed */ }
       push(ar ? "تم تسجيل طلبك بنجاح." : "Your order was placed successfully.");
@@ -180,7 +181,10 @@ export function CheckoutSheet({ open, onClose }: CheckoutSheetProps) {
         </form> : <div className="flex flex-1 flex-col items-center justify-center overflow-y-auto px-6 py-10 text-center">
           <span className="grid h-16 w-16 place-items-center rounded-full bg-acid"><Check className="h-7 w-7 text-ink" /></span>
           <h3 className="font-display mt-4 text-3xl">{ar ? "تم تسجيل طلبك" : "Order placed"}</h3>
-          <p className="mt-2 text-sm text-mist">{ar ? "شكرًا لك، تم تسجيل طلبك بنجاح." : "Thank you. Your order has been placed."}</p>
+          <div className="mt-4 max-w-md rounded-2xl border border-acid/30 bg-surface px-5 py-4 text-sm leading-relaxed shadow-sm" role="status">
+            <p className="font-bold text-ink">{ar ? (confirmation?.profileName ? <>شكرًا يا <bdi className="break-words">{confirmation.profileName}</bdi> على ثقتك واختيارك لينا 🤍</> : "شكرًا على ثقتك واختيارك لينا 🤍") : (confirmation?.profileName ? <>Thank you, <bdi className="break-words">{confirmation.profileName}</bdi>, for choosing us 🤍</> : "Thank you for choosing us 🤍")}</p>
+            <p className="mt-2 text-mist">{ar ? "سعداء إنك بتتسوق مع VLOR، وهنعمل كل جهدنا علشان نكون دايمًا عند حسن ظنك." : "We're delighted to have you shop with VLOR, and we'll do our best to live up to your trust."}</p>
+          </div>
           {confirmation && <><p className="mt-3 text-xs text-mist">{ar ? "رقم الطلب" : "Order"}: <bdi>{confirmation.id}</bdi></p><p className="mt-2 font-bold">{ar ? "الإجمالي المؤكد" : "Confirmed total"}: {formatPrice(confirmation.total, lang)}</p><a className="mt-4 underline" href={`#/track/${confirmation.tracking}`}>{ar ? "تتبع طلبك — احفظ الرابط" : "Track your order — save this link"}</a><Button data-analytics="copy-order" variant="outline" className="mt-5" onClick={copyOrder} icon={<Copy className="h-4 w-4" />} iconPosition="start">{ar ? "نسخ الطلب" : "Copy order"}</Button></>}
         </div>}
       </div>
