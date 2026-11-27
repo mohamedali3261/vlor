@@ -184,14 +184,15 @@ export async function prepareProductImageForUpload(file: File, maxBytes = MAX_D1
   } finally { decoded.release(); }
 }
 
-export async function uploadImageToD1(file: File, options?: { product?: boolean }): Promise<{ id: string; url: string }> {
+export async function uploadImageToD1(file: File, options?: { product?: boolean }): Promise<{ id: string; url: string; originalBytes: number; uploadedBytes: number }> {
   const prepared = options?.product ? await prepareProductImageForUpload(file) : await prepareImageForUpload(file);
   const data = new FormData();
   data.append("file", prepared);
   const response = await fetch("/api/admin/images", { method: "POST", body: data });
   if (response.status === 413) throw new ImageError("size");
   if (!response.ok) throw new Error("upload_failed");
-  return (await response.json()) as { id: string; url: string };
+  const result = (await response.json()) as { id: string; url: string };
+  return { ...result, originalBytes: file.size, uploadedBytes: prepared.size };
 }
 
 /** Rough storage cost of a string, in kilobytes. */

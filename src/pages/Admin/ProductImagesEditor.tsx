@@ -1,3 +1,4 @@
+import { ImageSizeComparison, type ImageSizes } from "@/pages/Admin/ImageSizeComparison";
 import { SmartImage } from "@/components/ui/Primitives";
 import { useLang } from "@/i18n/LanguageContext";
 import { ImageError, uploadImageToD1 } from "@/lib/image";
@@ -16,11 +17,16 @@ export function ProductImagesEditor({ images, onChange, uploading, setUploading 
   const [mainUrl, setMainUrl] = useState("");
   const [extraUrls, setExtraUrls] = useState("");
   const [error, setError] = useState("");
+  const [sizesByUrl, setSizesByUrl] = useState<Record<string, ImageSizes>>({});
   const current = useRef(images);
   const alive = useRef(true);
   current.current = images;
   useEffect(() => { alive.current = true; return () => { alive.current = false; }; }, []);
-  const commit = (next: string[]) => { current.current = next; onChange(next); };
+  const commit = (next: string[]) => {
+    current.current = next;
+    setSizesByUrl((previous) => Object.fromEntries(Object.entries(previous).filter(([url]) => next.includes(url))));
+    onChange(next);
+  };
 
   const addLinks = (main: boolean) => {
     const values = (main ? [mainUrl.trim()] : extraUrls.split(/\n/).map((v) => v.trim())).filter(Boolean);
@@ -42,6 +48,7 @@ export function ProductImagesEditor({ images, onChange, uploading, setUploading 
         const result = await uploadImageToD1(file, { product: true });
         if (!alive.current) return;
         commit(main ? setPrimaryImage(current.current, result.url) : [...current.current, result.url]);
+        setSizesByUrl((previous) => ({ ...previous, [result.url]: { originalBytes: result.originalBytes, uploadedBytes: result.uploadedBytes } }));
       }
     } catch (err) {
       if (alive.current) setError(err instanceof ImageError && err.code === "input-size"
@@ -57,6 +64,7 @@ export function ProductImagesEditor({ images, onChange, uploading, setUploading 
       <h3 className="text-sm font-bold">{ar ? "صور المنتج" : "Product images"}</h3>
       <p className="mt-1 text-xs leading-relaxed text-mist">{ar ? "الصورة الأساسية تظهر على الكارت وفي المتجر والتفاصيل. الصور الإضافية تظهر في صفحة التفاصيل. يمكنك إضافة حتى ٢٠ صورة." : "The main image appears on the card, in the shop and on the product page. Extra images appear in the gallery. Up to 20 images."}</p>
       <p className="product-images-editor__tip">{ar ? "نضغط الصور تلقائياً قبل رفعها لتسريع التحميل، مع الحفاظ على الخلفية الشفافة. الصور المضافة بروابط خارجية لا تُضغط." : "Uploaded photos are optimised for faster loading while keeping transparency. External image links are not compressed."}</p>
+      <p className="mt-2 text-[11px] text-mist">{ar ? "يظهر حجم كل صورة قبل الضغط وبعده لهذه الرفعة فقط." : "Before and after sizes are shown for images uploaded in this session."}</p>
       <fieldset disabled={uploading} className="mt-4 space-y-4 disabled:opacity-60">
         <div>
           <label className="block text-xs font-bold" htmlFor="product-main-upload">{ar ? "صورة المنتج الأساسية" : "Main product image"}</label>
@@ -70,7 +78,9 @@ export function ProductImagesEditor({ images, onChange, uploading, setUploading 
         </div>
         {images.length > 0 && <div className="space-y-2">{images.map((src, index) => <div key={`${src}-${index}`} className="flex items-center gap-3 rounded-xl border border-ink/10 bg-bone/60 p-2">
           <SmartImage src={src} alt={ar ? `صورة المنتج ${index + 1}` : `Product image ${index + 1}`} className="studio-image-thumb h-16 w-16 shrink-0 rounded-lg" />
-          <div className="min-w-0 flex-1"><p className="text-xs font-bold">{index === 0 ? (ar ? "الصورة الأساسية" : "Main image") : (ar ? `صورة إضافية ${index}` : `Extra image ${index}`)}</p><p className="mt-1 truncate text-[10px] text-mist" dir="ltr">{src}</p></div>
+          <div className="min-w-0 flex-1"><p className="text-xs font-bold">{index === 0 ? (ar ? "الصورة الأساسية" : "Main image") : (ar ? `صورة إضافية ${index}` : `Extra image ${index}`)}</p><p className="mt-1 truncate text-[10px] text-mist" dir="ltr">{src}</p>
+            {sizesByUrl[src] && <ImageSizeComparison sizes={sizesByUrl[src]} lang={lang} />}
+          </div>
           {index > 0 && <button type="button" onClick={() => commit(promoteProductImage(current.current, index))} className="text-xs font-bold underline" aria-label={ar ? `جعل الصورة ${index + 1} أساسية` : `Make image ${index + 1} primary`}>{ar ? "أساسية" : "Set main"}</button>}
           <button type="button" onClick={() => commit(removeProductImage(current.current, index))} className="text-xs font-bold text-rose-700 underline" aria-label={ar ? `حذف الصورة ${index + 1}` : `Remove image ${index + 1}`}>{ar ? "حذف" : "Remove"}</button>
         </div>)}</div>}

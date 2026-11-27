@@ -14,3 +14,6 @@
 .product-images-editor__tip { margin-top: .75rem; padding: .65rem .75rem; border-radius: .7rem; background: color-mix(in srgb, var(--color-acid) 14%, var(--color-bone)); color: var(--color-ink); font-size: .7rem; line-height: 1.6; }
 .product-images-editor__file::file-selector-button { margin-inline-end: .75rem; padding: .55rem .8rem; border: 0; border-radius: .6rem; background: var(--color-ink); color: var(--color-bone); font-weight: 700; cursor: pointer; }
 .studio-image-thumb { background-color: var(--color-bone-2); background-image: conic-gradient(color-mix(in srgb, var(--color-ink) 10%, transparent) 25%, transparent 0 50%, color-mix(in srgb, var(--color-ink) 10%, transparent) 0 75%, transparent 0); background-size: 16px 16px; }
+.image-size-comparison { display: flex; flex-wrap: wrap; align-items: center; gap: .2rem .45rem; margin-top: .45rem; color: var(--color-ink); font-size: .65rem; line-height: 1.5; }
+.image-size-comparison b { display: inline-block; font-weight: 800; }
+.image-size-comparison__note { padding: .1rem .4rem; border-radius: 999px; background: color-mix(in srgb, var(--color-acid) 22%, var(--color-bone)); font-weight: 700; }

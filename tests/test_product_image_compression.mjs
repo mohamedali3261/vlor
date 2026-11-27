@@ -27,6 +27,12 @@ await assert.rejects(prepareProductImageForUpload(mkfile(16*1024*1024)),e=>e.cod
 // Uploading a product sends the prepared blob rather than the original.
 let posted; encode=(type)=>blob(100_000,type);
 globalThis.fetch = async (url,opts)=>{assert.equal(url,'/api/admin/images'); posted=opts.body.get('file'); return {ok:true,json:async()=>({id:'id',url:'/api/images/id'})};};
-assert.equal((await uploadImageToD1(mkfile(800_000),{product:true})).url,'/api/images/id');
+const uploaded = await uploadImageToD1(mkfile(800_000),{product:true});
+assert.equal(uploaded.url,'/api/images/id');
 assert.equal(posted.type,'image/webp'); assert.equal(posted.size,100_000);
+assert.equal(uploaded.originalBytes,800_000); assert.equal(uploaded.uploadedBytes,posted.size);
+const unchanged = await uploadImageToD1(mkfile(50_000),{product:true});
+assert.equal(unchanged.originalBytes,50_000); assert.equal(unchanged.uploadedBytes,50_000);
+globalThis.fetch = async () => ({ok:false,status:500});
+await assert.rejects(uploadImageToD1(mkfile(50_000), {product:true}), /upload_failed/);
 console.log('Product image compression, transparent format fallback, size limits and upload checks passed.');
