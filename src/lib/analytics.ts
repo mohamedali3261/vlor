@@ -50,8 +50,8 @@ function send(event: AnalyticsEvent): void {
   const pagePath = normalizePagePath(event.pagePath);
   if (!pagePath) return;
 
-  const body = { ...event, pagePath, visitorId: getVisitorId() };
   try {
+    const body = { ...event, pagePath, visitorId: getVisitorId() };
     void fetch("/api/analytics/event", {
       method: "POST",
       headers: { "Content-Type": "application/json" },

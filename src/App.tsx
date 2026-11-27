@@ -7,6 +7,7 @@ import { Footer } from "@/components/layout/Footer";
 import { HomeLoader } from "@/components/layout/HomeLoader";
 import { Navbar } from "@/components/layout/Navbar";
 import { ScrollProgress } from "@/components/layout/ScrollProgress";
+import { useStorefrontAnalytics } from "@/hooks/useStorefrontAnalytics";
 import { useSecretKeyword } from "@/components/layout/SecretEntry";
 import { CartProvider, useCart } from "@/context/CartContext";
 import { StoreProvider } from "@/context/StoreContext";
@@ -44,6 +45,7 @@ function AppShell() {
   const [homeLoaderOpen, setHomeLoaderOpen] = useState(() => path === "/");
   const closeHomeLoader = useCallback(() => setHomeLoaderOpen(false), []);
   useSecretKeyword();
+  useStorefrontAnalytics(path);
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "auto" });
