@@ -1,0 +1,16 @@
+.studio-product-form__header { background: linear-gradient(135deg, color-mix(in srgb, var(--color-acid) 12%, var(--color-bone)), var(--color-bone)); }
+.studio-product-form__section-heading { display: flex; align-items: center; gap: .65rem; color: var(--color-ink); }
+.studio-product-form__section-heading span { display: grid; place-items: center; width: 1.8rem; height: 1.8rem; border-radius: .6rem; background: color-mix(in srgb, var(--color-acid) 24%, var(--color-bone)); font-size: .65rem; font-weight: 800; }
+.studio-product-form__section-heading h3 { font-size: .8rem; font-weight: 800; }
+.studio-preview { border: 1px solid color-mix(in srgb, var(--color-ink) 12%, transparent); border-radius: 1.3rem; overflow: hidden; background: linear-gradient(135deg, color-mix(in srgb, var(--color-acid) 10%, var(--color-bone)), var(--color-surface)); }
+.studio-preview__summary { display: flex; align-items: center; gap: 1rem; padding: 1rem; }
+.studio-preview__photo { display: grid; place-items: center; overflow: hidden; width: 86px; height: 100px; flex: 0 0 auto; padding: .45rem; border-radius: .9rem; color: var(--color-ink); font-size: .65rem; text-align: center; }
+.studio-preview__eyebrow { color: var(--color-ink); opacity: .65; font-size: .6rem; font-weight: 800; margin-bottom: .3rem; }
+.studio-preview__details { padding: .75rem 1rem 1rem; border-top: 1px solid color-mix(in srgb, var(--color-ink) 10%, transparent); }
+.studio-preview__details summary { cursor: pointer; font-size: .75rem; font-weight: 800; color: var(--color-ink); }
+.studio-preview__details summary:focus-visible { outline: 2px solid var(--color-acid); outline-offset: 4px; }
+.studio-preview__card { padding: 1.1rem 0 .6rem; }
+.product-images-editor { box-shadow: 0 8px 26px -24px color-mix(in srgb, var(--color-ink) 55%, transparent); }
+.product-images-editor__tip { margin-top: .75rem; padding: .65rem .75rem; border-radius: .7rem; background: color-mix(in srgb, var(--color-acid) 14%, var(--color-bone)); color: var(--color-ink); font-size: .7rem; line-height: 1.6; }
+.product-images-editor__file::file-selector-button { margin-inline-end: .75rem; padding: .55rem .8rem; border: 0; border-radius: .6rem; background: var(--color-ink); color: var(--color-bone); font-weight: 700; cursor: pointer; }
+.studio-image-thumb { background-color: var(--color-bone-2); background-image: conic-gradient(color-mix(in srgb, var(--color-ink) 10%, transparent) 25%, transparent 0 50%, color-mix(in srgb, var(--color-ink) 10%, transparent) 0 75%, transparent 0); background-size: 16px 16px; }

@@ -10,21 +10,13 @@
 const MAX_INPUT_BYTES = 15 * 1024 * 1024;
 
 export class ImageError extends Error {
-  constructor(public readonly code: "type" | "size" | "decode") {
+  constructor(public readonly code: "type" | "size" | "input-size" | "decode") {
     super(code);
   }
 }
 
 function decode(file: File): Promise<{ source: CanvasImageSource; width: number; height: number; release: () => void }> {
-  if (typeof createImageBitmap === "function") {
-    return createImageBitmap(file).then((bitmap) => ({
-      source: bitmap,
-      width: bitmap.width,
-      height: bitmap.height,
-      release: () => bitmap.close(),
-    }));
-  }
-  return new Promise((resolve, reject) => {
+  const withImage = () => new Promise<{ source: CanvasImageSource; width: number; height: number; release: () => void }>((resolve, reject) => {
     const url = URL.createObjectURL(file);
     const image = new Image();
     image.onload = () =>
@@ -40,6 +32,10 @@ function decode(file: File): Promise<{ source: CanvasImageSource; width: number;
     };
     image.src = url;
   });
+  if (typeof createImageBitmap !== "function") return withImage();
+  return createImageBitmap(file).then((bitmap) => ({
+    source: bitmap, width: bitmap.width, height: bitmap.height, release: () => bitmap.close(),
+  })).catch(withImage);
 }
 
 export async function compressImage(file: File, maxSide = 900, quality = 0.84): Promise<string> {
@@ -129,8 +125,67 @@ export async function prepareImageForUpload(file: File, maxBytes = MAX_D1_IMAGE_
   }
 }
 
-export async function uploadImageToD1(file: File): Promise<{ id: string; url: string }> {
-  const prepared = await prepareImageForUpload(file);
+/** Product images are optimised even when already under D1's size limit.
+ * Alpha-capable encoders only: never flatten transparent PNG/WebP onto a background. */
+export async function prepareProductImageForUpload(file: File, maxBytes = MAX_D1_IMAGE_BYTES): Promise<File> {
+  if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) throw new ImageError("type");
+  if (file.size > MAX_INPUT_BYTES) throw new ImageError("input-size");
+  if (file.size < 12) throw new ImageError("size");
+  // Avoid changing tiny already-optimised assets.
+  if (file.size <= Math.min(80_000, maxBytes)) return file;
+
+  let decoded: Awaited<ReturnType<typeof decode>>;
+  try { decoded = await decode(file); }
+  catch {
+    // A browser without a working decoder can still upload an already valid-sized file.
+    if (file.size <= maxBytes) return file;
+    throw new ImageError("decode");
+  }
+
+  try {
+    let best: File | undefined = file.size <= maxBytes ? file : undefined;
+    const target = Math.min(280_000, maxBytes);
+    const baseName = file.name.replace(/\.[^.]+$/, "") || "image";
+    const dimension = Math.max(decoded.width, decoded.height);
+    if (!dimension) throw new ImageError("decode");
+    let lastWidth = 0, lastHeight = 0;
+    for (const side of [1440, 1200, 960, 720, 560]) {
+      const scale = Math.min(1, side / dimension);
+      const width = Math.max(1, Math.round(decoded.width * scale));
+      const height = Math.max(1, Math.round(decoded.height * scale));
+      if (width === lastWidth && height === lastHeight) continue;
+      lastWidth = width; lastHeight = height;
+      const canvas = document.createElement("canvas");
+      canvas.width = width; canvas.height = height;
+      const context = canvas.getContext("2d");
+      if (!context) throw new ImageError("decode");
+      context.imageSmoothingQuality = "high";
+      // The canvas starts transparent; never paint a background.
+      context.drawImage(decoded.source, 0, 0, width, height);
+      for (const quality of [0.86, 0.76, 0.66]) {
+        let blob = await canvasBlob(canvas, "image/webp", quality);
+        if (!blob || blob.type !== "image/webp") {
+          const fallbackType = file.type === "image/jpeg" ? "image/jpeg" : "image/png";
+          blob = await canvasBlob(canvas, fallbackType, quality);
+          if (blob?.type !== fallbackType) blob = null;
+        }
+        if (blob && blob.size >= 12 && blob.size <= maxBytes && (!best || blob.size < best.size)) {
+          const ext = blob.type === "image/webp" ? "webp" : blob.type === "image/jpeg" ? "jpg" : "png";
+          best = new File([blob], `${baseName}.${ext}`, { type: blob.type });
+        }
+        if (best && best.size <= target) return best;
+      }
+    }
+    if (best) return best;
+    throw new ImageError("size");
+  } catch (error) {
+    if (file.size <= maxBytes) return file;
+    throw error instanceof ImageError ? error : new ImageError("decode");
+  } finally { decoded.release(); }
+}
+
+export async function uploadImageToD1(file: File, options?: { product?: boolean }): Promise<{ id: string; url: string }> {
+  const prepared = options?.product ? await prepareProductImageForUpload(file) : await prepareImageForUpload(file);
   const data = new FormData();
   data.append("file", prepared);
   const response = await fetch("/api/admin/images", { method: "POST", body: data });
