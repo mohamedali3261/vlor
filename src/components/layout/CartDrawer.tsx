@@ -128,18 +128,18 @@ export function CartDrawer() {
                       <Link to={`/product/${line.slug}`} onClick={close} className="line-clamp-2 text-[13px] font-bold leading-tight hover:underline">
                         {line.name[lang]}
                       </Link>
-                      <button onClick={() => remove(line.key)} className="grid h-7 w-7 place-items-center rounded-full bg-ink/5 text-mist transition hover:bg-rose-50 hover:text-rose-500" aria-label={t("cart.remove")}>
+                      <button data-analytics="remove-from-cart" onClick={() => remove(line.key)} className="grid h-7 w-7 place-items-center rounded-full bg-ink/5 text-mist transition hover:bg-rose-50 hover:text-rose-500" aria-label={t("cart.remove")}>
                         <Trash className="h-3.5 w-3.5" />
                       </button>
                     </div>
                     <p className="mt-0.5 text-[11px] text-mist">{line.ml} ml · <span dir="ltr">{formatPrice(line.price, lang)}</span></p>
                     <div className="mt-auto flex items-center justify-between pt-3">
                       <div className="flex items-center rounded-full border border-ink/10 bg-bone-2/50 p-0.5">
-                        <button onClick={() => setQty(line.key, line.qty - 1)} className="grid h-7 w-7 place-items-center rounded-full bg-surface shadow-sm transition hover:bg-ink hover:text-bone">
+                        <button data-analytics="quantity" onClick={() => setQty(line.key, line.qty - 1)} className="grid h-7 w-7 place-items-center rounded-full bg-surface shadow-sm transition hover:bg-ink hover:text-bone">
                           <Minus className="h-3 w-3" />
                         </button>
                         <span className="w-8 text-center text-[12px] font-bold">{line.qty}</span>
-                        <button onClick={() => setQty(line.key, line.qty + 1)} className="grid h-7 w-7 place-items-center rounded-full bg-surface shadow-sm transition hover:bg-ink hover:text-bone">
+                        <button data-analytics="quantity" onClick={() => setQty(line.key, line.qty + 1)} className="grid h-7 w-7 place-items-center rounded-full bg-surface shadow-sm transition hover:bg-ink hover:text-bone">
                           <Plus className="h-3 w-3" />
                         </button>
                       </div>
@@ -157,7 +157,7 @@ export function CartDrawer() {
               </div>
               <p className="mt-1 text-[10px] text-mist">{lang === "ar" ? "الشحن يُحسب حسب المحافظة عند إتمام الطلب" : "Shipping calculated at checkout by governorate"}</p>
 
-              <Button variant="acid" full size="lg" className="mt-4 shadow-md" onClick={openCheckout} icon={<ArrowRight className="h-4 w-4" />}>
+              <Button data-analytics="checkout" variant="acid" full size="lg" className="mt-4 shadow-md" onClick={openCheckout} icon={<ArrowRight className="h-4 w-4" />}>
                 {t("cart.detailsTitle")}
               </Button>
               <a

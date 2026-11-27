@@ -13,7 +13,7 @@ import { StoreProvider } from "@/context/StoreContext";
 import { ToastProvider } from "@/context/ToastContext";
 import { LanguageProvider } from "@/i18n/LanguageContext";
 import { protectStorefrontImages } from "@/lib/protectStorefrontImages";
-import { trackPageView } from "@/lib/analytics";
+import { startAnalyticsTracking, trackPageView } from "@/lib/analytics";
 import { useRoute } from "@/lib/router";
 import { HomePage } from "@/pages/Home";
 import { NotFoundPage } from "@/pages/NotFound/NotFoundPage";
@@ -52,6 +52,8 @@ function AppShell() {
     lastAnalyticsPath.current = path;
     trackPageView(path);
   }, [path]);
+
+  useEffect(() => startAnalyticsTracking(path), [path]);
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "auto" });

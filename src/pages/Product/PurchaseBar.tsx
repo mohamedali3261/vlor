@@ -42,6 +42,7 @@ export function PurchaseBar({ product }: { product: Product }) {
           {product.sizes.map((size) => (
             <button
               key={size.ml}
+              data-analytics="choose-size"
               onClick={() => setMl(size.ml)}
               aria-pressed={ml === size.ml}
               className={cn(
@@ -56,12 +57,14 @@ export function PurchaseBar({ product }: { product: Product }) {
       </div>
       <div className="mx-auto mt-2 grid max-w-xl grid-cols-[1.15fr_1fr_auto] gap-2">
         <button
+          data-analytics="add-to-cart"
           onClick={addToBag}
           className="flex h-12 items-center justify-center gap-1.5 rounded-full bg-ink text-[12px] font-bold text-bone active:scale-[0.98]"
         >
           <Bag className="h-4 w-4" /> {t("product.stickyAdd")}
         </button>
         <button
+          data-analytics="social-whatsapp"
           onClick={() =>
             openChannel(
               whatsappUrl(

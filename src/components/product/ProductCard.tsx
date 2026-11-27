@@ -81,6 +81,7 @@ function ProductCardBase({ product, className }: ProductCardProps) {
       {/* Wishlist — sits on the accent disc, so it uses ink for contrast. */}
       <button
         type="button"
+        data-analytics="wishlist"
         onClick={handleSave}
         aria-label={wished ? t("product.removeWishlist") : t("product.wishlist")}
         aria-pressed={wished}
@@ -114,6 +115,7 @@ function ProductCardBase({ product, className }: ProductCardProps) {
             {product.sizes.map((size) => (
               <button
                 key={size.ml}
+                data-analytics="choose-size"
                 type="button"
                 onClick={() => setMl(size.ml)}
                 aria-pressed={ml === size.ml}
@@ -127,6 +129,7 @@ function ProductCardBase({ product, className }: ProductCardProps) {
           {/* Buy */}
           <button
             type="button"
+            data-analytics="add-to-cart"
             onClick={addToBag}
             className={cn("pc-buy-btn", added && "pc-buy-btn--added")}
           >

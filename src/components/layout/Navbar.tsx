@@ -83,6 +83,7 @@ export function Navbar() {
         <div className="mx-auto flex h-[72px] max-w-[1400px] items-center justify-between gap-2 px-4 sm:gap-4 sm:px-6 lg:px-10">
           <div className="flex items-center gap-2 lg:gap-3">
             <button
+              data-analytics="menu"
               onClick={() => setMobileOpen(true)}
               className="grid h-10 w-10 place-items-center rounded-full border border-ink/12 text-ink transition hover:bg-ink hover:text-bone lg:hidden"
               aria-label={t("nav.menu")}
@@ -91,6 +92,7 @@ export function Navbar() {
             </button>
             <button
               type="button"
+              data-analytics="language"
               onClick={toggle}
               className="grid h-10 w-10 shrink-0 place-items-center rounded-full border border-ink/12 text-[11px] font-bold text-ink transition hover:border-ink/40 lg:hidden"
               aria-label={t("lang.switch")}
@@ -135,6 +137,7 @@ export function Navbar() {
 
           <div className="flex items-center gap-1.5 sm:gap-2">
             <button
+              data-analytics="language"
               onClick={toggle}
               className="hidden h-10 items-center gap-1.5 rounded-full border border-ink/12 px-3 text-[11px] font-bold uppercase tracking-widest text-ink transition hover:border-ink/40 lg:flex"
               aria-label={t("lang.switch")}
@@ -170,6 +173,7 @@ export function Navbar() {
               <Whatsapp className="h-4 w-4" />
             </a>
             <button
+              data-analytics="open-cart"
               onClick={open}
               className="m-press-spring group relative flex h-10 items-center gap-1.5 rounded-full bg-ink ps-2 pe-2 text-bone transition hover:bg-plum sm:gap-2.5 sm:ps-4 sm:pe-3"
               aria-label={t("nav.cart")}

@@ -137,7 +137,7 @@ export function ShopSlide({ product, index, total, active }: Props) {
             className={cn("mt-3 flex flex-wrap items-center justify-center gap-x-5 gap-y-1 lg:mt-4 lg:justify-start", REVEAL)}
             style={delay(3)}
           >
-            <button
+            <button data-analytics="carousel"
               type="button"
               onClick={addToBag}
               className="press inline-flex min-h-[44px] items-center gap-2 rounded-full bg-[var(--acc)] px-6 text-[12px] font-extrabold uppercase tracking-[0.12em] text-ink shadow-[0_8px_36px_-10px_var(--acc)] transition-[filter,box-shadow] duration-300 hover:brightness-105 hover:shadow-[0_12px_40px_-8px_var(--acc)]"
@@ -146,7 +146,7 @@ export function ShopSlide({ product, index, total, active }: Props) {
               {added ? t("product.added") : t("product.addToBag")}
             </button>
 
-            <button
+            <button data-analytics="carousel"
               type="button"
               onClick={toggleHeart}
               aria-pressed={wished}

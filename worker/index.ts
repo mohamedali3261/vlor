@@ -19,6 +19,8 @@ const order = z.object({ coupon: z.string().trim().toUpperCase().regex(/^[A-Z0-9
 const analyticsEvent = z.discriminatedUnion('type', [
   z.object({ type: z.literal('page_view'), pagePath: text(180).regex(/^\/[a-z0-9/_-]*$/i), visitorId: z.string().uuid() }).strict(),
   z.object({ type: z.literal('product_click'), pagePath: text(180).regex(/^\/[a-z0-9/_-]*$/i), visitorId: z.string().uuid(), productSlug: z.string().regex(/^[a-z0-9-]{1,100}$/) }).strict(),
+  z.object({ type: z.literal('heartbeat'), pagePath: text(180).regex(/^\/[a-z0-9/_-]*$/i), visitorId: z.string().uuid() }).strict(),
+  z.object({ type: z.literal('interaction'), pagePath: text(180).regex(/^\/[a-z0-9/_-]*$/i), visitorId: z.string().uuid(), action: z.string().max(108).regex(/^(?:open-cart|checkout|place-order|copy-order|add-to-cart|wishlist|choose-size|quantity|gallery|menu|language|filter|remove-from-cart|carousel|other-button|link-home|link-shop|link-wishlist|link-contact|link-track|link-other|social-whatsapp|social-instagram|social-facebook|social-tiktok|social-messenger|social-other|product:[a-z0-9-]{1,100})$/) }).strict(),
 ]);
 const encoder = new TextEncoder();
 const hex = (b: ArrayBuffer) => Array.from(new Uint8Array(b), x => x.toString(16).padStart(2,'0')).join('');
@@ -44,7 +46,7 @@ async function pruneOldAnalytics(db: D1Database, today: string): Promise<void> {
   analyticsCleanupDay = today;
   const cutoff = new Date(Date.now() - 400 * 86_400_000).toISOString().slice(0, 10);
   try {
-    await db.prepare('DELETE FROM analytics_daily WHERE day < ?').bind(cutoff).run();
+    await db.batch([db.prepare('DELETE FROM analytics_daily WHERE day < ?').bind(cutoff), db.prepare('DELETE FROM analytics_actions WHERE day < ?').bind(cutoff), db.prepare('DELETE FROM analytics_presence WHERE last_seen < ?').bind(Date.now()-300_000)]);
   } catch {
     analyticsCleanupDay = '';
   }
@@ -94,21 +96,27 @@ const adminGuard: MiddlewareHandler<Env> = async (c, next) => {
 app.use('/api/admin/*', adminGuard);
 app.get('/api/admin/session', c => c.json({ok:true,role:c.get('role'),mustChangePassword:c.get('mustChangePassword')}));
 app.get('/api/admin/analytics', async c => {
-  const range = z.enum(['7','30','90','365']).safeParse(c.req.query('days') || '30');
+  const range = z.enum(['7','30','90','365','400']).safeParse(c.req.query('days') || '30');
   if (!range.success) return c.json({error:'Invalid analytics range'},400);
   const days = Number(range.data);
   const end = new Date();
   const endDay = end.toISOString().slice(0,10);
   const startDay = new Date(end.getTime() - (days - 1) * 86_400_000).toISOString().slice(0,10);
-  const [summary, clickSummary, pages, products] = await Promise.all([
+  const [summary, clickSummary, pages, products, active, total, actions] = await Promise.all([
     c.env.DB.prepare("SELECT COALESCE(SUM(event_count),0) AS page_views,COUNT(DISTINCT visitor_hash) AS visitors FROM analytics_daily WHERE event_type='page_view' AND day BETWEEN ? AND ?").bind(startDay,endDay).first<{page_views:number,visitors:number}>(),
     c.env.DB.prepare("SELECT COALESCE(SUM(event_count),0) AS clicks FROM analytics_daily WHERE event_type='product_click' AND day BETWEEN ? AND ?").bind(startDay,endDay).first<{clicks:number}>(),
     c.env.DB.prepare("SELECT page_path,COALESCE(SUM(event_count),0) AS views,COUNT(DISTINCT visitor_hash) AS visitors FROM analytics_daily WHERE event_type='page_view' AND day BETWEEN ? AND ? GROUP BY page_path ORDER BY views DESC,page_path ASC").bind(startDay,endDay).all<{page_path:string,views:number,visitors:number}>(),
     c.env.DB.prepare("SELECT p.slug,COALESCE(json_extract(p.data,'$.name.en'),p.slug) AS name_en,COALESCE(json_extract(p.data,'$.name.ar'),p.slug) AS name_ar,COALESCE(SUM(a.event_count),0) AS clicks,COUNT(DISTINCT a.visitor_hash) AS visitors,p.archived FROM products p LEFT JOIN analytics_daily a ON a.event_type='product_click' AND a.target_id=p.slug AND a.day BETWEEN ? AND ? GROUP BY p.id,p.slug,p.archived ORDER BY clicks DESC,p.slug ASC").bind(startDay,endDay).all<{slug:string,name_en:string,name_ar:string,clicks:number,visitors:number,archived:number}>(),
+    c.env.DB.prepare("SELECT COUNT(*) AS visitors FROM analytics_presence WHERE last_seen>=?").bind(Date.now()-300_000).first<{visitors:number}>(),
+    c.env.DB.prepare("SELECT COUNT(DISTINCT visitor_hash) AS visitors,COALESCE(SUM(event_count),0) AS views FROM analytics_daily WHERE event_type='page_view' AND day>=?").bind(new Date(end.getTime()-399*86_400_000).toISOString().slice(0,10)).first<{visitors:number,views:number}>(),
+    c.env.DB.prepare("SELECT page_path,action,SUM(event_count) AS clicks,COUNT(DISTINCT visitor_hash) AS visitors FROM analytics_actions WHERE day BETWEEN ? AND ? GROUP BY page_path,action ORDER BY clicks DESC,page_path,action LIMIT 300").bind(startDay,endDay).all<{page_path:string,action:string,clicks:number,visitors:number}>(),
   ]);
   return c.json({
     period:{days,startDay,endDay},
     summary:{pageViews:summary?.page_views ?? 0,visitors:summary?.visitors ?? 0,productClicks:clickSummary?.clicks ?? 0},
+    activeVisitors:active?.visitors ?? 0,
+    retainedTotals:{visitors:total?.visitors ?? 0,pageViews:total?.views ?? 0},
+    actions:actions.results.map(row=>({path:row.page_path,action:row.action,clicks:row.clicks,visitors:row.visitors})),
     pages:pages.results.map(row=>({path:row.page_path,views:row.views,visitors:row.visitors})),
     products:products.results.map(row=>({slug:row.slug,name:{en:row.name_en,ar:row.name_ar},clicks:row.clicks,visitors:row.visitors,archived:Boolean(row.archived)})),
   });
@@ -182,6 +190,19 @@ app.post('/api/analytics/event', async c => {
   const today = new Date().toISOString().slice(0,10);
   await pruneOldAnalytics(c.env.DB,today);
   const visitorHash = await sha(`analytics-v1:${input.data.visitorId}`);
+  if (input.data.type === 'heartbeat') {
+    const now = Date.now();
+    await c.env.DB.batch([c.env.DB.prepare('DELETE FROM analytics_presence WHERE last_seen < ?').bind(now-300_000), c.env.DB.prepare('INSERT INTO analytics_presence(visitor_hash,last_seen) VALUES (?,?) ON CONFLICT(visitor_hash) DO UPDATE SET last_seen=excluded.last_seen').bind(visitorHash,now)]);
+    return c.json({ok:true});
+  }
+  if (input.data.type === 'interaction') {
+    if (input.data.action.startsWith('product:')) {
+      const found = await c.env.DB.prepare('SELECT id FROM products WHERE slug=?').bind(input.data.action.slice(8)).first();
+      if (!found) return c.json({error:'Product not found'},404);
+    }
+    await c.env.DB.prepare('INSERT INTO analytics_actions(day,page_path,action,visitor_hash,event_count) VALUES(?,?,?,?,1) ON CONFLICT(day,page_path,action,visitor_hash) DO UPDATE SET event_count=analytics_actions.event_count+1').bind(today,pagePath,input.data.action,visitorHash).run();
+    return c.json({ok:true});
+  }
   await c.env.DB.prepare("INSERT INTO analytics_daily(day,event_type,page_path,target_id,visitor_hash,event_count) VALUES(?,?,?,?,?,1) ON CONFLICT(day,event_type,page_path,target_id,visitor_hash) DO UPDATE SET event_count=analytics_daily.event_count+1")
     .bind(today,input.data.type,pagePath,targetId,visitorHash)
     .run();

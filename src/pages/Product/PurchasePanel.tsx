@@ -82,6 +82,7 @@ export function PurchasePanel({ product }: { product: Product }) {
           {product.sizes.map((size) => (
             <button
               key={size.ml}
+              data-analytics="choose-size"
               onClick={() => setMl(size.ml)}
               className={cn(
                 "relative flex flex-col items-start gap-0.5 rounded-xl border px-3 py-2.5 text-start transition",
@@ -102,18 +103,19 @@ export function PurchasePanel({ product }: { product: Product }) {
 
       <div className="flex items-center gap-2.5 pt-1">
         <div className="flex h-11 items-center rounded-full border border-ink/12 bg-surface">
-          <button onClick={() => setQty(Math.max(1, qty - 1))} className="grid h-9 w-9 place-items-center rounded-full hover:bg-ink/5" aria-label="decrease">
+          <button data-analytics="quantity" onClick={() => setQty(Math.max(1, qty - 1))} className="grid h-9 w-9 place-items-center rounded-full hover:bg-ink/5" aria-label="decrease">
             <Minus className="h-3.5 w-3.5" />
           </button>
           <span className="w-7 text-center text-[12px] font-bold">{qty}</span>
-          <button onClick={() => setQty(Math.min(20, qty + 1))} className="grid h-9 w-9 place-items-center rounded-full hover:bg-ink/5" aria-label="increase">
+          <button data-analytics="quantity" onClick={() => setQty(Math.min(20, qty + 1))} className="grid h-9 w-9 place-items-center rounded-full hover:bg-ink/5" aria-label="increase">
             <Plus className="h-3.5 w-3.5" />
           </button>
         </div>
-        <Button variant="primary" size="lg" className="flex-1" onClick={handleAdd}>
+        <Button data-analytics="add-to-cart" variant="primary" size="lg" className="flex-1" onClick={handleAdd}>
           {t("product.addToBag")}
         </Button>
         <button
+          data-analytics="wishlist"
           onClick={handleSave}
           aria-label={wished ? t("product.removeWishlist") : t("product.wishlist")}
           className={cn(

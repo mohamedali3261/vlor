@@ -113,7 +113,7 @@ export function QuickView({
                 )}
               </div>
               <div className="safe-bottom sticky bottom-0 -mx-1 mt-4 grid gap-2 rounded-t-2xl border-t border-ink/10 bg-bone/95 px-1 pb-2 pt-3 backdrop-blur sm:static sm:border-0 sm:bg-transparent sm:p-0 sm:backdrop-blur-none">
-                <Button variant="acid" full onClick={addToBag} icon={<Check className="h-4 w-4" />} iconPosition="start">
+                <Button data-analytics="add-to-cart" variant="acid" full onClick={addToBag} icon={<Check className="h-4 w-4" />} iconPosition="start">
                   {t("product.addToBag")}
                 </Button>
                 <div className="grid grid-cols-2 gap-2">

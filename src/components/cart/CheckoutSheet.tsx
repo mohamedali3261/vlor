@@ -184,14 +184,14 @@ export function CheckoutSheet({ open, onClose }: CheckoutSheetProps) {
             <p className="checkout-payment"><Check className="h-4 w-4 shrink-0" /> {ar ? "الدفع عند الاستلام" : "Cash on delivery"}</p>
           </section>
           <div className="checkout-actions sticky bottom-0 -mx-4 mt-4 grid gap-2 border-t border-ink/10 bg-bone/95 px-4 pb-3 pt-3 backdrop-blur sm:-mx-5 sm:px-5">
-            <Button type="submit" disabled={submitting || !activeQuote || quoteState !== "ready" || !lines.length} variant="acid" full size="lg">{submitting ? (ar ? "جاري إتمام الطلب…" : "Placing order…") : (ar ? "إتمام الطلب" : "Place order")}</Button>
-            <Button type="button" variant="ghost" size="sm" disabled={submitting || !lines.length} onClick={copyOrder} icon={<Copy className="h-4 w-4" />} iconPosition="start">{ar ? "نسخ الطلب" : "Copy order"}</Button>
+            <Button data-analytics="place-order" type="submit" disabled={submitting || !activeQuote || quoteState !== "ready" || !lines.length} variant="acid" full size="lg">{submitting ? (ar ? "جاري إتمام الطلب…" : "Placing order…") : (ar ? "إتمام الطلب" : "Place order")}</Button>
+            <Button data-analytics="copy-order" type="button" variant="ghost" size="sm" disabled={submitting || !lines.length} onClick={copyOrder} icon={<Copy className="h-4 w-4" />} iconPosition="start">{ar ? "نسخ الطلب" : "Copy order"}</Button>
           </div>
         </form> : <div className="flex flex-1 flex-col items-center justify-center overflow-y-auto px-6 py-10 text-center">
           <span className="grid h-16 w-16 place-items-center rounded-full bg-acid"><Check className="h-7 w-7 text-ink" /></span>
           <h3 className="font-display mt-4 text-3xl">{ar ? "تم تسجيل طلبك" : "Order placed"}</h3>
           <p className="mt-2 text-sm text-mist">{ar ? "شكرًا لك، تم تسجيل طلبك بنجاح." : "Thank you. Your order has been placed."}</p>
-          {confirmation && <><p className="mt-3 text-xs text-mist">{ar ? "رقم الطلب" : "Order"}: <bdi>{confirmation.id}</bdi></p><p className="mt-2 font-bold">{ar ? "الإجمالي المؤكد" : "Confirmed total"}: {formatPrice(confirmation.total, lang)}</p><a className="mt-4 underline" href={`#/track/${confirmation.tracking}`}>{ar ? "تتبع طلبك — احفظ الرابط" : "Track your order — save this link"}</a><Button variant="outline" className="mt-5" onClick={copyOrder} icon={<Copy className="h-4 w-4" />} iconPosition="start">{ar ? "نسخ الطلب" : "Copy order"}</Button></>}
+          {confirmation && <><p className="mt-3 text-xs text-mist">{ar ? "رقم الطلب" : "Order"}: <bdi>{confirmation.id}</bdi></p><p className="mt-2 font-bold">{ar ? "الإجمالي المؤكد" : "Confirmed total"}: {formatPrice(confirmation.total, lang)}</p><a className="mt-4 underline" href={`#/track/${confirmation.tracking}`}>{ar ? "تتبع طلبك — احفظ الرابط" : "Track your order — save this link"}</a><Button data-analytics="copy-order" variant="outline" className="mt-5" onClick={copyOrder} icon={<Copy className="h-4 w-4" />} iconPosition="start">{ar ? "نسخ الطلب" : "Copy order"}</Button></>}
         </div>}
       </div>
     </div>

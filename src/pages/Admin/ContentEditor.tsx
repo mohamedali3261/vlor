@@ -6,6 +6,7 @@ import { useLang } from "@/i18n/LanguageContext";
 import { Link } from "@/lib/router";
 import { siteBackground } from "@/lib/theme";
 import { Section } from "@/pages/Admin/ContentFields";
+import { StripsEditor } from "@/pages/Admin/StripsEditor";
 import { ProductImageScale } from "@/pages/Admin/ProductImageScale";
 import { ProductCardColours } from "@/pages/Admin/ProductCardColours";
 import type { SiteContent } from "@/types/content";
@@ -100,6 +101,12 @@ export function ContentEditor({ onManageProducts }: { onManageProducts?: () => v
           <Link to="/" className="text-xs font-bold text-plum underline decoration-acid decoration-2 underline-offset-4">{ar ? "معاينة الموقع ↗" : "Preview storefront ↗"}</Link>
           <span className="text-xs text-mist">{t("admin.dirtyNote")}</span>
         </div>
+      </div>
+
+      <div className="mt-3">
+        <Section title={ar ? "الشريط المتحرك أعلى الموقع" : "Top moving announcement bar"} description={ar ? "عدّل الرسائل والسرعة والاتجاه، ثم احفظ وانشر لتظهر للزوار." : "Edit messages, speed and direction, then save and publish to show visitors."} defaultOpen>
+          <StripsEditor draft={draft} edit={edit} ar={ar} />
+        </Section>
       </div>
 
       <div className="mt-3">
