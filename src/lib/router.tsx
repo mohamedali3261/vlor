@@ -1,4 +1,3 @@
-import { trackProductClick } from "@/lib/analytics";
 import {
   useCallback,
   useMemo,
@@ -68,8 +67,6 @@ export function Link({ to, children, onClick, ref, ...rest }: LinkProps) {
     (event: MouseEvent<HTMLAnchorElement>) => {
       onClick?.(event);
       if (event.defaultPrevented) return;
-      const product = /^\/product\/([a-z0-9-]+)(?:[?#]|$)/i.exec(to);
-      if (product) trackProductClick(product[1].toLowerCase(), snapshot());
       if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
       event.preventDefault();
       navigate(to);

@@ -304,8 +304,8 @@ export const dict = {
   "admin.eyebrow": { en: "Private · Studio", ar: "خاص · الاستوديو" },
   "admin.title": { en: "The product studio.", ar: "استوديو المنتجات." },
   "admin.lead": {
-    en: "Manage your catalogue, storefront details and GitHub publishing — all from one place. Changes are saved to this browser instantly.",
-    ar: "أدر كتالوجك وبيانات المتجر والنشر على جتهاب — من مكان واحد. التغييرات تُحفظ في هذا المتصفح فوراً.",
+    en: "Manage products and storefront details from one place. Saved changes appear on the store.",
+    ar: "أدر المنتجات ومحتوى المتجر من مكان واحد. التغييرات المحفوظة تظهر في المتجر.",
   },
   "admin.tab.products": { en: "Products", ar: "المنتجات" },
   "admin.tab.analytics": { en: "Analytics", ar: "التحليلات" },
@@ -581,8 +581,8 @@ export const dict = {
   "lock.eyebrow": { en: "Restricted area", ar: "منطقة محظورة" },
   "lock.title": { en: "Studio access", ar: "دخول الاستوديو" },
   "lock.lead": {
-    en: "This area manages the catalogue and publishing. Sign in to continue.",
-    ar: "هذه المنطقة تدير الكتالوج والنشر. سجّل الدخول للمتابعة.",
+    en: "This area manages the store. Sign in to continue.",
+    ar: "هذه المنطقة لإدارة المتجر. سجّل الدخول للمتابعة.",
   },
   "lock.user": { en: "Username", ar: "اسم المستخدم" },
   "lock.pass": { en: "Password", ar: "كلمة المرور" },

@@ -1,7 +1,4 @@
-import { Accounts } from "@/pages/Admin/Accounts";
-import { Analytics } from "@/pages/Admin/Analytics";
 import { Delivery } from "@/pages/Admin/Delivery";
-import { AuditLog } from "@/pages/Admin/AuditLog";
 import { Security } from "@/pages/Admin/Security";
 import { Orders } from "@/pages/Admin/Orders";
 import { AdminHeader, type AdminTab } from "@/pages/Admin/AdminHeader";
@@ -13,21 +10,39 @@ import { Button } from "@/components/ui/Button";
 import { Download, Plus, Refresh, Upload } from "@/components/ui/icons";
 import { useStore } from "@/context/StoreContext";
 import { useToast } from "@/context/ToastContext";
-import { cn } from "@/utils/cn";
 import { useLang } from "@/i18n/LanguageContext";
 import { downloadJson } from "@/lib/format";
 import { Link } from "@/lib/router";
+import { countDirtyDrafts } from "@/lib/studioDrafts";
 import type { Product, SiteSettings } from "@/types";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 export function AdminPage() {
   const { t, lang, l } = useLang();
-  const { products, settings, wishlist, saveProduct, deleteProduct, resetCatalogue, replaceCatalogue, updateSettings, content, dirty, lastPublishedAt } = useStore();
+  const { products, settings, wishlist, saveProduct, deleteProduct, resetCatalogue, replaceCatalogue, updateSettings, content, configStatus, reloadConfig } = useStore();
   const { push } = useToast();
   const [tab, setTab] = useState<AdminTab>("products");
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<Product | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+
+  const changeTab = (next: AdminTab) => {
+    if (next === tab) return;
+    if (countDirtyDrafts() && !window.confirm(lang === "ar" ? "لديك تعديلات غير محفوظة. هل تريد مغادرة هذا القسم وفقدها؟" : "You have unsaved changes. Leave this section and discard them?")) return;
+    setTab(next);
+  };
+  useEffect(() => {
+    const warn = (event: BeforeUnloadEvent) => { if (countDirtyDrafts()) event.preventDefault(); };
+    const leaving = (event: MouseEvent) => {
+      if (!countDirtyDrafts() || !(event.target instanceof Element)) return;
+      const href = event.target.closest('a')?.getAttribute('href') || '';
+      if (!href.startsWith('#/') || /^#\/(studio|admin)(?:[/?#]|$)/i.test(href)) return;
+      if (!window.confirm(lang === "ar" ? "لديك تعديلات غير محفوظة. هل تريد مغادرة الاستوديو؟" : "You have unsaved changes. Leave the studio?")) event.preventDefault();
+    };
+    window.addEventListener('beforeunload', warn);
+    document.addEventListener('click', leaving, true);
+    return () => { window.removeEventListener('beforeunload', warn); document.removeEventListener('click', leaving, true); };
+  }, [lang]);
 
   const openNew = () => {
     setEditing(null);
@@ -87,7 +102,7 @@ export function AdminPage() {
 
   const handleReset = () => {
     if (window.confirm(t("admin.resetConfirm"))) {
-      try { resetCatalogue(); } catch { push("Bulk reset is unavailable", "error"); return; }
+      try { resetCatalogue(); } catch { push(lang === "ar" ? "استعادة الكتالوج بالكامل غير متاحة." : "Bulk reset is unavailable.", "error"); return; }
       push(t("admin.resetDone"), "info");
     }
   };
@@ -127,9 +142,9 @@ export function AdminPage() {
     fileRef.current!.value = "";
   };
 
-  const saveSettings = (next: SiteSettings) => {
-    updateSettings(next);
-    push(t("admin.settingsSaved"));
+  const saveSettings = async (next: SiteSettings) => {
+    try { await updateSettings(next); push(lang === "ar" ? "تم حفظ بيانات المتجر للزوار." : "Storefront details saved."); }
+    catch (error) { push(error instanceof Error && error.message === 'Configuration changed' ? (lang === "ar" ? "تغيرت البيانات من جلسة أخرى. انسخ تعديلاتك ثم حدّث الصفحة." : "Settings changed in another session. Copy your edits and refresh.") : (lang === "ar" ? "تعذر حفظ البيانات. تحقق من الاتصال." : "Could not save settings. Check your connection."), "error"); }
   };
 
   return (
@@ -140,11 +155,11 @@ export function AdminPage() {
             <span className="rtl:rotate-180">←</span> {lang === "ar" ? "العودة للمتجر" : "Back to storefront"}
           </Link>
           <span className="rounded-full border border-ink/10 bg-surface/50 px-3 py-1 text-[8.5px] font-bold uppercase tracking-[0.16em] text-mist">
-            v2.0 · local-first
+            {lang === "ar" ? "إدارة المتجر" : "Store management"}
           </span>
         </div>
 
-        <AdminHeader tab={tab} setTab={setTab} dirty={dirty} stats={{ products: products.length, featured: products.filter((product) => product.featured).length, saved: wishlist.length }} />
+        <AdminHeader tab={tab} setTab={changeTab} stats={{ products: products.length, featured: products.filter((product) => product.featured).length, saved: wishlist.length }} />
 
         <div className="mt-5 rounded-[1.5rem] border border-ink/10 bg-bone/60 p-4 sm:p-5">
           {tab === "products" && (
@@ -154,11 +169,6 @@ export function AdminPage() {
                   <h2 className="text-[13px] font-bold">{t("admin.collection")}</h2>
                   <p className="text-[10px] text-mist">
                     {lang === "ar" ? "أضف أو عدّل أو احذف كروت العطور، وحدد ظهور كل كارت في الرئيسية والمتجر." : "Add, edit or remove scent cards, and choose whether each appears on the homepage or shop."}
-                  </p>
-                  <p className={cn("mt-1 inline-flex items-center gap-1.5 rounded-full px-2 py-1 text-[9px] font-bold", dirty ? "bg-amber-100 text-amber-800" : "bg-emerald-100 text-emerald-800")}>
-                    <span className={cn("h-1.5 w-1.5 rounded-full", dirty ? "bg-amber-500" : "bg-emerald-500")} />
-                    {dirty ? t("admin.dirtyNote") : t("admin.publishedNote")}
-                    {lastPublishedAt && <span className="opacity-60"> · {new Date(lastPublishedAt).toLocaleString(lang === "ar" ? "ar-EG" : "en-GB")}</span>}
                   </p>
                 </div>
                 <div className="flex flex-wrap gap-2">
@@ -187,10 +197,9 @@ export function AdminPage() {
             </>
           )}
 
-          {tab === "analytics" && <Analytics />}
           {tab === "orders" && <Orders />}
           {tab === "delivery" && content.studioDeliveryTab && <Delivery />}
-          {tab === "security" && <><Security /><Accounts /><AuditLog /></>}
+          {tab === "security" && <Security />}
           {tab === "content" && (
             <>
               <div className="mb-4">
@@ -201,7 +210,7 @@ export function AdminPage() {
                     : "Full control over every text, section and colour on the site."}
                 </p>
               </div>
-              <ContentEditor onManageProducts={() => setTab("products")} />
+              {configStatus === "ready" ? <ContentEditor onManageProducts={() => setTab("products")} /> : <ConfigLoading status={configStatus} retry={reloadConfig} ar={lang === "ar"} />}
             </>
           )}
 
@@ -211,7 +220,7 @@ export function AdminPage() {
                 <h2 className="text-[13px] font-bold">{t("admin.tab.settings")}</h2>
                 <p className="text-[10px] text-mist">{lang === "ar" ? "بيانات التواصل والشحن المستخدمة في كل الصفحات." : "Contact and shipping details used across every page."}</p>
               </div>
-              <StoreSettingsForm settings={settings} onSave={saveSettings} />
+              {configStatus === "ready" ? <StoreSettingsForm settings={settings} onSave={saveSettings} /> : <ConfigLoading status={configStatus} retry={reloadConfig} ar={lang === "ar"} />}
             </>
           )}        </div>
       </div>
@@ -219,4 +228,10 @@ export function AdminPage() {
       <ProductForm open={formOpen} initial={editing} onClose={() => setFormOpen(false)} onSave={handleSave} />
     </div>
   );
+}
+
+function ConfigLoading({status,retry,ar}: {status:"loading" | "error"; retry:() => void; ar:boolean}) {
+  return <div role={status === "error" ? "alert" : "status"} className="rounded-xl border border-ink/10 bg-surface p-4 text-sm">
+    {status === "loading" ? (ar ? "جارٍ تحميل إعدادات المتجر…" : "Loading storefront settings…") : <>{ar ? "تعذر تحميل إعدادات المتجر. لم يتم تغيير أي بيانات." : "Could not load storefront settings. No data was changed."} <button className="font-bold underline" onClick={retry}>{ar ? "إعادة المحاولة" : "Retry"}</button></>}
+  </div>;
 }

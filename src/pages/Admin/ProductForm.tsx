@@ -309,35 +309,35 @@ export function ProductForm({
             <span>01</span><h3>{lang === "ar" ? "بيانات المنتج" : "Product details"}</h3>
           </div>
           <div className="grid gap-3 sm:grid-cols-2">
-            <Field label="Name (English) *">
+            <Field label={lang === "ar" ? "الاسم بالإنجليزية *" : "Name (English) *"}>
               <input value={draft.nameEn} onChange={(event) => update("nameEn", event.target.value)} className="field" dir="ltr" placeholder="Nuit Blanche" />
             </Field>
-            <Field label="الاسم (عربي)">
+            <Field label={lang === "ar" ? "الاسم بالعربية" : "Name (Arabic)"}>
               <input value={draft.nameAr} onChange={(event) => update("nameAr", event.target.value)} className="field" dir="rtl" placeholder="نوي بلانش" />
             </Field>
-            <Field label="Slug / URL *" full hint="stored at /#/product/your-slug">
+            <Field label={lang === "ar" ? "رابط المنتج (بالإنجليزية) *" : "Slug / URL *"} full hint={lang === "ar" ? "عنوان صفحة المنتج: /#/product/your-slug" : "Stored at /#/product/your-slug"}>
               <input value={draft.slug} onChange={(event) => update("slug", event.target.value)} className="field" dir="ltr" placeholder="nuit-blanche" />
             </Field>
-            <Field label="Tagline (English)">
+            <Field label={lang === "ar" ? "الوصف المختصر بالإنجليزية" : "Tagline (English)"}>
               <input value={draft.taglineEn} onChange={(event) => update("taglineEn", event.target.value)} className="field" dir="ltr" placeholder="Iris · Musk · Cedar" />
             </Field>
-            <Field label="الوصف المختصر (عربي)">
+            <Field label={lang === "ar" ? "الوصف المختصر بالعربية" : "Tagline (Arabic)"}>
               <input value={draft.taglineAr} onChange={(event) => update("taglineAr", event.target.value)} className="field" dir="rtl" placeholder="سوسن · مسك · أرز" />
             </Field>
-            <Field label="Description (English)" full>
+            <Field label={lang === "ar" ? "الوصف بالإنجليزية" : "Description (English)"} full>
               <textarea value={draft.descEn} onChange={(event) => update("descEn", event.target.value)} rows={2} className="field resize-none" dir="ltr" />
             </Field>
-            <Field label="الوصف (عربي)" full>
+            <Field label={lang === "ar" ? "الوصف بالعربية" : "Description (Arabic)"} full>
               <textarea value={draft.descAr} onChange={(event) => update("descAr", event.target.value)} rows={2} className="field resize-none" dir="rtl" />
             </Field>
 
             <div className="sm:col-span-2 my-1 border-t border-ink/10 pt-4">
               <div className="studio-product-form__section-heading"><span>02</span><h3>{lang === "ar" ? "السعر والحجم والمخزون" : "Pricing, sizes & stock"}</h3></div>
             </div>
-            <Field label="Price (EGP)">
+            <Field label={lang === "ar" ? "السعر (جنيه)" : "Price (EGP)"}>
               <input type="number" min={0} value={draft.price} onChange={(event) => update("price", Number(event.target.value))} className="field" dir="ltr" />
             </Field>
-            <Field label="Compare-at price (optional)">
+            <Field label={lang === "ar" ? "السعر قبل الخصم (اختياري)" : "Compare-at price (optional)"}>
               <input type="number" min={0} value={draft.compareAt} onChange={(event) => update("compareAt", Number(event.target.value))} className="field" dir="ltr" />
             </Field>
             <Field label={lang === "ar" ? "الفئة" : "Audience"}>
@@ -359,18 +359,18 @@ export function ProductForm({
                 {draft.sizes.map((size, index) => (
                   <div key={index} className="flex flex-wrap items-center gap-2 rounded-xl border border-ink/10 bg-surface/40 p-2">
                     <div className="flex items-center gap-1.5">
-                      <input type="number" min={1} value={size.ml} onChange={(event) => setSize(index, "ml", Number(event.target.value))} className="field h-10 w-20 text-center" aria-label="ml" />
-                      <span className="text-[10px] font-bold text-mist">ml</span>
+                      <input type="number" min={1} value={size.ml} onChange={(event) => setSize(index, "ml", Number(event.target.value))} className="field h-10 w-20 text-center" aria-label={lang === "ar" ? "الحجم بالملليلتر" : "Size in ml"} />
+                      <span className="text-[10px] font-bold text-mist">{lang === "ar" ? "مل" : "ml"}</span>
                     </div>
                     <div className="flex flex-1 items-center gap-1.5">
-                      <input type="number" min={0} value={size.price} onChange={(event) => setSize(index, "price", Number(event.target.value))} className="field h-10 flex-1 text-center" aria-label="price" />
-                      <span className="text-[10px] font-bold text-mist">EGP</span>
+                      <input type="number" min={0} value={size.price} onChange={(event) => setSize(index, "price", Number(event.target.value))} className="field h-10 flex-1 text-center" aria-label={lang === "ar" ? "السعر" : "Price"} />
+                      <span className="text-[10px] font-bold text-mist">{lang === "ar" ? "ج.م" : "EGP"}</span>
                     </div>
                     <div className="flex items-center gap-1.5">
                       <span className="hidden text-[9px] font-bold uppercase tracking-widest text-mist sm:inline">{lang === "ar" ? "المخزون" : "Qty"}</span>
-                      <input type="number" min={0} max={1000000} value={draft.stocks[index] ?? 0} onChange={(event) => setStock(index, Number(event.target.value))} className="field h-10 w-[92px] text-center font-bold" aria-label="stock" placeholder="0" />
+                      <input type="number" min={0} max={1000000} value={draft.stocks[index] ?? 0} onChange={(event) => setStock(index, Number(event.target.value))} className="field h-10 w-[92px] text-center font-bold" aria-label={lang === "ar" ? "المخزون" : "Stock"} placeholder="0" />
                     </div>
-                    <button type="button" onClick={() => { update("sizes", draft.sizes.filter((_, i) => i !== index)); update("stocks", draft.stocks.filter((_, i) => i !== index)); }} className="grid h-9 w-9 place-items-center rounded-full border border-ink/10 text-mist hover:text-rose-500" aria-label="remove size">
+                    <button type="button" onClick={() => { update("sizes", draft.sizes.filter((_, i) => i !== index)); update("stocks", draft.stocks.filter((_, i) => i !== index)); }} className="grid h-9 w-9 place-items-center rounded-full border border-ink/10 text-mist hover:text-rose-500" aria-label={lang === "ar" ? "حذف الحجم" : "Remove size"}>
                       <Trash className="h-3.5 w-3.5" />
                     </button>
                   </div>

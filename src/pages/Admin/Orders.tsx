@@ -149,7 +149,7 @@ export function Orders() {
                   {orderItems.map(i=>{
                     let name: string = i.name;
                     try { const parsed = JSON.parse(i.name); name = parsed[lang] || parsed.en || i.name; } catch {}
-                    return <li key={i.id} className="flex items-center justify-between px-3 py-2 text-sm"><span>{name} · {i.size} ml × {i.quantity}</span><span className="font-bold">{i.unit_price} EGP</span></li>;
+                    return <li key={i.id} className="flex items-center justify-between px-3 py-2 text-sm"><span>{name} · {i.size} {ar ? 'مل' : 'ml'} × {i.quantity}</span><span className="font-bold">{i.unit_price} {ar ? 'ج.م' : 'EGP'}</span></li>;
                   })}
                 </ul>
                 <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-xl bg-ink px-4 py-3 text-sm text-bone">
@@ -158,7 +158,7 @@ export function Orders() {
                     <span>{ar?'المجموع':'Subtotal'} <b className="text-bone">{o.subtotal}</b></span>
                     <span>{ar?'الشحن':'Ship'} <b className="text-bone">{o.shipping}</b></span>
                     <span>{ar?'الخصم':'Disc'} <b className="text-acid">-{o.discount}</b></span>
-                    <span className="rounded-full bg-acid px-3 py-1 font-black text-ink">{total} EGP</span>
+                    <span className="rounded-full bg-acid px-3 py-1 font-black text-ink">{total} {ar ? 'ج.م' : 'EGP'}</span>
                   </span>
                 </div>
                 <div className="mt-3 flex items-center gap-2">

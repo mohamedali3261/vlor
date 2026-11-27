@@ -1,27 +1,24 @@
-import { Check, Eye, Lock, Pencil, Sparkle } from "@/components/ui/icons";
+import { Lock, Pencil, Sparkle } from "@/components/ui/icons";
 import { useLang } from "@/i18n/LanguageContext";
 import { useStore } from "@/context/StoreContext";
 import { cn } from "@/utils/cn";
 
-export type AdminTab = "products" | "analytics" | "orders" | "delivery" | "security" | "content" | "settings";
+export type AdminTab = "products" | "orders" | "delivery" | "security" | "content" | "settings";
 
 export function AdminHeader({
   tab,
   setTab,
   stats,
-  dirty,
 }: {
   tab: AdminTab;
   setTab: (tab: AdminTab) => void;
   stats: { products: number; featured: number; saved: number };
-  dirty: boolean;
 }) {
   const { t, lang } = useLang();
   const { content } = useStore();
 
   const tabs: { key: AdminTab; label: string }[] = [
     { key: "products", label: t("admin.tab.products") },
-    { key: "analytics", label: t("admin.tab.analytics") },
     { key: "orders", label: lang === "ar" ? "الطلبات" : "Orders" },
     { key: "delivery", label: lang === "ar" ? "الشحن" : "Delivery" },
     { key: "security", label: lang === "ar" ? "الأمان" : "Security" },
@@ -66,17 +63,10 @@ export function AdminHeader({
               )}
             >
               {item.key === "products" && <Sparkle className="h-3.5 w-3.5" />}
-              {item.key === "analytics" && <Eye className="h-3.5 w-3.5" />}
               {item.key === "content" && <Pencil className="h-3.5 w-3.5" />}
               {item.label}
             </button>
           ))}
-          <div className="ms-auto flex items-center gap-2">
-            <span className={cn("inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[9px] font-bold uppercase tracking-[0.12em]", dirty ? "bg-amber-300/15 text-amber-200" : "bg-bone/10 text-bone/45")}>
-              {dirty ? <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-amber-300" /> : <Check className="h-3 w-3" />}
-              {dirty ? t("gh.dirty") : t("gh.allPublished")}
-            </span>
-          </div>
         </div>
       </div>
     </div>

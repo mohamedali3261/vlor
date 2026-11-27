@@ -13,11 +13,10 @@ import { StoreProvider } from "@/context/StoreContext";
 import { ToastProvider } from "@/context/ToastContext";
 import { LanguageProvider } from "@/i18n/LanguageContext";
 import { protectStorefrontImages } from "@/lib/protectStorefrontImages";
-import { startAnalyticsTracking, trackPageView } from "@/lib/analytics";
 import { useRoute } from "@/lib/router";
 import { HomePage } from "@/pages/Home";
 import { NotFoundPage } from "@/pages/NotFound/NotFoundPage";
-import { Suspense, lazy, useCallback, useEffect, useRef, useState } from "react";
+import { Suspense, lazy, useCallback, useEffect, useState } from "react";
 
 const ShopPage = lazy(() => import("@/pages/Shop").then((m) => ({ default: m.ShopPage })));
 const WishlistPage = lazy(() => import("@/pages/Wishlist").then((m) => ({ default: m.WishlistPage })));
@@ -44,16 +43,7 @@ function AppShell() {
   const { path } = useRoute();
   const [homeLoaderOpen, setHomeLoaderOpen] = useState(() => path === "/");
   const closeHomeLoader = useCallback(() => setHomeLoaderOpen(false), []);
-  const lastAnalyticsPath = useRef<string | null>(null);
   useSecretKeyword();
-
-  useEffect(() => {
-    if (lastAnalyticsPath.current === path) return;
-    lastAnalyticsPath.current = path;
-    trackPageView(path);
-  }, [path]);
-
-  useEffect(() => startAnalyticsTracking(path), [path]);
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "auto" });

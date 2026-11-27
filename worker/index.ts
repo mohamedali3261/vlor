@@ -121,6 +121,35 @@ app.get('/api/admin/analytics', async c => {
     products:products.results.map(row=>({slug:row.slug,name:{en:row.name_en,ar:row.name_ar},clicks:row.clicks,visitors:row.visitors,archived:Boolean(row.archived)})),
   });
 });
+// Shared storefront configuration is stored independently from products and orders.
+// Revision checks prevent an older studio session from overwriting newer edits.
+const configLocal = z.object({en:z.string().max(5000), ar:z.string().max(5000)});
+const storefrontSettings = z.object({whatsapp:z.string().max(2048), messenger:z.string().max(2048), instagram:z.string().max(2048), facebook:z.string().max(2048), youtube:z.string().max(2048), tiktok:z.string().max(2048), email:z.string().max(2048), phone:z.string().max(2048), freeShippingThreshold:z.number().finite().min(0).max(500000000), address:configLocal, hours:configLocal}).strict();
+const storefrontContent = z.object({
+  studioDeliveryTab:z.boolean(), announcements:z.array(configLocal).max(100),
+  strips:z.object({announcement:z.object({enabled:z.boolean(),speed:z.number().finite().min(10).max(200),direction:z.enum(['left','right'])})}).passthrough(),
+  theme:z.object({ink:z.string(),bone:z.string(),accent:z.string(),lilac:z.string(),productImageScale:z.number(),headingScale:z.number(),bodyScale:z.number(),sectionSpacing:z.number()}).passthrough(),
+  sections:z.record(z.string(),z.boolean()),
+}).passthrough().and(z.record(z.string(),z.json()));
+app.get('/api/storefront-config', async c => {
+  const rows=(await c.env.DB.prepare("SELECT key,value FROM store_meta WHERE key IN ('storefront_content_v1','storefront_settings_v1')").all<{key:string,value:string}>()).results;
+  const read=(key:string) => { const row=rows.find(r=>r.key===key); if (!row) return null; try { return JSON.parse(row.value); } catch { return null; } };
+  return c.json({content:read('storefront_content_v1'),settings:read('storefront_settings_v1')});
+});
+app.put('/api/admin/storefront-config/:kind', async c => {
+  const kind=c.req.param('kind');
+  if (kind!=='content' && kind!=='settings') return c.json({error:'Invalid configuration'},400);
+  const body=z.object({version:z.string().uuid().nullable(),data:z.unknown()}).strict().safeParse(await jsonBody(c));
+  if (!body.success) return c.json({error:'Invalid configuration'},400);
+  const parsed=(kind==='content' ? storefrontContent : storefrontSettings).safeParse(body.data.data);
+  if (!parsed.success || JSON.stringify(body.data.data).length>200000) return c.json({error:'Invalid configuration'},400);
+  const version=crypto.randomUUID(), key=`storefront_${kind}_v1`, value=JSON.stringify({version,data:parsed.data});
+  const result = body.data.version === null
+    ? await c.env.DB.prepare('INSERT OR IGNORE INTO store_meta(key,value) VALUES (?,?)').bind(key,value).run()
+    : await c.env.DB.prepare("UPDATE store_meta SET value=? WHERE key=? AND json_valid(value) AND json_extract(value,'$.version')=?").bind(value,key,body.data.version).run();
+  if (!result.meta.changes) return c.json({error:'Configuration changed. Refresh and try again.'},409);
+  return c.json({ok:true,version});
+});
 app.post('/api/admin/logout', async c => { const token = getCookie(c,'__Host-malika_session'); if (token) await c.env.DB.prepare('DELETE FROM sessions WHERE token_hash=?').bind(await sha(token)).run(); deleteCookie(c,'__Host-malika_session',{secure:true,path:'/'}); return c.json({ok:true}); });
 app.post('/api/admin/password', async c => {
   const data = z.object({ currentPassword: z.string().max(256).optional(), newPassword: z.string().min(8).max(256) }).safeParse(await jsonBody(c));
@@ -260,12 +289,30 @@ app.put('/api/admin/shipping', async c => {
   await c.env.DB.batch([c.env.DB.prepare('INSERT INTO shipping_rates VALUES(?,?,?) ON CONFLICT(city) DO UPDATE SET amount=excluded.amount,free_threshold=excluded.free_threshold').bind(v.city,v.amount,v.freeThreshold),c.env.DB.prepare('INSERT INTO audit_log(id,admin_id,action,target_id) VALUES(?,?,?,?)').bind(crypto.randomUUID(),c.get('adminId'),'shipping_updated',v.city)]);
   return c.json({ok:true});
 });
+app.delete('/api/admin/shipping/:city', async c => {
+  const city=text(100).safeParse(c.req.param('city')); if(!city.success) return c.json({error:'Invalid city'},400);
+  const [result]=await c.env.DB.batch([
+    c.env.DB.prepare('DELETE FROM shipping_rates WHERE city=?').bind(city.data),
+    c.env.DB.prepare('INSERT INTO audit_log(id,admin_id,action,target_id) SELECT ?,?,?,? WHERE changes()>0').bind(crypto.randomUUID(),c.get('adminId'),'shipping_deleted',city.data),
+  ]);
+  if(!result.meta.changes) return c.json({error:'Not found'},404);
+  return c.json({ok:true});
+});
 const couponSchema = z.object({code:z.string().trim().toUpperCase().regex(/^[A-Z0-9_-]{1,40}$/),percent:z.number().int().min(1).max(100),maxUses:z.number().int().min(1).max(1000000),expiresAt:z.string().datetime().nullable(),enabled:z.boolean()});
 app.get('/api/admin/coupons', async c => c.json((await c.env.DB.prepare('SELECT * FROM coupons ORDER BY code').all()).results));
 app.put('/api/admin/coupons', async c => {
   const parsed=couponSchema.safeParse(await jsonBody(c)); if(!parsed.success) return c.json({error:'Invalid coupon'},400);
   const v=parsed.data;
   await c.env.DB.batch([c.env.DB.prepare('INSERT INTO coupons(code,percent,max_uses,expires_at,enabled) VALUES(?,?,?,?,?) ON CONFLICT(code) DO UPDATE SET percent=excluded.percent,max_uses=excluded.max_uses,expires_at=excluded.expires_at,enabled=excluded.enabled').bind(v.code,v.percent,v.maxUses,v.expiresAt,v.enabled?1:0), c.env.DB.prepare('INSERT INTO audit_log(id,admin_id,action,target_id) VALUES(?,?,?,?)').bind(crypto.randomUUID(),c.get('adminId'),'coupon_updated',v.code)]);
+  return c.json({ok:true});
+});
+app.delete('/api/admin/coupons/:code', async c => {
+  const code=z.string().trim().toUpperCase().regex(/^[A-Z0-9_-]{1,40}$/).safeParse(c.req.param('code')); if(!code.success) return c.json({error:'Invalid coupon'},400);
+  const [result]=await c.env.DB.batch([
+    c.env.DB.prepare('DELETE FROM coupons WHERE code=?').bind(code.data),
+    c.env.DB.prepare('INSERT INTO audit_log(id,admin_id,action,target_id) SELECT ?,?,?,? WHERE changes()>0').bind(crypto.randomUUID(),c.get('adminId'),'coupon_deleted',code.data),
+  ]);
+  if(!result.meta.changes) return c.json({error:'Not found'},404);
   return c.json({ok:true});
 });
 // Quotes are previews only; the order and database triggers revalidate everything.

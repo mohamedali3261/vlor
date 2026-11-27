@@ -20,7 +20,7 @@ export function ProductImageScale({ products, value, onChange }: {
   return (
     <div className="grid gap-4 sm:grid-cols-2 sm:items-start">
       <div className="space-y-4">
-        <p className="text-xs leading-relaxed text-mist">{ar ? "اضبط حجم الصور لكل المنتجات وشاهد النتيجة مباشرة. بعد الحفظ والنشر تظهر الصور الجديدة للزوار." : "Adjust the image size for all products and preview it here. Save and publish to show the new images to visitors."}</p>
+        <p className="text-xs leading-relaxed text-mist">{ar ? "اضبط حجم الصور لكل المنتجات وشاهد النتيجة مباشرة. بعد الحفظ تظهر الصور الجديدة للزوار بالحجم المحدد." : "Adjust the image size for all products and preview it here. Save to show the new image size to visitors."}</p>
         {products.length > 0 && <label className="block text-xs font-bold">
           {ar ? "اختر منتجاً للمعاينة" : "Choose a product to preview"}
           <select className="field mt-2" value={product?.id ?? ""} onChange={(event) => setSelected(event.target.value)}>

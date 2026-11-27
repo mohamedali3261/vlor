@@ -97,19 +97,19 @@ export function ProductTable({
                   <div className="mt-1 flex flex-wrap gap-1 md:hidden">
                     {product.showOnHome !== false && <span className="rounded-full bg-lilac px-1.5 py-0.5 text-[7px] font-bold">{ar ? "الرئيسية" : "home"}</span>}
                     {product.showOnShop !== false && <span className="rounded-full bg-bone-2 px-1.5 py-0.5 text-[7px] font-bold">{ar ? "المتجر" : "shop"}</span>}
-                    {product.featured && <span className="rounded-full bg-ink px-1.5 py-0.5 text-[7px] font-bold text-acid">featured</span>}
-                    {product.isNew && <span className="rounded-full bg-lilac px-1.5 py-0.5 text-[7px] font-bold">new</span>}
-                    {product.bestseller && <span className="rounded-full bg-acid px-1.5 py-0.5 text-[7px] font-bold">best</span>}
+                    {product.featured && <span className="rounded-full bg-ink px-1.5 py-0.5 text-[7px] font-bold text-acid">{ar ? "مميز" : "featured"}</span>}
+                    {product.isNew && <span className="rounded-full bg-lilac px-1.5 py-0.5 text-[7px] font-bold">{ar ? "جديد" : "new"}</span>}
+                    {product.bestseller && <span className="rounded-full bg-acid px-1.5 py-0.5 text-[7px] font-bold">{ar ? "الأكثر مبيعًا" : "best"}</span>}
                   </div>
                 </div>
               </div>
               <span className="hidden text-[11px] text-ink/60 md:block">{t(`shop.${product.gender}`)}</span>
               <div className="hidden flex-wrap gap-1 md:flex">
-                {product.showOnHome !== false && <span className="rounded-full bg-lilac px-1.5 py-0.5 text-[7px] font-bold">home</span>}
-                {product.showOnShop !== false && <span className="rounded-full bg-bone-2 px-1.5 py-0.5 text-[7px] font-bold">shop</span>}
-                {product.featured && <span className="rounded-full bg-ink px-1.5 py-0.5 text-[7px] font-bold text-acid">featured</span>}
-                {product.isNew && <span className="rounded-full bg-lilac px-1.5 py-0.5 text-[7px] font-bold">new</span>}
-                {product.bestseller && <span className="rounded-full bg-acid px-1.5 py-0.5 text-[7px] font-bold">best</span>}
+                {product.showOnHome !== false && <span className="rounded-full bg-lilac px-1.5 py-0.5 text-[7px] font-bold">{ar ? "الرئيسية" : "home"}</span>}
+                {product.showOnShop !== false && <span className="rounded-full bg-bone-2 px-1.5 py-0.5 text-[7px] font-bold">{ar ? "المتجر" : "shop"}</span>}
+                {product.featured && <span className="rounded-full bg-ink px-1.5 py-0.5 text-[7px] font-bold text-acid">{ar ? "مميز" : "featured"}</span>}
+                {product.isNew && <span className="rounded-full bg-lilac px-1.5 py-0.5 text-[7px] font-bold">{ar ? "جديد" : "new"}</span>}
+                {product.bestseller && <span className="rounded-full bg-acid px-1.5 py-0.5 text-[7px] font-bold">{ar ? "الأكثر مبيعًا" : "best"}</span>}
               </div>
               <div className="flex items-center justify-end gap-1.5">
                 <button onClick={() => onEdit(product)} className="grid h-8 w-8 place-items-center rounded-full border border-ink/10 text-ink transition hover:bg-ink hover:text-bone" aria-label={t("admin.edit")}>
