@@ -1,0 +1,18 @@
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+const form=readFileSync('src/pages/Admin/ProductForm.tsx','utf8');
+const images=readFileSync('src/pages/Admin/ProductImagesEditor.tsx','utf8');
+const styles=readFileSync('src/styles/studio-product-form.css','utf8');
+assert.match(form,/aria-labelledby="studio-product-title"/);
+assert.match(form,/<ProductPhoto src=\{preview\.images\[0\]\}/);
+assert.match(form,/<details className="studio-preview__details">/);
+assert.match(form,/<div className="studio-preview__card" inert aria-hidden="true"><ProductCard product=\{preview\}/);
+assert.match(form,/<ProductImagesEditor images=\{draft\.images\}/);
+assert.match(form,/disabled=\{uploading \|\| inventoryLoading \|\| inventoryError\}/);
+assert.match(images,/uploadImageToD1\(file, \{ product: true \}\)/);
+assert.match(images,/الحفاظ على الخلفية الشفافة/);
+assert.match(images,/الصور المضافة بروابط خارجية لا تُضغط/);
+assert.match(images,/جاري ضغط الصور ورفعها/);
+assert.match(images,/١٥ ميجابايت/);
+assert.match(styles,/studio-image-thumb[\s\S]*?conic-gradient/);
+console.log('Product form, primary-image preview and transparent upload UI checks passed.');

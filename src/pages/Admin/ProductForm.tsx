@@ -1,5 +1,8 @@
 import { Button } from "@/components/ui/Button";
-import { Portal, SmartImage } from "@/components/ui/Primitives";
+import { Portal } from "@/components/ui/Primitives";
+import { ProductPhoto } from "@/components/product/ProductPhoto";
+import { ProductCard } from "@/components/product/ProductCard";
+import { formatPrice } from "@/lib/format";
 import { Select } from "@/components/ui/Select";
 import { Check, Plus, Trash, X } from "@/components/ui/icons";
 import { useBodyLock } from "@/hooks/useUi";
@@ -9,6 +12,7 @@ import { productImages } from "@/lib/productImages";
 import type { Category, Gender, Localized, Mood, Product, SizeOption } from "@/types";
 import { cn } from "@/utils/cn";
 import { useEffect, useState, type FormEvent } from "react";
+import "@/styles/studio-product-form.css";
 
 const genders: Gender[] = ["women", "men", "unisex"];
 
@@ -266,13 +270,14 @@ export function ProductForm({
 
   return (
     <Portal>
-    <div className="fixed inset-0 z-[115]" role="dialog" aria-modal="true">
+    <div className="fixed inset-0 z-[115]" role="dialog" aria-modal="true" aria-labelledby="studio-product-title">
       <div onClick={onClose} className="anim-fade absolute inset-0 bg-ink/55 backdrop-blur-sm" />
-      <div className="absolute inset-y-0 end-0 flex w-full max-w-2xl flex-col bg-bone shadow-2xl">
-        <div className="flex items-center justify-between border-b border-ink/10 px-5 py-4">
+      <div className="studio-product-form absolute inset-y-0 end-0 flex w-full max-w-2xl flex-col bg-bone shadow-2xl">
+        <div className="studio-product-form__header flex items-center justify-between border-b border-ink/10 px-5 py-4">
           <div>
             <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-mist">{t("admin.tab.products")}</p>
-            <h2 className="font-display text-2xl">{initial ? t("admin.edit") : t("admin.newProduct")}</h2>
+            <h2 id="studio-product-title" className="font-display text-2xl">{initial ? t("admin.edit") : t("admin.newProduct")}</h2>
+            <p className="mt-1 text-xs text-mist">{lang === "ar" ? "أضف البيانات والصور وشاهد الكارت مباشرة قبل الحفظ." : "Add details and images, then preview your card before saving."}</p>
           </div>
           <button onClick={onClose} className="grid h-9 w-9 place-items-center rounded-full border border-ink/15 transition hover:bg-ink hover:text-bone" aria-label={t("nav.close")}>
             <X className="h-4 w-4" />
@@ -280,20 +285,29 @@ export function ProductForm({
         </div>
 
         <form onSubmit={submit} className="flex-1 overflow-y-auto px-5 py-5">
-          {/* preview */}
-          <div className="mb-5 flex items-center gap-4 rounded-2xl border border-ink/10 bg-surface/40 p-3">
-            <SmartImage src={preview.images[0] ?? ""} alt={l(preview.name)} className="h-24 w-20 shrink-0 rounded-xl" />
-            <div className="min-w-0">
-              <p className="truncate text-sm font-bold">{l(preview.name)}</p>
-              <p className="truncate text-[10px] text-mist">{l(preview.tagline)}</p>
-              <div className="mt-1.5 flex flex-wrap gap-1">
-                {draft.featured && <span className="rounded-full bg-ink px-2 py-0.5 text-[8px] font-bold text-acid">featured</span>}
-                {draft.isNew && <span className="rounded-full bg-lilac px-2 py-0.5 text-[8px] font-bold">new</span>}
-                {draft.sizes.length > 0 && <span className="rounded-full bg-bone-2 px-2 py-0.5 text-[8px] font-bold">{draft.price} EGP</span>}
+          {/* The preview reflects the same primary photo and card styling as the storefront. */}
+          <section className="studio-preview mb-6" aria-label={lang === "ar" ? "معاينة المنتج" : "Product preview"}>
+            <div className="studio-preview__summary">
+              <div className="studio-preview__photo studio-image-thumb">
+                <ProductPhoto src={preview.images[0]} alt={l(preview.name)} className="h-full w-full object-contain" fallback={<span>{lang === "ar" ? "أضف صورة" : "Add photo"}</span>} />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="studio-preview__eyebrow">{lang === "ar" ? "معاينة مباشرة" : "Live preview"}</p>
+                <p className="truncate text-base font-bold">{l(preview.name)}</p>
+                <p className="truncate text-xs text-mist">{l(preview.tagline)}</p>
+                <p className="mt-2 text-sm font-bold">{formatPrice((preview.sizes.find((size) => size.ml === 50) ?? preview.sizes[0])?.price ?? preview.price, lang)}</p>
               </div>
             </div>
-          </div>
+            <details className="studio-preview__details">
+              <summary>{lang === "ar" ? "استعراض كارت المنتج" : "Preview product card"}</summary>
+              <div className="studio-preview__card" inert aria-hidden="true"><ProductCard product={preview} /></div>
+              <p className="text-center text-[11px] text-mist">{lang === "ar" ? "معاينة فقط؛ لا تضيف المنتج للسلة." : "Preview only; no items are added to the bag."}</p>
+            </details>
+          </section>
 
+          <div className="studio-product-form__section-heading mb-3">
+            <span>01</span><h3>{lang === "ar" ? "بيانات المنتج" : "Product details"}</h3>
+          </div>
           <div className="grid gap-3 sm:grid-cols-2">
             <Field label="Name (English) *">
               <input value={draft.nameEn} onChange={(event) => update("nameEn", event.target.value)} className="field" dir="ltr" placeholder="Nuit Blanche" />
@@ -318,7 +332,7 @@ export function ProductForm({
             </Field>
 
             <div className="sm:col-span-2 my-1 border-t border-ink/10 pt-4">
-              <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-mist">{lang === "ar" ? "السعر والحجم" : "Pricing & sizes"}</p>
+              <div className="studio-product-form__section-heading"><span>02</span><h3>{lang === "ar" ? "السعر والحجم والمخزون" : "Pricing, sizes & stock"}</h3></div>
             </div>
             <Field label="Price (EGP)">
               <input type="number" min={0} value={draft.price} onChange={(event) => update("price", Number(event.target.value))} className="field" dir="ltr" />
