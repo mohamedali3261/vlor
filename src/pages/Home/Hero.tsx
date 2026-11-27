@@ -16,7 +16,7 @@ export function Hero() {
 
 
   return (
-    <section className="grain relative overflow-hidden bg-ink text-bone">
+    <section className="home-hero grain relative overflow-hidden bg-ink text-bone">
       {/* Ambient art direction */}
       <div className="pointer-events-none absolute inset-0">
         <div className="m-drift-mist-a absolute -start-24 top-10 h-[340px] w-[340px] rounded-full bg-plum-2/80 blur-[100px]" />
@@ -54,11 +54,11 @@ export function Hero() {
         </Reveal>
 
         <Reveal variant="m-rise-soft" delay={110}>
-          <p className="lead-copy mt-6 max-w-xl text-bone/60">{lc(c.hero.lead)}</p>
+          <p className="lead-copy mt-4 max-w-xl text-bone/60">{lc(c.hero.lead)}</p>
         </Reveal>
 
         <Reveal variant="m-spring-soft" delay={180}>
-          <div className="mt-8 flex flex-wrap items-center justify-center gap-2.5 sm:gap-3">
+          <div className="mt-5 flex flex-wrap items-center justify-center gap-2.5 sm:gap-3">
             <div
               ref={magneticCta.ref}
               onPointerMove={magneticCta.onPointerMove}
@@ -87,14 +87,14 @@ export function Hero() {
           </div>
         </Reveal>
 
-        <div className="hero-social mt-9">
+        <div className="hero-social mt-5">
           <div className="hero-social__heading"><span />{x("Find us on", "تابعنا على")}<span /></div>
           <SocialLinks variant="hero" />
         </div>
 
         <a
           href="#runway-lookbook"
-          className="home-scroll-cue mt-8 inline-flex flex-col items-center gap-2 text-bone/45 transition-colors hover:text-acid"
+          className="home-scroll-cue mt-4 inline-flex flex-col items-center gap-2 text-bone/45 transition-colors hover:text-acid"
         >
           <span className="text-[9px] font-bold uppercase tracking-[0.22em]">{t("hero.scroll")}</span>
           <span className="grid h-8 w-6 place-items-center rounded-full border border-bone/20">

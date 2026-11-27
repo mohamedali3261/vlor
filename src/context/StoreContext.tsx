@@ -1,3 +1,4 @@
+import { migrateInstagram } from "@/lib/migrateInstagram";
 import { migrateSocialSettings } from "@/lib/migrateSocialSettings";
 import { clearOldImageStorage } from "@/lib/clearOldImageStorage";
 import { publishedAt, publishedContent, publishedSettings } from "@/data/published";
@@ -61,6 +62,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       if (typeof window !== "undefined") {
         clearOldImageStorage(window.localStorage);
         migrateSocialSettings(window.localStorage, `malika.settings.v3${catalogueVersion}`, defaultSettings);
+        migrateInstagram(window.localStorage, [`malika.settings.v3${catalogueVersion}`, `malika.settings.v2${catalogueVersion}`], defaultSettings.instagram);
       }
     } catch { /* Storage may be blocked. */ }
   });

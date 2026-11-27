@@ -10,6 +10,7 @@ const data = new Map();
 const storage = { getItem: (key) => data.get(key) ?? null, setItem: (key, value) => data.set(key, String(value)) };
 globalThis.window = { localStorage: storage, matchMedia: () => ({ matches: false }) };
 const key = 'malika.settings.v3.20261103170000';
+data.set('malika.settings.instagram-vlor.v1', '1'); // The owner may edit the handle after the one-time update.
 data.set(key, JSON.stringify({ whatsapp: '201111111111', instagram: 'custominsta', facebook: '', youtube: '', freeShippingThreshold: 42, address: { en: 'mine', ar: 'ع' } }));
 migrateSocialSettings(storage, key, defaultSettings);
 let settings = JSON.parse(data.get(key));
@@ -47,6 +48,9 @@ assert.equal(socialUrl('www.tiktok.com/@vlor.perfumes', 'tiktok'), 'https://www.
 assert.equal(socialUrl('@shop', 'tiktok'), 'https://tiktok.com/@shop');
 assert.equal(socialUrl('https://evil.com/@shop', 'tiktok'), undefined);
 assert.equal(socialUrl('javascript:alert(1)', 'tiktok'), undefined);
+data.clear();
+html = renderSocialAndHero();
+assert.equal((html.match(/href="https:\/\/instagram\.com\/vlor\.perfumes"/g) || []).length, 2);
 const form = readFileSync('src/pages/Admin/StoreSettingsForm.tsx', 'utf8');
 for (const field of ['whatsapp', 'instagram', 'facebook', 'tiktok', 'youtube']) assert.match(form, new RegExp(`set\\("${field}"`));
 assert.match(form, /registerDraft/);

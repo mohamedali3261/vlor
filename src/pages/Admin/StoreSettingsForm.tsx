@@ -67,7 +67,7 @@ export function StoreSettingsForm({
           <Field label="Messenger username" hint="facebook.com/yourpage → vlor.perfumes">
             <input value={draft.messenger} onChange={(event) => set("messenger", event.target.value)} className="field" dir="ltr" />
           </Field>
-          <Field label="Instagram handle">
+          <Field label={lang === "ar" ? "رابط أو اسم إنستجرام" : "Instagram URL or handle"} hint="@vlor.perfumes">
             <input value={draft.instagram} onChange={(event) => set("instagram", event.target.value)} className="field" dir="ltr" />
           </Field>
           <Field label={lang === "ar" ? "رابط فيسبوك" : "Facebook URL"} hint="https://facebook.com/yourpage">

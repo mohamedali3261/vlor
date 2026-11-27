@@ -18,7 +18,7 @@ export const BRAND = {
 export const defaultSettings: SiteSettings = {
   whatsapp: "201276163222",
   messenger: "vlor.perfumes",
-  instagram: "vlor.perfumes",
+  instagram: "@vlor.perfumes",
   facebook: "https://www.facebook.com/share/1FyisBgKu9/?mibextid=wwXIfr",
   youtube: "https://www.youtube.com/@VlorPerfumes",
   tiktok: "https://www.tiktok.com/@vlor.perfumes",

@@ -134,3 +134,14 @@ html[dir="rtl"] .shop-bottle {
     transition: none;
   }
 }
+
+/* Entrance on the first render and each slide change, separate from image scaling. */
+.shop-bottle-enter, .shop-bottle-content { width: 100%; height: 100%; display: grid; place-items: center; }
+@keyframes shop-image-enter { from { opacity: 0; transform: translateY(18px) scale(.92); } to { opacity: 1; transform: translateY(0) scale(1); } }
+@keyframes shop-copy-enter { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+.shop-bottle-enter[data-active="true"] { animation: shop-image-enter .7s cubic-bezier(.22,1,.36,1) both; }
+[data-on="true"] .shop-reveal { animation: shop-copy-enter .65s cubic-bezier(.22,1,.36,1) var(--shop-delay, 0ms) both; }
+@media (prefers-reduced-motion: reduce) {
+  .shop-bottle-enter[data-active="true"], [data-on="true"] .shop-reveal { animation: none; }
+  .shop-reveal { transition: none !important; }
+}

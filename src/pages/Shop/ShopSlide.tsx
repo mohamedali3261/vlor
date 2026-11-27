@@ -18,7 +18,7 @@ interface Props {
 
 /** Staggered entrance: each block rises in, one after another, once its slide is active. */
 const REVEAL =
-  "translate-y-9 opacity-0 transition-[opacity,translate] duration-500 ease-out group-data-[on=true]/slide:translate-y-0 group-data-[on=true]/slide:opacity-100";
+  "shop-reveal translate-y-9 opacity-0 transition-[opacity,translate] duration-500 ease-out group-data-[on=true]/slide:translate-y-0 group-data-[on=true]/slide:opacity-100";
 
 const GROUP_TITLE = "mb-2 text-[11px] font-extrabold uppercase tracking-[0.2em] text-bone/65";
 
@@ -40,7 +40,7 @@ export function ShopSlide({ product, index, total, active }: Props) {
   const unit = x("ml", "مل");
 
 
-  const delay = (step: number): CSSProperties => ({ transitionDelay: active ? `${step * 110 + 170}ms` : "0ms" });
+  const delay = (step: number): CSSProperties => ({ transitionDelay: active ? `${step * 110 + 170}ms` : "0ms", "--shop-delay": `${step * 100 + 80}ms` } as CSSProperties);
 
   const addToBag = () => {
     if (!selected) return;
