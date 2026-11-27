@@ -69,6 +69,7 @@ export interface SiteSettings {
   instagram: string;
   facebook: string;
   youtube: string;
+  tiktok: string;
   email: string;
   phone: string;
   freeShippingThreshold: number;

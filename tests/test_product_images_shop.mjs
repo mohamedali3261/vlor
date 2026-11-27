@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { build } from 'esbuild';
-const result = await build({ entryPoints: ['tests/storefront_render_fixture.tsx'], bundle: true, platform: 'node', format: 'cjs', packages: 'external', jsx: 'automatic', write: false, alias: { '@': new URL('../src', import.meta.url).pathname } });
+const result = await build({ entryPoints: ['tests/storefront_render_fixture.tsx'], loader: { '.css': 'empty' }, bundle: true, platform: 'node', format: 'cjs', packages: 'external', jsx: 'automatic', write: false, alias: { '@': new URL('../src', import.meta.url).pathname } });
 const module = {exports:{}};
 new Function('require','module','exports',result.outputFiles[0].text)(createRequire(import.meta.url),module,module.exports);
 const { productImages, primaryProductImage, setPrimaryImage, removeProductImage, promoteProductImage, shopHeroProducts, renderImageEditor, renderProductPhotos } = module.exports;

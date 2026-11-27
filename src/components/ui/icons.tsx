@@ -316,3 +316,9 @@ export const Facebook = (p: IconProps) => (
 export const Youtube = (p: IconProps) => (
   <Base {...p}><rect x="2" y="5" width="20" height="14" rx="4" /><path d="m10 9 5 3-5 3V9Z" /></Base>
 );
+
+export const TikTok = (p: IconProps) => (
+  <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" {...p}>
+    <path d="M16.7 2h-3.3v13.3a3.1 3.1 0 1 1-2.5-3.04V8.9a6.45 6.45 0 1 0 5.8 6.42V8.54A8.1 8.1 0 0 0 21.5 10V6.7a4.8 4.8 0 0 1-4.8-4.7Z" />
+  </svg>
+);

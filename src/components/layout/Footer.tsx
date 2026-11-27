@@ -4,15 +4,12 @@ import { BRAND } from "@/data/site";
 import {
   ArrowUpRight,
   Globe,
-  Instagram,
-  Facebook,
-  Youtube,
-  Whatsapp,
 } from "@/components/ui/icons";
 import { useStore } from "@/context/StoreContext";
 import { useLang } from "@/i18n/LanguageContext";
-import { socialUrl, whatsappUrl } from "@/lib/messaging";
+import { whatsappUrl } from "@/lib/messaging";
 import { Link } from "@/lib/router";
+import { SocialLinks } from "@/components/ui/SocialLinks";
 import { StudioDot } from "@/components/layout/SecretEntry";
 
 export function Footer() {
@@ -39,21 +36,9 @@ export function Footer() {
           <div>
             <Logo light />
             <p className="mt-5 max-w-xs text-sm leading-relaxed text-bone/55">{t("brand.tagline")}</p>
-            <div className="mt-6 flex gap-2">
-              {[
-                { href: whatsappUrl(settings.whatsapp, x("Hello VLOR 🌿", "مرحباً ڨلور 🌿")), icon: Whatsapp, label: "WhatsApp", color: "#25D366" },
-                { href: socialUrl(settings.facebook, "facebook"), icon: Facebook, label: "Facebook", color: "#1877F2" },
-                { href: socialUrl(settings.instagram, "instagram"), icon: Instagram, label: "Instagram", color: "#E1306C" },
-                { href: socialUrl(settings.youtube, "youtube"), icon: Youtube, label: "YouTube", color: "#FF0000" },
-              ].map(({ href, icon: Icon, label, color }) => {
-                const icon = <Icon className="h-5 w-5" />;
-                const className = "grid h-10 w-10 place-items-center rounded-full border border-bone/15 bg-bone transition hover:border-bone/50";
-                return href ? (
-                  <a key={label} href={href} target="_blank" rel="noopener noreferrer" aria-label={label} className={className} style={{ color }}>{icon}</a>
-                ) : (
-                  <span key={label} role="img" aria-label={`${label} ${x("link not set", "الرابط غير متاح")}`} className={className} style={{ color }}>{icon}</span>
-                );
-              })}
+            <div className="mt-7">
+              <p className="mb-3 text-[10px] font-bold uppercase tracking-[0.2em] text-bone/45">{x("Follow VLOR", "تابع ڨلور")}</p>
+              <SocialLinks />
             </div>
           </div>
 

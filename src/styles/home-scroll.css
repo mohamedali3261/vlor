@@ -10,3 +10,38 @@
 @media (prefers-reduced-motion: reduce) {
   .home-scroll-cue > span:last-child { animation: none; }
 }
+
+/* A quieter, framed social area gives the hero a clear finishing point. */
+.hero-social {
+  padding: 1.1rem 1.5rem 1.25rem;
+  border: 1px solid rgb(255 255 255 / 9%);
+  border-radius: 22px;
+  background: linear-gradient(135deg, rgb(255 255 255 / 5%), rgb(255 255 255 / 1%));
+  box-shadow: 0 18px 48px rgb(0 0 0 / 12%);
+}
+.hero-social__heading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: .75rem;
+  margin-bottom: .85rem;
+  color: color-mix(in srgb, var(--color-bone) 58%, transparent);
+  font-size: .65rem;
+  font-weight: 700;
+  letter-spacing: .12em;
+}
+.hero-social__heading span { width: 22px; height: 1px; background: color-mix(in srgb, var(--color-acid) 45%, transparent); }
+
+.hero-eyebrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: .7rem;
+  margin-bottom: 1.25rem;
+  color: var(--color-acid);
+  font-size: .65rem;
+  font-weight: 700;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+}
+.hero-eyebrow span { width: 26px; height: 1px; background: currentColor; opacity: .55; }
