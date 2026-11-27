@@ -1,0 +1,28 @@
+import assert from 'node:assert/strict';
+import {createRequire} from 'node:module';
+import {build} from 'esbuild';
+const require=createRequire(import.meta.url), React=require('react'), {act,create}=require('react-test-renderer');
+globalThis.IS_REACT_ACT_ENVIRONMENT=true;
+let confirm=false, calls=[], code=200, rows=[];
+globalThis.window={confirm:()=>confirm,matchMedia:()=>({matches:true,addEventListener(){},removeEventListener(){}}),setTimeout,clearTimeout};
+globalThis.document={hidden:false,addEventListener(){},removeEventListener(){}};
+globalThis.fetch=async(url,options={})=>{calls.push({url,...options});return {ok:code===200,status:code,json:async()=>rows};};
+const mock={'@/i18n/LanguageContext':`exports.useLang=()=>({lang:'ar',l:v=>v.ar,x:(e,a)=>a})`};
+async function load(file){const out=await build({entryPoints:[file],bundle:true,platform:'node',format:'cjs',packages:'external',jsx:'automatic',write:false,loader:{'.css':'empty'},alias:{'@':process.cwd()+'/src'},plugins:[{name:'mock',setup(b){b.onResolve({filter:/^@\//},a=>mock[a.path]?{path:a.path,namespace:'mock'}:undefined);b.onLoad({filter:/.*/,namespace:'mock'},a=>({contents:mock[a.path],loader:'js'}));}}]});const mod={exports:{}};new Function('require','module','exports',out.outputFiles[0].text)(require,mod,mod.exports);return mod.exports;}
+const {Gallery}=await load('src/pages/Product/Gallery.tsx');
+const product={id:'p',name:{ar:'عطر',en:'Perfume'},tagline:{ar:'عطر',en:'Perfume'},images:['/a','/b'],sizes:[{ml:50,price:1},{ml:100,price:2}]};
+rows=[{image:'/a',size:50,available:0},{image:'/a',size:100,available:1},{image:'/b',size:100,available:0}];let r;
+await act(async()=>{r=create(React.createElement(Gallery,{product,selectedSize:50}));});
+assert.ok(JSON.stringify(r.toJSON()).includes('غير متوفر · 50 مل'));assert.ok(r.root.findByProps({'aria-label':'الصورة 1 · الأساسية · غير متوفر · 50 ml'}));
+await act(async()=>r.update(React.createElement(Gallery,{product,selectedSize:100})));assert.equal(r.root.findAllByProps({className:'product-gallery__availability'}).length,0);assert.ok(r.root.findByProps({'aria-label':'الصورة 2 · غير متوفر · 100 ml'}));
+await act(async()=>r.root.findByProps({'aria-label':'الصورة 2 · غير متوفر · 100 ml'}).props.onClick());assert.ok(JSON.stringify(r.toJSON()).includes('غير متوفر · 100 مل'));
+code=500;await act(async()=>r.update(React.createElement(Gallery,{product:{...product,id:'new'},selectedSize:100})));assert.equal(r.root.findAllByProps({className:'product-gallery__availability'}).length,0);assert.ok(JSON.stringify(r.toJSON()).includes('تعذر تحميل حالة الصور'));
+await act(async()=>r.unmount());
+const {ImageStockEditor}=await load('src/pages/Admin/ImageStockEditor.tsx');code=200;rows=[{image:'/a',size:50,quantity:0},{image:'/a',size:100,quantity:4}];calls=[];
+await act(async()=>{r=create(React.createElement(ImageStockEditor,{products:[product]}))});
+let selects=()=>r.root.findAllByType('select');await act(async()=>selects()[0].props.onChange({target:{value:'p'}}));await act(async()=>selects()[1].props.onChange({target:{value:'/a'}}));
+let inputs=()=>r.root.findAllByType('input');assert.equal(inputs()[0].props.value,'0');assert.equal(inputs()[1].props.value,'4');
+await act(async()=>inputs()[0].props.onChange({target:{value:'3'}}));await act(async()=>selects()[1].props.onChange({target:{value:'/b'}}));assert.equal(selects()[1].props.value,'/a');assert.equal(inputs()[0].props.value,'3');
+code=409;await act(async()=>r.root.findByType('form').props.onSubmit({preventDefault(){}}));assert.ok(JSON.stringify(r.toJSON()).includes('تغيرت الصورة'));assert.equal(inputs()[0].props.value,'3');
+code=200;await act(async()=>r.root.findByType('form').props.onSubmit({preventDefault(){}}));const sent=JSON.parse(calls.at(-1).body);assert.deepEqual(sent.sizes,[{size:50,quantity:3,expected:0},{size:100,quantity:4,expected:4}]);assert.ok(JSON.stringify(r.toJSON()).includes('تم حفظ كميات الصورة'));
+await act(async()=>r.unmount());console.log('Image stock editor and selected-size gallery availability passed.');

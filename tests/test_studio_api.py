@@ -60,7 +60,7 @@ class StudioApiTests(unittest.TestCase):
         self.assertEqual(public['content']['data']['announcements'][0]['ar'],'رسالة جديدة')
         self.assertEqual(self.request('/api/admin/storefront-config/settings','PUT',{'version':None,'data':settings},token)[0],409)
         rate={'city':'Cairo','amount':30,'freeThreshold':None}
-        rule={'id':str(uuid.uuid4()),'kind':'quantity','threshold':1,'percent':20,'enabled':True}
+        rule={'id':str(uuid.uuid4()),'kind':'quantity','threshold':1,'discountAmount':20,'enabled':True}
         self.assertEqual(self.request('/api/admin/shipping','PUT',rate,token)[0],200)
         self.assertEqual(self.request('/api/admin/discount-rules','PUT',rule,token)[0],200)
         item={'productId':product,'ml':ml,'qty':1}

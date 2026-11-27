@@ -14,6 +14,7 @@ interface StoreValue {
   settings: SiteSettings;
   wishlist: string[];
   saveProduct: (product: Product) => Promise<void>;
+  reloadProducts: () => Promise<void>;
   deleteProduct: (id: string) => Promise<void>;
   resetCatalogue: () => void;
   replaceCatalogue: (products: Product[]) => Promise<void>;
@@ -171,6 +172,12 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     null
   );
 
+  const reloadProducts = useCallback(async () => {
+    const response = await fetch('/api/products');
+    if (!response.ok) throw new Error('Catalogue unavailable');
+    setProducts(await response.json());
+  }, []);
+
   const saveProduct = useCallback(async (product: Product) => {
     const response = await fetch(`/api/admin/products/${encodeURIComponent(product.id)}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(product) });
     if (!response.ok) throw new Error('Could not save product');
@@ -230,6 +237,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       settings,
       wishlist,
       saveProduct,
+      reloadProducts,
       deleteProduct,
       resetCatalogue,
       replaceCatalogue,
@@ -251,6 +259,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       settings,
       wishlist,
       saveProduct,
+      reloadProducts,
       deleteProduct,
       resetCatalogue,
       replaceCatalogue,

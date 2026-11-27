@@ -39,30 +39,36 @@ class AutomaticDiscountTests(unittest.TestCase):
         db.commit()
         rate={'city':'Cairo','amount':30,'freeThreshold':250}
         self.assertEqual(self.request('/api/admin/shipping','PUT',rate,token)[0],200)
-        a={'id':str(uuid.uuid4()),'kind':'quantity','threshold':3,'percent':10,'enabled':True}
-        b={'id':str(uuid.uuid4()),'kind':'amount','threshold':200,'percent':20,'enabled':True}
-        off={'id':str(uuid.uuid4()),'kind':'quantity','threshold':1,'percent':90,'enabled':False}
+        a={'id':str(uuid.uuid4()),'kind':'quantity','threshold':3,'discountAmount':10,'enabled':True}
+        b={'id':str(uuid.uuid4()),'kind':'amount','threshold':200,'discountAmount':20,'enabled':True}
+        off={'id':str(uuid.uuid4()),'kind':'quantity','threshold':1,'discountAmount':90,'enabled':False}
         self.assertEqual(self.request('/api/admin/discount-rules','PUT',a)[0],401)
         self.assertEqual(self.request('/api/admin/discount-rules','PUT',a,staff)[0],403)
-        self.assertEqual(self.request('/api/admin/discount-rules','PUT',{**a,'percent':101},token)[0],400)
+        self.assertEqual(self.request('/api/admin/discount-rules','PUT',{**a,'discountAmount':0},token)[0],400)
         for rule in [a,b,off]: self.assertEqual(self.request('/api/admin/discount-rules','PUT',rule,token)[0],200)
         self.assertEqual(len(self.request('/api/discount-rules')[1]),2)
+        # Fixed reductions cannot exceed the value of products or reduce shipping.
+        cap={**off,'discountAmount':500,'enabled':True}
+        self.assertEqual(self.request('/api/admin/discount-rules','PUT',cap,token)[0],200)
+        capped=self.request('/api/quote','POST',{'city':'Cairo','items':[{'productId':product,'ml':ml,'qty':1}]})[1]
+        self.assertEqual((capped['discount'],capped['shipping'],capped['total']),(100,30,30))
+        self.assertEqual(self.request('/api/admin/discount-rules','PUT',off,token)[0],200)
         def quote(qty): return self.request('/api/quote','POST',{'city':'Cairo','items':[{'productId':product,'ml':ml,'qty':qty}]})
         self.assertEqual(quote(1)[1]['discount'],0)
-        self.assertEqual(quote(2)[1]['discount'],40)
-        quoted=quote(3)[1]; self.assertEqual((quoted['discount'],quoted['shipping'],quoted['total']),(60,30,270))
+        self.assertEqual(quote(2)[1]['discount'],20)
+        quoted=quote(3)[1]; self.assertEqual((quoted['discount'],quoted['shipping'],quoted['total']),(20,0,280))
         self.assertEqual(self.request('/api/quote','POST',{'city':'Cairo','coupon':'LEGACY','items':[{'productId':product,'ml':ml,'qty':1}]})[0],400)
         body={'customer':{'name':'Test User','phone':'01012345678','city':'Cairo','address':'Test address','note':''},'expectedShipping':quoted['shipping'],'expectedDiscount':quoted['discount'],'items':[{'productId':product,'ml':ml,'qty':3,'expectedPrice':100}]}
-        self.assertEqual(self.request('/api/admin/discount-rules','PUT',{**b,'percent':25},token)[0],200)
+        self.assertEqual(self.request('/api/admin/discount-rules','PUT',{**b,'discountAmount':25},token)[0],200)
         self.assertEqual(self.request('/api/orders','POST',body,key=str(uuid.uuid4()))[0],409)
         self.assertEqual(db.execute('SELECT quantity FROM inventory WHERE product_id=? AND size=?',(product,ml)).fetchone()[0],30)
         q=quote(3)[1];body['expectedDiscount']=q['discount'];body['expectedShipping']=q['shipping']
         key=str(uuid.uuid4());status,order=self.request('/api/orders','POST',body,key=key); self.assertEqual(status,201,order)
-        self.assertEqual(order['discount'],75);self.assertEqual(self.request('/api/orders','POST',body,key=key)[0],200)
-        self.assertEqual(db.execute('SELECT count(*) FROM checkout_discount_context').fetchone()[0],0)
+        self.assertEqual(order['discount'],25);self.assertEqual(self.request('/api/orders','POST',body,key=key)[0],200)
+        self.assertEqual(db.execute('SELECT count(*) FROM checkout_amount_context').fetchone()[0],0)
         self.assertEqual(db.execute('SELECT quantity FROM inventory WHERE product_id=? AND size=?',(product,ml)).fetchone()[0],27)
         self.assertEqual(self.request('/api/admin/discount-rules/'+b['id'],'DELETE',token=token)[0],200)
-        self.assertEqual(quote(3)[1]['discount'],30)
+        self.assertEqual(quote(3)[1]['discount'],10)
         self.assertEqual(db.execute("SELECT subtotal,discount,coupon_code FROM orders WHERE id='old'").fetchone(),(100,10,'LEGACY'))
-        self.assertEqual(db.execute('SELECT discount FROM orders WHERE id=?',(order['id'],)).fetchone()[0],75)
+        self.assertEqual(db.execute('SELECT discount FROM orders WHERE id=?',(order['id'],)).fetchone()[0],25)
         db.close()

@@ -163,6 +163,9 @@ export function Navbar() {
                 </span>
               )}
             </Link>
+            <Link to="/profile" className={cn("hidden h-10 w-10 shrink-0 place-items-center rounded-full border text-ink transition sm:grid", path === "/profile" ? "border-ink bg-ink text-bone" : "border-ink/12 hover:border-ink/40")} aria-label={lang === "ar" ? "بروفايلي" : "My profile"} aria-current={path === "/profile" ? "page" : undefined}>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true" className="h-4 w-4"><circle cx="12" cy="8" r="3.5"/><path d="M5 20c.6-4 3-6 7-6s6.4 2 7 6"/></svg>
+            </Link>
             <a
               href={whatsappUrl(settings.whatsapp, x("Hello VLOR 🌿", "مرحباً ڨلور 🌿"))}
               target="_blank"
@@ -230,7 +233,7 @@ export function Navbar() {
               <X className="h-4 w-4" />
             </button>
           </div>
-          <nav className="flex flex-1 flex-col gap-1 px-5 py-8">
+          <nav className="flex flex-1 flex-col gap-1 overflow-y-auto px-5 py-8">
             {links.map((link, index) => (
               <Link
                 key={link.to}
@@ -262,6 +265,9 @@ export function Navbar() {
                 )}
               </span>
               <span className="font-mono text-[10px] text-mist">04</span>
+            </Link>
+            <Link to="/profile" onClick={() => setMobileOpen(false)} className={cn("group flex items-center justify-between border-b border-ink/8 py-4 transition", path === "/profile" ? "text-ink" : "text-ink/60")}>
+              <span className="font-display text-4xl leading-none">{lang === "ar" ? "بروفايلي" : "My profile"}</span><span className="font-mono text-[10px] text-mist">05</span>
             </Link>
           </nav>
           <div className="space-y-3 border-t border-ink/10 p-5">

@@ -35,12 +35,14 @@ function StatusBadge({ status, ar }: { status:string; ar:boolean }) {
   return <span className={`inline-flex items-center rounded-full border px-2.5 py-1 text-[11px] font-bold ${map[status] || 'bg-bone-2 text-mist'}`}>{label[status] || status}</span>;
 }
 
-export function Orders() {
+export function Orders({ canHide = false }: { canHide?: boolean }) {
   const { lang } = useLang();
   const ar = lang==='ar';
   const [orders,setOrders]=useState<Order[]>([]);
   const [items,setItems]=useState<Item[]>([]);
   const [error,setError]=useState('');
+  const [hiding,setHiding]=useState<string | null>(null);
+  const [refreshKey,setRefreshKey]=useState(0);
   const seenNew=useRef<Set<string>|null>(null);
   const [notice,setNotice]=useState('');
   const [query,setQuery]=useState('');
@@ -62,7 +64,7 @@ export function Orders() {
       setError('');
     }).catch(e=>{ if(e.name!=='AbortError') setError(ar?'تعذر تحميل الطلبات':'Could not load orders'); });
     return ()=>controller.abort();
-  },[ar,page,query,status]);
+  },[ar,page,query,status,refreshKey]);
 
   useEffect(()=> {
     let stopped=false;
@@ -94,6 +96,19 @@ export function Orders() {
       if(!r.ok) throw Error();
       setOrders(prev=>status && status!==next ? prev.filter(o=>o.id!==id) : prev.map(o=>o.id===id?{...o,status:next}:o));
     } catch {setError(ar?'تعذر تغيير الحالة':'Could not update status');}
+  };
+
+  const hide = async (id:string) => {
+    if (hiding || !window.confirm(ar ? 'إخفاء هذا الطلب من الاستوديو؟ لن يتغير المخزون وسيظل رابط التتبع والطلب محفوظين، ولا يمكن إرجاعه للقائمة من الاستوديو.' : 'Hide this order from the studio? Stock, the order and its tracking link will remain unchanged. It cannot be restored from the studio.')) return;
+    setHiding(id); setError('');
+    try {
+      const response=await fetch(`/api/admin/orders/${encodeURIComponent(id)}`,{method:'DELETE'});
+      if (!response.ok) throw Error();
+      setOrders(prev=>prev.filter(order=>order.id!==id));
+      setItems(prev=>prev.filter(item=>item.order_id!==id));
+      if (page > 1 && orders.length === 1) setPage(p=>p-1); else setRefreshKey(v=>v+1);
+    } catch { setError(ar?'تعذر إخفاء الطلب. حاول مجددًا.':'Could not hide the order. Please retry.'); }
+    finally { setHiding(null); }
   };
 
   return (
@@ -173,6 +188,7 @@ export function Orders() {
                     onChange={(value) => void update(o.id, value)}
                     dir={ar ? 'rtl' : 'ltr'}
                   />
+                  {canHide && <button type="button" aria-label={ar ? `حذف الطلب ${o.id} من الاستوديو` : `Remove order ${o.id} from studio`} disabled={!!hiding} onClick={()=>void hide(o.id)} className="ms-auto rounded-full border border-rose-200 px-3 py-2 text-xs font-bold text-rose-700 disabled:opacity-50">{hiding===o.id ? (ar?'جاري الإخفاء…':'Hiding…') : (ar?'حذف من الاستوديو':'Remove from studio')}</button>}
                 </div>
               </div>
             </article>

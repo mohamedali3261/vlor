@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Gallery } from "@/pages/Product/Gallery";
 import { PurchasePanel } from "@/pages/Product/PurchasePanel";
 import { RelatedScents } from "@/pages/Product/RelatedScents";
@@ -14,6 +15,7 @@ export function ProductPage() {
   const { products } = useStore();
   const { segments } = useRoute();
   const product = getProductBySlug(products, segments[1] ?? "");
+  const [selection, setSelection] = useState<{id:string; ml:number} | null>(null);
 
   if (!product) {
     return (
@@ -32,6 +34,8 @@ export function ProductPage() {
     );
   }
 
+  const ml = selection?.id === product.id && product.sizes.some(size => size.ml === selection.ml) ? selection.ml : (product.sizes.find(size => size.ml === 50) ?? product.sizes[0])?.ml ?? 50;
+
   return (
     <div className="anim-page bg-bone">
       <section className="relative overflow-hidden page-pad">
@@ -48,9 +52,9 @@ export function ProductPage() {
           </Link>
           <div className="grid gap-8 lg:grid-cols-[1.02fr_0.98fr] lg:gap-14">
             <div className="lg:sticky lg:top-24 lg:self-start">
-              <Gallery product={product} />
+              <Gallery product={product} selectedSize={ml} />
             </div>
-            <PurchasePanel product={product} />
+            <PurchasePanel key={product.id} product={product} ml={ml} onSizeChange={size => setSelection({id:product.id, ml:size})} />
           </div>
         </div>
       </section>

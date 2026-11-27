@@ -10,6 +10,7 @@ const DDL_STATEMENTS = [
   `CREATE TABLE IF NOT EXISTS sessions (token_hash TEXT PRIMARY KEY, admin_id TEXT NOT NULL REFERENCES admins(id) ON DELETE CASCADE, expires_at INTEGER NOT NULL, last_seen INTEGER NOT NULL DEFAULT 0)`,
   `CREATE TABLE IF NOT EXISTS login_attempts (key TEXT PRIMARY KEY, count INTEGER NOT NULL, expires_at INTEGER NOT NULL)`,
   `CREATE TABLE IF NOT EXISTS orders (id TEXT PRIMARY KEY, customer_name TEXT NOT NULL, phone TEXT NOT NULL, city TEXT NOT NULL, address TEXT NOT NULL, note TEXT NOT NULL, subtotal INTEGER NOT NULL, status TEXT NOT NULL DEFAULT 'new', created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, idempotency_key TEXT, request_hash TEXT, stock_reserved INTEGER NOT NULL DEFAULT 0 CHECK(stock_reserved IN (0, 1)), shipping INTEGER NOT NULL DEFAULT 0, discount INTEGER NOT NULL DEFAULT 0, coupon_code TEXT, tracking_hash TEXT)`,
+  `CREATE TABLE IF NOT EXISTS hidden_studio_orders (order_id TEXT PRIMARY KEY REFERENCES orders(id) ON DELETE CASCADE, hidden_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)`,
   `CREATE TABLE IF NOT EXISTS order_contacts (order_id TEXT PRIMARY KEY REFERENCES orders(id) ON DELETE CASCADE, additional_phone TEXT NOT NULL)`,
   `CREATE TABLE IF NOT EXISTS order_items (id TEXT PRIMARY KEY, order_id TEXT NOT NULL REFERENCES orders(id), product_id TEXT NOT NULL REFERENCES products(id), name TEXT NOT NULL, size INTEGER NOT NULL, unit_price INTEGER NOT NULL, quantity INTEGER NOT NULL)`,
   `CREATE INDEX IF NOT EXISTS order_items_order ON order_items(order_id)`,
@@ -18,6 +19,7 @@ const DDL_STATEMENTS = [
   `CREATE UNIQUE INDEX IF NOT EXISTS order_tracking_hash ON orders(tracking_hash) WHERE tracking_hash IS NOT NULL`,
   `CREATE TABLE IF NOT EXISTS audit_log (id TEXT PRIMARY KEY, admin_id TEXT NOT NULL, action TEXT NOT NULL, target_id TEXT NOT NULL, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)`,
   `CREATE INDEX IF NOT EXISTS audit_log_created ON audit_log(created_at DESC)`,
+  `CREATE INDEX IF NOT EXISTS audit_log_order_confirmation ON audit_log(target_id,action)`,
   `CREATE TABLE IF NOT EXISTS inventory (product_id TEXT NOT NULL REFERENCES products(id), size INTEGER NOT NULL CHECK(size > 0), quantity INTEGER NOT NULL DEFAULT 0 CHECK(quantity >= 0), PRIMARY KEY (product_id, size))`,
   `CREATE TABLE IF NOT EXISTS shipping_rates (city TEXT PRIMARY KEY, amount INTEGER NOT NULL CHECK(amount >= 0), free_threshold INTEGER CHECK(free_threshold IS NULL OR free_threshold >= 0))`,
   `CREATE TABLE IF NOT EXISTS checkout_discount_context (order_id TEXT PRIMARY KEY, quantity INTEGER NOT NULL CHECK(quantity > 0))`,
@@ -30,6 +32,10 @@ const DDL_STATEMENTS = [
   `CREATE TABLE IF NOT EXISTS analytics_presence (visitor_hash TEXT PRIMARY KEY, last_seen INTEGER NOT NULL)`,
   `CREATE INDEX IF NOT EXISTS analytics_presence_seen ON analytics_presence(last_seen)`,
   `CREATE INDEX IF NOT EXISTS analytics_daily_products ON analytics_daily(event_type,day,target_id)`,
+  `CREATE TABLE IF NOT EXISTS analytics_profiles (profile_hash TEXT PRIMARY KEY, name TEXT NOT NULL, last_seen INTEGER NOT NULL)`,
+  `CREATE TABLE IF NOT EXISTS analytics_profile_revocations (profile_hash TEXT PRIMARY KEY, deleted_at INTEGER NOT NULL)`,
+  `CREATE TABLE IF NOT EXISTS analytics_profile_events (profile_hash TEXT NOT NULL REFERENCES analytics_profiles(profile_hash) ON DELETE CASCADE, day TEXT NOT NULL, kind TEXT NOT NULL, page_path TEXT NOT NULL, target TEXT NOT NULL DEFAULT '', event_count INTEGER NOT NULL DEFAULT 1, PRIMARY KEY(profile_hash,day,kind,page_path,target))`,
+  `CREATE INDEX IF NOT EXISTS analytics_profile_events_day ON analytics_profile_events(day)`,
   `CREATE TABLE IF NOT EXISTS deleted_images (key TEXT PRIMARY KEY, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)`,
   `CREATE TABLE IF NOT EXISTS images (key TEXT PRIMARY KEY, content_type TEXT NOT NULL CHECK(content_type IN ('image/jpeg', 'image/png', 'image/webp')), data_base64 TEXT NOT NULL CHECK(length(data_base64) BETWEEN 16 AND 1333336), size INTEGER NOT NULL CHECK(size BETWEEN 12 AND 1000000), created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)`,
 ];
@@ -205,6 +211,43 @@ async function ensureDiscountRules(db: D1Database): Promise<void> {
   ]);
 }
 
+// Percentage offers cannot be converted to pounds without changing their meaning.
+// Keep them as disabled drafts until the owner supplies a fixed amount.
+const FIXED_RULES_TABLE = `CREATE TABLE IF NOT EXISTS discount_amount_rules (id TEXT PRIMARY KEY, kind TEXT NOT NULL CHECK(kind IN ('quantity','amount')), threshold INTEGER NOT NULL CHECK(threshold > 0), discount_amount INTEGER CHECK(discount_amount IS NULL OR discount_amount BETWEEN 1 AND 10000000), legacy_percent INTEGER CHECK(legacy_percent IS NULL OR legacy_percent BETWEEN 1 AND 100), enabled INTEGER NOT NULL CHECK(enabled IN (0,1)), CHECK(enabled=0 OR discount_amount IS NOT NULL))`;
+const FIXED_CONTEXT_TABLE = `CREATE TABLE IF NOT EXISTS checkout_amount_context (order_id TEXT PRIMARY KEY, quantity INTEGER NOT NULL CHECK(quantity > 0))`;
+// Separate contexts allow an old worker to finish orders during the migration/deploy window.
+const FIXED_DISCOUNT_TRIGGER = `CREATE TRIGGER validate_checkout BEFORE INSERT ON orders WHEN NEW.tracking_hash IS NOT NULL BEGIN
+  SELECT CASE WHEN NEW.subtotal < 0 OR NEW.discount < 0 OR NEW.shipping < 0 OR NEW.coupon_code IS NOT NULL OR (NOT EXISTS (SELECT 1 FROM checkout_amount_context WHERE order_id=NEW.id) AND NOT EXISTS (SELECT 1 FROM checkout_discount_context WHERE order_id=NEW.id) AND (NEW.discount != 0 OR EXISTS (SELECT 1 FROM discount_amount_rules WHERE enabled=1) OR EXISTS (SELECT 1 FROM discount_rules WHERE enabled=1))) THEN RAISE(ABORT, 'discount_changed') END;
+  SELECT CASE WHEN EXISTS (SELECT 1 FROM checkout_amount_context WHERE order_id=NEW.id) AND NEW.discount != MIN(NEW.subtotal, COALESCE((SELECT MAX(discount_amount) FROM discount_amount_rules WHERE enabled=1 AND ((kind='quantity' AND (SELECT quantity FROM checkout_amount_context WHERE order_id=NEW.id)>=threshold) OR (kind='amount' AND NEW.subtotal>=threshold))),0)) THEN RAISE(ABORT, 'discount_changed') END;
+  SELECT CASE WHEN NOT EXISTS (SELECT 1 FROM checkout_amount_context WHERE order_id=NEW.id) AND EXISTS (SELECT 1 FROM checkout_discount_context WHERE order_id=NEW.id) AND NEW.discount != CAST(NEW.subtotal * COALESCE((SELECT MAX(percent) FROM discount_rules WHERE enabled=1 AND ((kind='quantity' AND (SELECT quantity FROM checkout_discount_context WHERE order_id=NEW.id)>=threshold) OR (kind='amount' AND NEW.subtotal>=threshold))),0) / 100 AS INTEGER) THEN RAISE(ABORT, 'discount_changed') END;
+  SELECT CASE WHEN NOT EXISTS (SELECT 1 FROM shipping_rates r WHERE r.city=NEW.city AND NEW.shipping = CASE WHEN r.free_threshold IS NOT NULL AND NEW.subtotal-NEW.discount>=r.free_threshold THEN 0 ELSE r.amount END) THEN RAISE(ABORT, 'shipping_changed') END;
+END`;
+async function ensureFixedDiscountRules(db: D1Database): Promise<void> {
+  await db.prepare(FIXED_RULES_TABLE).run();
+  await db.prepare(FIXED_CONTEXT_TABLE).run();
+  const marker = await db.prepare("SELECT value FROM store_meta WHERE key='fixed_discounts_v1'").first();
+  if (!marker) await db.batch([
+    db.prepare("INSERT OR IGNORE INTO discount_amount_rules(id,kind,threshold,discount_amount,legacy_percent,enabled) SELECT id,kind,threshold,NULL,percent,0 FROM discount_rules WHERE NOT EXISTS (SELECT 1 FROM store_meta WHERE key='fixed_discounts_v1')"),
+    db.prepare('DROP TRIGGER IF EXISTS validate_checkout'),
+    db.prepare(FIXED_DISCOUNT_TRIGGER),
+    db.prepare("INSERT OR IGNORE INTO store_meta(key,value) VALUES('fixed_discounts_v1','1')"),
+  ]);
+}
+
+// Per-image values are intentionally separate from order inventory: they are manual display data.
+const IMAGE_STOCK_TABLE = `CREATE TABLE IF NOT EXISTS image_stock (product_id TEXT NOT NULL REFERENCES products(id), image_url TEXT NOT NULL, size INTEGER NOT NULL CHECK(size > 0), quantity INTEGER CHECK(quantity IS NULL OR quantity BETWEEN 0 AND 1000000), PRIMARY KEY(product_id,image_url,size))`;
+const IMAGE_STOCK_CLEANUP = `CREATE TRIGGER IF NOT EXISTS image_stock_cleanup AFTER UPDATE OF data ON products BEGIN
+  DELETE FROM image_stock WHERE product_id=NEW.id AND (
+    (NOT EXISTS (SELECT 1 FROM json_each(NEW.data,'$.images') j WHERE j.value=image_url)
+      AND NOT (NOT EXISTS (SELECT 1 FROM json_each(NEW.data,'$.images') valid WHERE valid.type='text' AND length(trim(valid.value))>0) AND COALESCE(json_extract(NEW.data,'$.cutout'),'')=image_url))
+    OR NOT EXISTS (SELECT 1 FROM json_each(NEW.data,'$.sizes') s WHERE json_extract(s.value,'$.ml')=image_stock.size)
+  );
+END`;
+async function ensureImageStock(db:D1Database):Promise<void> {
+  await db.prepare(IMAGE_STOCK_TABLE).run();
+  await db.prepare(IMAGE_STOCK_CLEANUP).run();
+}
+
 async function initialize(db: D1Database): Promise<void> {
   let initialized = false;
   try {
@@ -215,9 +258,13 @@ async function initialize(db: D1Database): Promise<void> {
   }
   if (initialized) {
     // Existing databases also need the additive table before accepting new orders.
+    await db.prepare(DDL_STATEMENTS.find(sql => sql.includes('CREATE TABLE IF NOT EXISTS hidden_studio_orders'))!).run();
+    await db.prepare(DDL_STATEMENTS.find(sql => sql.includes('CREATE INDEX IF NOT EXISTS audit_log_order_confirmation'))!).run();
     await db.prepare(`CREATE TABLE IF NOT EXISTS order_contacts (order_id TEXT PRIMARY KEY REFERENCES orders(id) ON DELETE CASCADE, additional_phone TEXT NOT NULL)`).run();
-    for (const sql of DDL_STATEMENTS.filter(statement => /analytics_daily|analytics_actions|analytics_presence/.test(statement))) await db.prepare(sql).run();
+    for (const sql of DDL_STATEMENTS.filter(statement => /analytics_daily|analytics_actions|analytics_presence/.test(statement) || /analytics_profiles|analytics_profile_events|analytics_profile_revocations/.test(statement))) await db.prepare(sql).run();
     await ensureDiscountRules(db);
+    await ensureFixedDiscountRules(db);
+    await ensureImageStock(db);
     await applyVlorBrandMigration(db);
     await ensureRequestedScents(db);
     await removeOldImages(db);
@@ -240,6 +287,8 @@ async function initialize(db: D1Database): Promise<void> {
   }
 
   await ensureDiscountRules(db);
+  await ensureFixedDiscountRules(db);
+  await ensureImageStock(db);
 
   // Seed initial bootstrap owner ('admin') only if no admin accounts exist yet,
   // or refresh the untouched bootstrap hash to 100k PBKDF2 iterations if still awaiting first password change.

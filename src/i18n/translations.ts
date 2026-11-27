@@ -332,7 +332,7 @@ export const dict = {
   "admin.analytics.clicks": { en: "Clicks", ar: "النقرات" },
   "admin.analytics.uniqueClickers": { en: "Unique clickers", ar: "زوار فريدون" },
   "admin.analytics.archived": { en: "Archived", ar: "مؤرشف" },
-  "admin.analytics.privacy": { en: "Analytics uses a random browser ID, hashed before storage; no IP addresses or customer/order details are saved. Studio pages are excluded, online visitors are estimated over five minutes, and records expire after 400 days.", ar: "تستخدم التحليلات معرّفاً عشوائياً للمتصفح يُحوّل إلى بصمة قبل التخزين؛ لا تُحفظ عناوين IP أو بيانات العملاء والطلبات. صفحات الاستوديو مستثناة، والزوار الحاليون تقدير لآخر 5 دقائق، وتُحذف السجلات بعد 400 يوم." },
+  "admin.analytics.privacy": { en: "General analytics uses a hashed browser ID. Named profiles voluntarily share their display name and later activity; delivery and order details are not sent to analytics. Studio pages are excluded, online visitors are estimated over five minutes, and records expire after 400 days.", ar: "تستخدم التحليلات العامة بصمة للمتصفح. تشارك البروفيلات الاختيارية اسم البروفيل والنشاط اللاحق؛ لا تُرسل بيانات التوصيل أو الطلبات للتحليلات. صفحات الاستوديو مستثناة، والزوار الحاليون تقدير لآخر 5 دقائق، وتُحذف السجلات بعد 400 يوم." },
   "admin.analytics.error": { en: "Could not load analytics. Check your connection and studio access.", ar: "تعذر تحميل التحليلات. تحقق من الاتصال وصلاحية دخول الاستوديو." },
   "admin.analytics.retry": { en: "Try again", ar: "أعد المحاولة" },
   "admin.tab.github": { en: "GitHub publish", ar: "النشر على جتهاب" },

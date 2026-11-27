@@ -1,8 +1,11 @@
+import { loadProfile } from "@/lib/localProfile";
+import { ProfileSetup } from "@/pages/Profile/ProfileSetup";
+import { Portal } from "@/components/ui/Primitives";
 import { primaryProductImage } from "@/lib/productImages";
 import { usePersistentState } from "@/hooks/usePersistentState";
 import { useStore } from "@/context/StoreContext";
 import type { CartLine, Product } from "@/types";
-import { useCallback, useContext, useEffect, useMemo, useState, createContext, type ReactNode } from "react";
+import { useCallback, useContext, useEffect, useMemo, useRef, useState, createContext, type ReactNode } from "react";
 import { useRoute } from "@/lib/router";
 
 interface CartValue {
@@ -26,6 +29,8 @@ const CartContext = createContext<CartValue | null>(null);
 export function CartProvider({ children }: { children: ReactNode }) {
   const [lines, setLines] = usePersistentState<CartLine[]>("malika.cart.v2", []);
   const [isOpen, setIsOpen] = useState(false);
+  const [showProfileSetup,setShowProfileSetup]=useState(false);
+  const setupOffered=useRef(false);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const { path } = useRoute();
   const { products } = useStore();
@@ -56,6 +61,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const add = useCallback(
     (product: Product, ml: number, price: number, qty = 1) => {
+      if (!setupOffered.current && !loadProfile()?.displayName) {
+        let dismissed=false;try { dismissed=!!window.localStorage.getItem('vlor.profile-prompt.dismissed'); } catch { /* Offer once even without storage. */ }
+        setupOffered.current=true;if(!dismissed)setShowProfileSetup(true);
+      }
       const key = `${product.id}-${ml}`;
       setLines((prev) => {
         const existing = prev.find((line) => line.key === key);
@@ -125,7 +134,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
     [lines, count, subtotal, isOpen, checkoutOpen, add, setQty, remove, clear]
   );
 
-  return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
+  const dismissSetup = () => { try { window.localStorage.setItem('vlor.profile-prompt.dismissed','1'); } catch { /* optional */ } setShowProfileSetup(false); };
+  return <CartContext.Provider value={value}>{children}{showProfileSetup && <Portal><div className="fixed inset-0 z-[160] flex items-center justify-center bg-ink/60 p-4" role="dialog" aria-modal="true" aria-label="Profile"><div className="max-h-[90dvh] w-full max-w-md overflow-y-auto rounded-2xl bg-bone p-6 shadow-2xl"><ProfileSetup onDone={dismissSetup} onSkip={dismissSetup}/></div></div></Portal>}</CartContext.Provider>;
 }
 
 export function useCart() {

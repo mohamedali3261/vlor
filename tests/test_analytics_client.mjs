@@ -4,7 +4,7 @@ import { build } from 'esbuild';
 const require=createRequire(import.meta.url);
 const bundle=await build({entryPoints:['src/lib/analytics.ts'],bundle:true,platform:'node',format:'cjs',write:false});
 const module={exports:{}};new Function('require','module','exports',bundle.outputFiles[0].text)(require,module,module.exports);
-const {interactionAction,startAnalyticsTracking}=module.exports;
+const {interactionAction,startAnalyticsTracking,trackPageView}=module.exports;
 const nativeSetTimeout=globalThis.setTimeout,nativeClearTimeout=globalThis.clearTimeout;
 let scheduledTimers=new Map(), timerId=0;
 globalThis.setTimeout=(fn,ms)=>{scheduledTimers.set(++timerId,{fn,ms});return timerId};
@@ -45,6 +45,13 @@ listeners.click({target:el('a',{href:'#/track/private-token'})});await drain();a
 document.visibilityState='hidden';interval();assert.equal(calls.length,3);document.visibilityState='visible';listeners.visibilitychange();await drain();assert.equal(calls.length,4);
 stop();assert.equal(interval,null);assert.equal(Object.keys(listeners).length,0);
 startAnalyticsTracking('/studio');assert.equal(calls.length,4);assert.equal(Object.keys(listeners).length,0);
+// Profile association is captured at event time, never retroactively when the queue flushes.
+const local=new Map();globalThis.localStorage={getItem:k=>local.get(k)??null,setItem:(k,v)=>local.set(k,v),removeItem:k=>local.delete(k)};
+trackPageView('/shop');
+const profileToken='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
+local.set('vlor.local-profile.v1',JSON.stringify({details:{name:'',phone:'',additionalPhone:'',city:'',address:''},orders:[],displayName:'Test',analyticsToken:profileToken}));
+trackPageView('/shop');await drain();assert.equal(calls.at(-2).profileToken,undefined);assert.equal(calls.at(-1).profileToken,profileToken);local.clear();
+
 // Rapid clicks never issue synchronous requests; a stuck request is bounded and the queue is capped.
 const before=calls.length; let release;
 globalThis.fetch=(_url,options)=>{calls.push(JSON.parse(options.body));return new Promise(resolve=>{release=resolve;});};

@@ -63,6 +63,7 @@ export function ProductImagesEditor({ images, onChange, uploading, setUploading 
     <div className="product-images-editor sm:col-span-2 rounded-2xl border border-ink/10 bg-surface/45 p-4">
       <h3 className="text-sm font-bold">{ar ? "صور المنتج" : "Product images"}</h3>
       <p className="mt-1 text-xs leading-relaxed text-mist">{ar ? "الصورة الأساسية تظهر على الكارت وفي المتجر والتفاصيل. الصور الإضافية تظهر في صفحة التفاصيل. يمكنك إضافة حتى 20 صورة." : "The main image appears on the card, in the shop and on the product page. Extra images appear in the gallery. Up to 20 images."}</p>
+      <p className="mt-1 text-xs text-mist">{ar ? "إزالة صورة محفوظة تزيل أيضًا كميات العرض المسجلة لها، دون تغيير مخزون المنتج." : "Removing a saved image also removes its display quantities, without changing product stock."}</p>
       <p className="product-images-editor__tip">{ar ? "نضغط الصور تلقائياً قبل رفعها لتسريع التحميل، مع الحفاظ على الخلفية الشفافة. الصور المضافة بروابط خارجية لا تُضغط." : "Uploaded photos are optimised for faster loading while keeping transparency. External image links are not compressed."}</p>
       <p className="mt-2 text-[11px] text-mist">{ar ? "يظهر حجم كل صورة قبل الضغط وبعده لهذه الرفعة فقط." : "Before and after sizes are shown for images uploaded in this session."}</p>
       <fieldset disabled={uploading} className="mt-4 space-y-4 disabled:opacity-60">

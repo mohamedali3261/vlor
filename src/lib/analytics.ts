@@ -1,3 +1,4 @@
+import { loadProfile } from "@/lib/localProfile";
 const VISITOR_STORAGE_KEY = "vlor.analytics.visitor.v1";
 const VISITOR_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -37,7 +38,7 @@ function normalizePagePath(path: string): string | null {
   if (/^\/track(?:\/|$)/i.test(pathname)) return "/track";
   if (pathname === "/favorites" || pathname === "/saved") return "/wishlist";
   if (/^\/product\/[a-z0-9-]{1,100}$/i.test(pathname)) return pathname.toLowerCase();
-  if (["/", "/shop", "/wishlist", "/contact"].includes(pathname)) return pathname;
+  if (["/", "/shop", "/wishlist", "/contact", "/profile"].includes(pathname)) return pathname;
   return "/404";
 }
 
@@ -49,7 +50,7 @@ type AnalyticsEvent =
 
 // A small, bounded, best-effort queue keeps rapid clicks from flooding the network
 // or doing storage/serialization work in the click handler. Shopping never awaits it.
-const queue: AnalyticsEvent[] = [];
+const queue: (AnalyticsEvent & {profileToken?:string})[] = [];
 let scheduled = false;
 function schedule(): void {
   if (scheduled || !queue.length) return;
@@ -79,7 +80,8 @@ function send(event: AnalyticsEvent): void {
   try {
     const pagePath = normalizePagePath(event.pagePath);
     if (!pagePath || queue.length >= 40) return;
-    queue.push({ ...event, pagePath });
+    const profileToken = loadProfile()?.analyticsToken;
+    queue.push({ ...event, pagePath, ...(profileToken ? {profileToken} : {}) });
     schedule();
   } catch { /* Never interrupt browsing. */ }
 }

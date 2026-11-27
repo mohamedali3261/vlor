@@ -17,8 +17,8 @@ const bundle=await build({entryPoints:['src/components/layout/Announcement.tsx']
 const module={exports:{}};new Function('require','module','exports',bundle.outputFiles[0].text)(require,module,module.exports);
 let r;await act(async()=>{r=create(React.createElement(module.exports.Announcement))});
 assert.ok(JSON.stringify(r.toJSON()).includes('أهلاً'));assert.ok(!JSON.stringify(r.toJSON()).includes('خصم'));
-shown=[{id:'1',kind:'quantity',threshold:3,percent:15},{id:'2',kind:'amount',threshold:500,percent:20}];
+shown=[{id:'1',kind:'quantity',threshold:3,discountAmount:15},{id:'2',kind:'amount',threshold:500,discountAmount:20}];
 await act(async()=>listeners['vlor:discounts-changed']());
-const text=JSON.stringify(r.toJSON());assert.ok(text.includes('خصم 15% عند شراء 3'));assert.ok(text.includes('خصم 20% عند شراء بـ 500'));
+const text=JSON.stringify(r.toJSON());assert.ok(text.includes('خصم 15 ج.م عند شراء 3'));assert.ok(text.includes('خصم 20 ج.م عند شراء بـ 500'));
 await act(async()=>r.unmount());assert.deepEqual(listeners,{});
 console.log('Active offers appear alongside owner announcements and refresh after editing.');
