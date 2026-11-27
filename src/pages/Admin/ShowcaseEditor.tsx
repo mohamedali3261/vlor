@@ -1,3 +1,4 @@
+import { latinDigits } from "@/lib/format";
 import { Button } from "@/components/ui/Button";
 import { SmartImage } from "@/components/ui/Primitives";
 import { Select } from "@/components/ui/Select";
@@ -106,7 +107,7 @@ export function ShowcaseEditor({ value, products, onChange }: Props) {
         code === "type"
           ? ar ? "الملف ليس صورة." : "That file is not an image."
           : code === "size"
-            ? ar ? "الصورة أكبر من ١٥ ميجا." : "That image is over 15 MB."
+            ? ar ? "الصورة أكبر من 15 ميجا." : "That image is over 15 MB."
             : ar ? "تعذّرت قراءة الصورة." : "Could not read that image.",
         "error"
       );
@@ -166,7 +167,7 @@ export function ShowcaseEditor({ value, products, onChange }: Props) {
                   #{String(index + 1).padStart(2, "0")}
                   {isUpload && <span className="ms-2 text-plum">{ar ? `مرفوعة · ${kb(image.src)} ك.ب` : `uploaded · ${kb(image.src)} KB`}</span>}
                 </p>
-                <p className="truncate text-[12px] font-bold">{product ? product.name[lang] : ar ? "بدون عطر مرتبط" : "No linked scent"}</p>
+                <p className="truncate text-[12px] font-bold">{product ? latinDigits(product.name[lang]) : ar ? "بدون عطر مرتبط" : "No linked scent"}</p>
               </div>
               <div className="flex shrink-0 items-center gap-1">
                 <button type="button" onClick={() => move(index, -1)} disabled={index === 0} className="press grid h-9 w-9 place-items-center rounded-full border border-ink/10 disabled:opacity-30" aria-label={ar ? "للأعلى" : "Move up"}>
@@ -188,7 +189,7 @@ export function ShowcaseEditor({ value, products, onChange }: Props) {
                 onChange={(value) => pickProduct(image.id, value)}
                 options={[
                   { value: "", label: ar ? "— بدون —" : "— none —" },
-                  ...products.map((item) => ({ value: item.slug, label: item.name[lang] })),
+                  ...products.map((item) => ({ value: item.slug, label: latinDigits(item.name[lang]) })),
                 ]}
                 ariaLabel={ar ? "العطر المرتبط" : "Linked scent"}
                 dir={ar ? "rtl" : "ltr"}

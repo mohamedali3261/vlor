@@ -7,11 +7,11 @@ export function createDefaultContent(): SiteContent {
   return {
     studioDeliveryTab: true,
     announcements: [
-      { en: "Complimentary delivery on orders over EGP 2,000", ar: "توصيل مجاني للطلبات فوق ٢٠٠٠ ج.م" },
+      { en: "Complimentary delivery on orders over EGP 2,000", ar: "توصيل مجاني للطلبات فوق 2000 ج.م" },
     ],
 
     hero: {
-      eyebrow: { en: "Independent perfume house · Est. 2021", ar: "دار عطور مستقلة · تأسست ٢٠٢١" },
+      eyebrow: { en: "Independent perfume house · Est. 2021", ar: "دار عطور مستقلة · تأسست 2021" },
       titleLine1: { en: "Arrive like", ar: "حضورٌ" },
       titleLine2: { en: "royalty.", ar: "ملكي." },
       lead: {
@@ -51,7 +51,7 @@ export function createDefaultContent(): SiteContent {
       title: { en: "Built slowly. Worn quietly.", ar: "يُصنع ببطء. ويُلبَس بهدوء." },
       lead: {
         en: "VLOR began with one question: why do some scents vanish while others become part of your memory? We spent two years, 214 trials and many quiet nights looking for the answer.",
-        ar: "بدأت ڨلور بسؤال واحد: لماذا تختفي بعض العطور بينما تصبح أخرى جزءاً من ذاكرتك؟ قضينا عامين و٢١٤ محاولة وكثيراً من الليالي الهادئة بحثاً عن الإجابة.",
+        ar: "بدأت ڨلور بسؤال واحد: لماذا تختفي بعض العطور بينما تصبح أخرى جزءاً من ذاكرتك؟ قضينا عامين و214 محاولة وكثيراً من الليالي الهادئة بحثاً عن الإجابة.",
       },
       quote: {
         en: "A perfume should not announce you. It should make people lean in.",
@@ -69,7 +69,7 @@ export function createDefaultContent(): SiteContent {
           title: { en: "Small batch, always", ar: "كميات صغيرة دائماً" },
           body: {
             en: "We blend 40 litres at a time. Enough to care about every bottle, never enough to cut a corner.",
-            ar: "نركّب ٤٠ لتراً في المرة. كفاية للاهتمام بكل زجاجة، وليست كفاية للتفريط في الجودة.",
+            ar: "نركّب 40 لتراً في المرة. كفاية للاهتمام بكل زجاجة، وليست كفاية للتفريط في الجودة.",
           },
         },
         {
@@ -85,7 +85,7 @@ export function createDefaultContent(): SiteContent {
           title: { en: "Refill, don't replace", ar: "أعد التعبئة، لا تستبدل" },
           body: {
             en: "Keep the heavy glass. Order a refill for 25% less and we'll plant a tree in your name.",
-            ar: "احتفظ بالزجاجة الثقيلة. اطلب إعادة تعبئة بخصم ٢٥٪ وسنزرع شجرة باسمك.",
+            ar: "احتفظ بالزجاجة الثقيلة. اطلب إعادة تعبئة بخصم 25٪ وسنزرع شجرة باسمك.",
           },
         },
       ],
@@ -96,7 +96,7 @@ export function createDefaultContent(): SiteContent {
       title: { en: "The trail people leave.", ar: "الأثر الذي يتركونه خلفهم." },
       lead: {
         en: "4.9/5 from 1,842 verified reviews. These are a few of our favourites.",
-        ar: "٤٫٩/٥ من ١٨٤٢ تقييماً موثقاً. هذه بعض المفضلة لدينا.",
+        ar: "4.9/5 من 1842 تقييماً موثقاً. هذه بعض المفضلة لدينا.",
       },
       items: [
         {
@@ -127,7 +127,7 @@ export function createDefaultContent(): SiteContent {
           id: "salma",
           quote: {
             en: "Fig & Ember is the only thing that survived a 12-hour hospital shift. Subtle by hour ten, but still there on my scarf the next morning.",
-            ar: "تين وجمر هو الوحيد الذي صمد معي في شيفت ١٢ ساعة. هادئ بعد عشر ساعات، لكنه ما زال على الشال صباح اليوم التالي.",
+            ar: "تين وجمر هو الوحيد الذي صمد معي في شيفت 12 ساعة. هادئ بعد عشر ساعات، لكنه ما زال على الشال صباح اليوم التالي.",
           },
           name: { en: "Salma Fathy", ar: "سلمى فتحي" },
           city: { en: "Giza", ar: "الجيزة" },
@@ -161,7 +161,7 @@ export function createDefaultContent(): SiteContent {
         question: { en: "How long does delivery take?", ar: "كم يستغرق التوصيل؟" },
         answer: {
           en: "Cairo and Giza: 1–2 working days. Other governorates: 2–4 working days. Orders above EGP 2,000 ship free.",
-          ar: "القاهرة والجيزة: ١–٢ يوم عمل. المحافظات الأخرى: ٢–٤ أيام عمل. الطلبات فوق ٢٠٠٠ ج.م توصيلها مجاني.",
+          ar: "القاهرة والجيزة: 1–2 يوم عمل. المحافظات الأخرى: 2–4 أيام عمل. الطلبات فوق 2000 ج.م توصيلها مجاني.",
         },
       },
       {
@@ -169,7 +169,7 @@ export function createDefaultContent(): SiteContent {
         question: { en: "Can I try before buying?", ar: "هل يمكنني التجربة قبل الشراء؟" },
         answer: {
           en: "Yes. Order a discovery set of five 2ml samples for EGP 350, and we'll deduct it from your first full bottle.",
-          ar: "نعم. اطلب طقم اكتشاف من خمس عينات ٢ مل بـ٣٥٠ ج.م، وسنخصم قيمته من أول زجاجة كاملة.",
+          ar: "نعم. اطلب طقم اكتشاف من خمس عينات 2 مل بـ350 ج.م، وسنخصم قيمته من أول زجاجة كاملة.",
         },
       },
       {
@@ -177,7 +177,7 @@ export function createDefaultContent(): SiteContent {
         question: { en: "Do you make custom scents?", ar: "هل تصنعون عطوراً مخصصة؟" },
         answer: {
           en: "We do — for weddings, hotels and brands. A bespoke composition starts at EGP 12,000 and takes 4–6 weeks.",
-          ar: "نعم — للأعراس والفنادق والعلامات التجارية. التركيبة المخصصة تبدأ من ١٢٠٠٠ ج.م وتستغرق ٤–٦ أسابيع.",
+          ar: "نعم — للأعراس والفنادق والعلامات التجارية. التركيبة المخصصة تبدأ من 12000 ج.م وتستغرق 4–6 أسابيع.",
         },
       },
     ],

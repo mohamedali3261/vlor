@@ -15,7 +15,7 @@ const product = z.object({
   notes: z.object({ top: z.array(localized).max(30), heart: z.array(localized).max(30), base: z.array(localized).max(30) }),
   images: z.array(z.string().max(2048)).max(20), cutout: z.string().max(2048).optional(), accent: text(50), showOnHome: z.boolean().optional(), showOnShop: z.boolean().optional(), featured: z.boolean().optional(), isNew: z.boolean().optional(), bestseller: z.boolean().optional(), rating: z.number().min(0).max(5), reviews: z.number().int().min(0), longevity: text(100), sillage: localized, createdAt: text(100)
 }).strict();
-const order = z.object({ coupon: z.string().trim().toUpperCase().regex(/^[A-Z0-9_-]{1,40}$/).optional(), expectedShipping: z.number().int().min(0).max(10000000), expectedDiscount: z.number().int().min(0).max(500000000), customer: z.object({ name: text(120).min(2), phone: text(30).regex(/^[+\d\s()-]{8,30}$/), additionalPhone: z.string().trim().max(30).refine(v => !v || (/^[+\d\s()-]+$/.test(v) && v.replace(/\D/g, "").length >= 8)).optional(), city: text(100), address: text(500).min(6), note: z.string().trim().max(1000) }), items: z.array(z.object({ productId: text(100), ml: z.number().int().positive(), qty: z.number().int().min(1).max(20), expectedPrice: z.number().int().min(0).max(10000000) })).min(1).max(50) });
+const order = z.object({ expectedShipping: z.number().int().min(0).max(10000000), expectedDiscount: z.number().int().min(0).max(500000000), customer: z.object({ name: text(120).min(2), phone: text(30).regex(/^[+\d\s()-]{8,30}$/), additionalPhone: z.string().trim().max(30).refine(v => !v || (/^[+\d\s()-]+$/.test(v) && v.replace(/\D/g, "").length >= 8)).optional(), city: text(100), address: text(500).min(6), note: z.string().trim().max(1000) }), items: z.array(z.object({ productId: text(100), ml: z.number().int().positive(), qty: z.number().int().min(1).max(20), expectedPrice: z.number().int().min(0).max(10000000) })).min(1).max(50) }).strict();
 const analyticsEvent = z.discriminatedUnion('type', [
   z.object({ type: z.literal('page_view'), pagePath: text(180).regex(/^\/[a-z0-9/_-]*$/i), visitorId: z.string().uuid() }).strict(),
   z.object({ type: z.literal('product_click'), pagePath: text(180).regex(/^\/[a-z0-9/_-]*$/i), visitorId: z.string().uuid(), productSlug: z.string().regex(/^[a-z0-9-]{1,100}$/) }).strict(),
@@ -298,38 +298,31 @@ app.delete('/api/admin/shipping/:city', async c => {
   if(!result.meta.changes) return c.json({error:'Not found'},404);
   return c.json({ok:true});
 });
-const couponSchema = z.object({code:z.string().trim().toUpperCase().regex(/^[A-Z0-9_-]{1,40}$/),percent:z.number().int().min(1).max(100),maxUses:z.number().int().min(1).max(1000000),expiresAt:z.string().datetime().nullable(),enabled:z.boolean()});
-app.get('/api/admin/coupons', async c => c.json((await c.env.DB.prepare('SELECT * FROM coupons ORDER BY code').all()).results));
-app.put('/api/admin/coupons', async c => {
-  const parsed=couponSchema.safeParse(await jsonBody(c)); if(!parsed.success) return c.json({error:'Invalid coupon'},400);
-  const v=parsed.data;
-  await c.env.DB.batch([c.env.DB.prepare('INSERT INTO coupons(code,percent,max_uses,expires_at,enabled) VALUES(?,?,?,?,?) ON CONFLICT(code) DO UPDATE SET percent=excluded.percent,max_uses=excluded.max_uses,expires_at=excluded.expires_at,enabled=excluded.enabled').bind(v.code,v.percent,v.maxUses,v.expiresAt,v.enabled?1:0), c.env.DB.prepare('INSERT INTO audit_log(id,admin_id,action,target_id) VALUES(?,?,?,?)').bind(crypto.randomUUID(),c.get('adminId'),'coupon_updated',v.code)]);
+const discountRule = z.object({id:z.string().uuid(),kind:z.enum(['quantity','amount']),threshold:z.number().int().min(1).max(10000000),percent:z.number().int().min(1).max(100),enabled:z.boolean()}).strict();
+app.get('/api/discount-rules', async c => c.json((await c.env.DB.prepare('SELECT id,kind,threshold,percent FROM discount_rules WHERE enabled=1 ORDER BY kind,threshold').all()).results));
+app.get('/api/admin/discount-rules', async c => c.json((await c.env.DB.prepare('SELECT * FROM discount_rules ORDER BY kind,threshold').all()).results));
+app.put('/api/admin/discount-rules', async c => {
+  const rule=discountRule.safeParse(await jsonBody(c)); if(!rule.success) return c.json({error:'Invalid discount rule'},400);
+  const r=rule.data;
+  await c.env.DB.batch([c.env.DB.prepare('INSERT INTO discount_rules(id,kind,threshold,percent,enabled) VALUES(?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET kind=excluded.kind,threshold=excluded.threshold,percent=excluded.percent,enabled=excluded.enabled').bind(r.id,r.kind,r.threshold,r.percent,r.enabled?1:0),c.env.DB.prepare('INSERT INTO audit_log(id,admin_id,action,target_id) VALUES(?,?,?,?)').bind(crypto.randomUUID(),c.get('adminId'),'discount_rule_updated',r.id)]);
   return c.json({ok:true});
 });
-app.delete('/api/admin/coupons/:code', async c => {
-  const code=z.string().trim().toUpperCase().regex(/^[A-Z0-9_-]{1,40}$/).safeParse(c.req.param('code')); if(!code.success) return c.json({error:'Invalid coupon'},400);
-  const [result]=await c.env.DB.batch([
-    c.env.DB.prepare('DELETE FROM coupons WHERE code=?').bind(code.data),
-    c.env.DB.prepare('INSERT INTO audit_log(id,admin_id,action,target_id) SELECT ?,?,?,? WHERE changes()>0').bind(crypto.randomUUID(),c.get('adminId'),'coupon_deleted',code.data),
-  ]);
-  if(!result.meta.changes) return c.json({error:'Not found'},404);
-  return c.json({ok:true});
+app.delete('/api/admin/discount-rules/:id', async c => {
+  const id=z.string().uuid().safeParse(c.req.param('id')); if(!id.success) return c.json({error:'Invalid rule'},400);
+  const [result]=await c.env.DB.batch([c.env.DB.prepare('DELETE FROM discount_rules WHERE id=?').bind(id.data),c.env.DB.prepare('INSERT INTO audit_log(id,admin_id,action,target_id) SELECT ?,?,?,? WHERE changes()>0').bind(crypto.randomUUID(),c.get('adminId'),'discount_rule_deleted',id.data)]);
+  return result.meta.changes ? c.json({ok:true}) : c.json({error:'Not found'},404);
 });
 // Quotes are previews only; the order and database triggers revalidate everything.
-async function quote(db:D1Database, city:string, coupon:string | undefined, subtotal:number) {
+async function quote(db:D1Database, city:string, subtotal:number, quantity:number) {
   const rate=await db.prepare('SELECT amount,free_threshold FROM shipping_rates WHERE city=?').bind(city).first<{amount:number,free_threshold:number|null}>();
   if (!rate) return null;
-  let discount=0;
-  if (coupon) {
-    const c=await db.prepare("SELECT percent FROM coupons WHERE code=? AND enabled=1 AND uses<max_uses AND (expires_at IS NULL OR datetime(expires_at)>datetime('now'))").bind(coupon).first<{percent:number}>();
-    if (!c) return null;
-    discount=Math.floor(subtotal*c.percent/100);
-  }
+  const rule=await db.prepare("SELECT MAX(percent) AS percent FROM discount_rules WHERE enabled=1 AND ((kind='quantity' AND threshold<=?) OR (kind='amount' AND threshold<=?))").bind(quantity,subtotal).first<{percent:number|null}>();
+  const discount=Math.floor(subtotal*(rule?.percent || 0)/100);
   const shipping=rate.free_threshold!==null && subtotal-discount>=rate.free_threshold ? 0 : rate.amount;
   return {discount,shipping,total:subtotal-discount+shipping};
 }
 app.post('/api/quote', async c => {
-  const input=z.object({city:text(100),coupon:z.string().trim().toUpperCase().regex(/^[A-Z0-9_-]{1,40}$/).optional(),items:z.array(z.object({productId:text(100),ml:z.number().int().positive(),qty:z.number().int().min(1).max(20)})).min(1).max(50)}).safeParse(await jsonBody(c));
+  const input=z.object({city:text(100),items:z.array(z.object({productId:text(100),ml:z.number().int().positive(),qty:z.number().int().min(1).max(20)})).min(1).max(50)}).strict().safeParse(await jsonBody(c));
   if(!input.success) return c.json({error:'Invalid quote'},400);
   let subtotal=0; const seen=new Set<string>(); const prices=[];
   for (const item of input.data.items) {
@@ -340,8 +333,8 @@ app.post('/api/quote', async c => {
     if(!size)return c.json({error:'Size unavailable'},400);
     subtotal+=size.price*item.qty;prices.push({productId:item.productId,ml:item.ml,price:size.price});
   }
-  const value=await quote(c.env.DB,input.data.city,input.data.coupon,subtotal);
-  if(!value)return c.json({error:'Shipping unavailable or invalid coupon'},400);
+  const value=await quote(c.env.DB,input.data.city,subtotal,input.data.items.reduce((sum,item)=>sum+item.qty,0));
+  if(!value)return c.json({error:'Shipping unavailable'},400);
   return c.json({subtotal,...value,prices});
 });
 app.post('/api/track', async c => {
@@ -369,13 +362,13 @@ app.post('/api/orders', async c => {
   }
   if (changed.length) return c.json({error:'Prices changed',changed},409);
   const id=crypto.randomUUID(), customer=data.data.customer, subtotal=rows.reduce((sum,x)=>sum+x.price*x.qty,0);
-  const calculated=await quote(c.env.DB,customer.city,data.data.coupon,subtotal);
-  if (!calculated || calculated.shipping!==data.data.expectedShipping || calculated.discount!==data.data.expectedDiscount) return c.json({error:'Shipping or coupon changed'},409);
+  const calculated=await quote(c.env.DB,customer.city,subtotal,rows.reduce((sum,item)=>sum+item.qty,0));
+  if (!calculated || calculated.shipping!==data.data.expectedShipping || calculated.discount!==data.data.expectedDiscount) return c.json({error:'Shipping or discount changed'},409);
   try {
-    await c.env.DB.batch([c.env.DB.prepare('INSERT INTO orders(id,customer_name,phone,city,address,note,subtotal,idempotency_key,request_hash,stock_reserved,shipping,discount,coupon_code,tracking_hash) VALUES (?,?,?,?,?,?,?,?,?,1,?,?,?,?)').bind(id,customer.name,customer.phone,customer.city,customer.address,customer.note,subtotal,key,requestHash,calculated.shipping,calculated.discount,data.data.coupon || null,await sha('track:'+key)), ...(customer.additionalPhone ? [c.env.DB.prepare('INSERT INTO order_contacts(order_id,additional_phone) VALUES (?,?)').bind(id,customer.additionalPhone)] : []), ...rows.map(x=>c.env.DB.prepare('INSERT INTO order_items VALUES (?,?,?,?,?,?,?)').bind(crypto.randomUUID(),id,x.id,x.name,x.ml,x.price,x.qty))]);
+    await c.env.DB.batch([c.env.DB.prepare('INSERT INTO checkout_discount_context(order_id,quantity) VALUES (?,?)').bind(id,rows.reduce((sum,item)=>sum+item.qty,0)), c.env.DB.prepare('INSERT INTO orders(id,customer_name,phone,city,address,note,subtotal,idempotency_key,request_hash,stock_reserved,shipping,discount,coupon_code,tracking_hash) VALUES (?,?,?,?,?,?,?,?,?,1,?,?,NULL,?)').bind(id,customer.name,customer.phone,customer.city,customer.address,customer.note,subtotal,key,requestHash,calculated.shipping,calculated.discount,await sha('track:'+key)), ...(customer.additionalPhone ? [c.env.DB.prepare('INSERT INTO order_contacts(order_id,additional_phone) VALUES (?,?)').bind(id,customer.additionalPhone)] : []), ...rows.map(x=>c.env.DB.prepare('INSERT INTO order_items VALUES (?,?,?,?,?,?,?)').bind(crypto.randomUUID(),id,x.id,x.name,x.ml,x.price,x.qty)), c.env.DB.prepare('DELETE FROM checkout_discount_context WHERE order_id=?').bind(id)]);
   } catch (error) {
     const existing = await c.env.DB.prepare('SELECT id,subtotal,shipping,discount,request_hash FROM orders WHERE idempotency_key=?').bind(key).first<{id:string,subtotal:number,shipping:number,discount:number,request_hash:string}>();
-    if (!existing) { const message=String(error); if (message.includes('insufficient_stock') || message.includes('product_changed') || message.includes('coupon_changed') || message.includes('shipping_changed')) return c.json({error:'Product price or stock changed. Refresh your cart and try again.'},409); throw error; }
+    if (!existing) { const message=String(error); if (message.includes('insufficient_stock') || message.includes('product_changed') || message.includes('discount_changed') || message.includes('shipping_changed')) return c.json({error:'Product price or stock changed. Refresh your cart and try again.'},409); throw error; }
     return existing.request_hash === requestHash ? c.json({id:existing.id,subtotal:existing.subtotal,shipping:existing.shipping,discount:existing.discount,total:existing.subtotal-existing.discount+existing.shipping,trackingToken:key},200) : c.json({error:'Idempotency key reused'},409);
   }
   return c.json({id,subtotal,...calculated,trackingToken:key},201);

@@ -22,7 +22,7 @@ export function GithubPanel({ products, settings, content }: { products: Product
   const { dirty, lastPublishedAt } = useStore();
   const p = usePublisher();
 
-  const when = lastPublishedAt ? new Date(lastPublishedAt).toLocaleString(lang === "ar" ? "ar-EG" : "en-GB") : null;
+  const when = lastPublishedAt ? new Date(lastPublishedAt).toLocaleString(lang === "ar" ? "ar-EG-u-nu-latn" : "en-GB") : null;
   const working = p.phase === "working";
 
   const exportCatalogue = () => {

@@ -1,12 +1,17 @@
 import type { Lang } from "@/types";
 
+/** Display existing Arabic/Persian numerals as Latin without changing stored text. */
+export function latinDigits(text: string): string {
+  return text.replace(/[٠-٩۰-۹٫٬]/g, digit => '01234567890123456789.,'['٠١٢٣٤٥٦٧٨٩۰۱۲۳۴۵۶۷۸۹٫٬'.indexOf(digit)]);
+}
+
 /** Unicode isolate so digits + separators never reorder inside RTL text. */
 function isolate(value: string): string {
   return `\u2068${value}\u2069`;
 }
 
 export function formatNumber(value: number, lang: Lang): string {
-  const formatted = new Intl.NumberFormat(lang === "ar" ? "ar-EG" : "en-US", {
+  const formatted = new Intl.NumberFormat(lang === "ar" ? "ar-EG-u-nu-latn" : "en-US", {
     maximumFractionDigits: 0,
   }).format(value);
   return isolate(formatted);
@@ -19,7 +24,7 @@ export function formatPrice(value: number, lang: Lang): string {
 
 export function formatRating(value: number, lang: Lang): string {
   return isolate(
-    new Intl.NumberFormat(lang === "ar" ? "ar-EG" : "en-US", {
+    new Intl.NumberFormat(lang === "ar" ? "ar-EG-u-nu-latn" : "en-US", {
       minimumFractionDigits: 1,
       maximumFractionDigits: 1,
     }).format(value)

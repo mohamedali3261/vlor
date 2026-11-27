@@ -81,19 +81,19 @@ export function SetupGuide() {
         <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {[
             {
-              title: lang === "ar" ? "١. مستودع" : "1. Repository",
+              title: lang === "ar" ? "1. مستودع" : "1. Repository",
               body: lang === "ar" ? "ارفع المشروع إلى GitHub (main)." : "Push the project to GitHub (main branch).",
             },
             {
-              title: lang === "ar" ? "٢. استضافة" : "2. Hosting",
+              title: lang === "ar" ? "2. استضافة" : "2. Hosting",
               body: lang === "ar" ? "اربط المستودع بـ Vercel أو Netlify. أمر البناء: npm run build." : "Connect the repo to Vercel or Netlify. Build command: npm run build.",
             },
             {
-              title: lang === "ar" ? "٣. توكن" : "3. Token",
+              title: lang === "ar" ? "3. توكن" : "3. Token",
               body: lang === "ar" ? "توكن دقيق بصلاحية Contents: Read & Write فقط للمستودع." : "Fine-grained token with Contents: Read & write for this repo only.",
             },
             {
-              title: lang === "ar" ? "٤. ربط ونشر" : "4. Connect & publish",
+              title: lang === "ar" ? "4. ربط ونشر" : "4. Connect & publish",
               body: lang === "ar" ? "سجّل الدخول بـ OAuth، ثم كل نشر = كوميت = إعادة نشر تلقائية." : "Sign in with OAuth, then every publish = commit = automatic redeploy.",
             },
           ].map((step) => (

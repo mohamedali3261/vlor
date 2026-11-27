@@ -3,7 +3,7 @@ import { useLang } from "@/i18n/LanguageContext";
 import { useStore } from "@/context/StoreContext";
 import { cn } from "@/utils/cn";
 
-export type AdminTab = "products" | "analytics" | "orders" | "delivery" | "security" | "content" | "settings";
+export type AdminTab = "products" | "analytics" | "orders" | "delivery" | "discounts" | "security" | "content" | "settings";
 
 export function AdminHeader({
   tab,
@@ -22,6 +22,7 @@ export function AdminHeader({
     { key: "analytics", label: t("admin.tab.analytics") },
     { key: "orders", label: lang === "ar" ? "الطلبات" : "Orders" },
     { key: "delivery", label: lang === "ar" ? "الشحن" : "Delivery" },
+    { key: "discounts", label: lang === "ar" ? "الخصومات" : "Discounts" },
     { key: "security", label: lang === "ar" ? "الأمان" : "Security" },
     { key: "content", label: t("admin.tab.content") },
     { key: "settings", label: t("admin.tab.settings") },

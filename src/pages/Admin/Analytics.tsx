@@ -1,3 +1,4 @@
+import { latinDigits } from "@/lib/format";
 import { ArrowUpRight, Eye, Lock, Refresh, Sparkles } from "@/components/ui/icons";
 import { Select } from "@/components/ui/Select";
 import { useLang } from "@/i18n/LanguageContext";
@@ -88,7 +89,7 @@ function MetricCard({
 export function Analytics() {
   const { lang, t } = useLang();
   const ar = lang === "ar";
-  const number = useMemo(() => new Intl.NumberFormat(ar ? "ar-EG" : "en-US"), [ar]);
+  const number = useMemo(() => new Intl.NumberFormat(ar ? "ar-EG-u-nu-latn" : "en-US"), [ar]);
   const [days, setDays] = useState("30");
   const [reload, setReload] = useState(0);
   const [data, setData] = useState<AnalyticsPayload | null>(null);
@@ -96,7 +97,7 @@ export function Analytics() {
 
   const rangeOptions = RANGE_DAYS.map((value) => ({
     value: String(value),
-    label: value === 400 ? (ar ? "كل البيانات المتاحة (٤٠٠ يوم)" : "All available data (400 days)") : ar ? `آخر ${number.format(value)} يوماً` : `Last ${value} days`,
+    label: value === 400 ? (ar ? "كل البيانات المتاحة (400 يوم)" : "All available data (400 days)") : ar ? `آخر ${number.format(value)} يوماً` : `Last ${value} days`,
   }));
 
   useEffect(() => {
@@ -127,7 +128,7 @@ export function Analytics() {
   const maxViews = Math.max(0, ...(data?.pages.map((page) => page.views) ?? []));
   const formatDay = (day: string) => {
     const date = new Date(`${day}T00:00:00Z`);
-    return new Intl.DateTimeFormat(ar ? "ar-EG" : "en-GB", { day: "numeric", month: "short", timeZone: "UTC" }).format(date);
+    return new Intl.DateTimeFormat(ar ? "ar-EG-u-nu-latn" : "en-GB", { day: "numeric", month: "short", timeZone: "UTC" }).format(date);
   };
 
   return (
@@ -174,9 +175,9 @@ export function Analytics() {
       ) : data ? (
         <>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <MetricCard label={ar ? "الزوار الحاليون" : "Visitors online"} value={number.format(data.activeVisitors)} detail={ar ? "متصفحات نشطة خلال آخر ٥ دقائق — تحديث تلقائي" : "Browsers active in the last 5 minutes — refreshes automatically"} icon={<span className="h-3 w-3 rounded-full bg-emerald-500" />} />
-            <MetricCard label={ar ? "إجمالي الزوار المتاح" : "Total available visitors"} value={number.format(data.retainedTotals.visitors)} detail={ar ? "متصفحات مميزة خلال آخر ٤٠٠ يوم" : "Unique browsers over the last 400 days"} icon={<Sparkles className="h-5 w-5" />} />
-            <MetricCard label={ar ? "إجمالي المشاهدات المتاح" : "Total available views"} value={number.format(data.retainedTotals.pageViews)} detail={ar ? "مشاهدات الصفحات خلال آخر ٤٠٠ يوم" : "Page views over the last 400 days"} icon={<Eye className="h-5 w-5" />} />
+            <MetricCard label={ar ? "الزوار الحاليون" : "Visitors online"} value={number.format(data.activeVisitors)} detail={ar ? "متصفحات نشطة خلال آخر 5 دقائق — تحديث تلقائي" : "Browsers active in the last 5 minutes — refreshes automatically"} icon={<span className="h-3 w-3 rounded-full bg-emerald-500" />} />
+            <MetricCard label={ar ? "إجمالي الزوار المتاح" : "Total available visitors"} value={number.format(data.retainedTotals.visitors)} detail={ar ? "متصفحات مميزة خلال آخر 400 يوم" : "Unique browsers over the last 400 days"} icon={<Sparkles className="h-5 w-5" />} />
+            <MetricCard label={ar ? "إجمالي المشاهدات المتاح" : "Total available views"} value={number.format(data.retainedTotals.pageViews)} detail={ar ? "مشاهدات الصفحات خلال آخر 400 يوم" : "Page views over the last 400 days"} icon={<Eye className="h-5 w-5" />} />
             <MetricCard
               label={t("admin.analytics.pageViews")}
               value={number.format(data.summary.pageViews)}
@@ -256,7 +257,7 @@ export function Analytics() {
                       {data.products.map((product) => (
                         <tr key={product.slug} className={product.archived ? "opacity-55" : ""}>
                           <th scope="row" className="max-w-[240px] px-4 py-3 text-start font-semibold">
-                            <span className="block truncate">{product.name[lang] || product.slug}</span>
+                            <span className="block truncate">{latinDigits(product.name[lang] || product.slug)}</span>
                             <span dir="ltr" className="mt-0.5 block truncate text-[9px] font-normal text-mist">
                               {product.slug}{product.archived ? ` · ${t("admin.analytics.archived")}` : ""}
                             </span>
@@ -275,7 +276,7 @@ export function Analytics() {
           <section className="overflow-hidden rounded-2xl border border-ink/10 bg-surface" aria-labelledby="analytics-actions-title">
             <header className="border-b border-ink/10 px-4 py-3.5 sm:px-5">
               <h3 id="analytics-actions-title" className="text-sm font-bold">{ar ? "الضغطات في كل صفحة" : "Clicks by page"}</h3>
-              <p className="mt-1 text-xs leading-relaxed text-mist">{ar ? "يعرض أكثر ٣٠٠ تفاعل للأزرار والروابط حسب الصفحة. الأزرار غير المصنّفة تظهر كزر آخر؛ الضغط لا يعني بالضرورة نجاح الطلب. تتوفر البيانات الجديدة من وقت تفعيل هذه الميزة." : "Top 300 button and link interactions by page. Unclassified buttons appear as Other button; a click does not mean an order succeeded. New interaction data starts when this feature is enabled."}</p>
+              <p className="mt-1 text-xs leading-relaxed text-mist">{ar ? "يعرض أكثر 300 تفاعل للأزرار والروابط حسب الصفحة. الأزرار غير المصنّفة تظهر كزر آخر؛ الضغط لا يعني بالضرورة نجاح الطلب. تتوفر البيانات الجديدة من وقت تفعيل هذه الميزة." : "Top 300 button and link interactions by page. Unclassified buttons appear as Other button; a click does not mean an order succeeded. New interaction data starts when this feature is enabled."}</p>
             </header>
             {data.actions.length === 0 ? <p className="px-5 py-8 text-center text-xs text-mist">{ar ? "لا توجد ضغطات مسجلة خلال هذه الفترة." : "No interactions recorded for this period."}</p> : <div className="max-h-[520px] overflow-auto">
               <table className="w-full min-w-[520px] text-start text-xs"><thead className="sticky top-0 bg-bone-2 text-[10px] text-mist"><tr>

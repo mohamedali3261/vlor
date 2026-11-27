@@ -18,7 +18,7 @@ export function LongevityRing({ longevity, sillage }: { longevity: string; silla
   const { lang, t } = useLang();
   const hours = parseLongevityHours(longevity);
   const fraction = Math.min(1, Math.max(0.08, hours / 12));
-  const number = new Intl.NumberFormat((lang === "ar" ? "ar-EG" : "en-US")).format(hours);
+  const number = new Intl.NumberFormat((lang === "ar" ? "ar-EG-u-nu-latn" : "en-US")).format(hours);
 
   return (
     <div className="flex items-center gap-3 text-center lg:block">

@@ -31,7 +31,7 @@ export const defaultSettings: SiteSettings = {
   },
   hours: {
     en: "Online · Daily 11:00 – 22:00",
-    ar: "أونلاين · يومياً ١١:٠٠ – ٢٢:٠٠",
+    ar: "أونلاين · يومياً 11:00 – 22:00",
   },
 };
 

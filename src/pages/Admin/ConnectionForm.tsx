@@ -105,7 +105,7 @@ export function ConnectionForm({
             >
               {x("Open GitHub's token page", "افتح صفحة التوكن في GitHub")} <ArrowUpRight className="h-3.5 w-3.5" />
             </a>
-            <span className="block text-mist">{x("The name, 90-day expiry and “Contents: write” are already filled in.", "الاسم ومدة ٩٠ يوماً وصلاحية «Contents: write» معبّأة مسبقاً.")}</span>
+            <span className="block text-mist">{x("The name, 90-day expiry and “Contents: write” are already filled in.", "الاسم ومدة 90 يوماً وصلاحية «Contents: write» معبّأة مسبقاً.")}</span>
           </li>
           <li>
             {x("Under ", "تحت ")}

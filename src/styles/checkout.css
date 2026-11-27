@@ -14,3 +14,21 @@
 .checkout-payment { display: flex; align-items: center; gap: .5rem; margin-top: .9rem; border-radius: .7rem; background: color-mix(in srgb, var(--color-acid) 26%, var(--color-bone)); color: var(--color-ink); padding: .65rem .75rem; font-size: .75rem; font-weight: 800; }
 .checkout-actions { padding-bottom: max(.75rem, env(safe-area-inset-bottom)); }
 @media (max-width: 380px) { .checkout-item__photo { width: 68px; height: 82px; } .checkout-item { flex-wrap: wrap; } }
+/* Spacious, readable checkout on desktop without losing the mobile sheet layout. */
+.checkout-sheet { min-height: min(700px, 94dvh); }
+.checkout-sheet .checkout-section { padding: 1.25rem; }
+.checkout-sheet .checkout-heading { font-size: 1rem; }
+.checkout-sheet .checkout-field > span, .checkout-sheet .checkout-totals { font-size: .9rem; }
+.checkout-sheet .field { min-height: 48px; }
+@media (min-width: 640px) {
+  .checkout-sheet .checkout-section { padding: 1.5rem; }
+  .checkout-sheet .checkout-item__photo { width: 96px; height: 108px; }
+}
+
+@media (min-width: 768px) {
+  .checkout-form { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, .9fr); align-content: start; align-items: start; gap: 1rem; }
+  .checkout-products { grid-column: 2; grid-row: 1; }
+  .checkout-details { grid-column: 1; grid-row: 1 / span 2; margin-top: 0; }
+  .checkout-summary { grid-column: 2; grid-row: 2; margin-top: 0; }
+  .checkout-actions { grid-column: 1 / -1; grid-row: 3; }
+}

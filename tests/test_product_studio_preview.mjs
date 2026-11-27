@@ -13,6 +13,6 @@ assert.match(images,/uploadImageToD1\(file, \{ product: true \}\)/);
 assert.match(images,/الحفاظ على الخلفية الشفافة/);
 assert.match(images,/الصور المضافة بروابط خارجية لا تُضغط/);
 assert.match(images,/جاري ضغط الصور ورفعها/);
-assert.match(images,/١٥ ميجابايت/);
+assert.match(images,/15 ميجابايت/);
 assert.match(styles,/studio-image-thumb[\s\S]*?conic-gradient/);
 console.log('Product form, primary-image preview and transparent upload UI checks passed.');

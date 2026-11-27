@@ -33,7 +33,7 @@ export const INTERACTIONS_PRESETS: readonly MotionPreset[] = [
   { index: 189, id: "m-hover-tilt-cw", category: "interactions", trigger: "hover", durationMs: 380, label: { en: "Stamp Clockwise Tilt", ar: "ميل الختم يميناً" } },
   { index: 190, id: "m-hover-tilt-ccw", category: "interactions", trigger: "hover", durationMs: 380, label: { en: "Stamp Counter Tilt", ar: "ميل الختم يساراً" } },
   { index: 191, id: "m-hover-icon-spin90", category: "interactions", trigger: "hover", durationMs: 420, label: { en: "Quarter-Turn Plus Icon", ar: "دوران ربع دورة" } },
-  { index: 192, id: "m-hover-icon-spin45", category: "interactions", trigger: "hover", durationMs: 350, label: { en: "45° Arrow Pivot", ar: "استدارة ٤٥ درجة" } },
+  { index: 192, id: "m-hover-icon-spin45", category: "interactions", trigger: "hover", durationMs: 350, label: { en: "45° Arrow Pivot", ar: "استدارة 45 درجة" } },
   { index: 193, id: "m-hover-glow-acid", category: "interactions", trigger: "hover", durationMs: 350, label: { en: "Hover Acid Aura", ar: "إشراقة ليمونية عند المرور" } },
   { index: 194, id: "m-hover-glow-lilac", category: "interactions", trigger: "hover", durationMs: 350, label: { en: "Hover Lilac Aura", ar: "إشراقة ليلكية عند المرور" } },
   { index: 195, id: "m-magnetic-surface", category: "interactions", trigger: "pointer", durationMs: 240, label: { en: "Pointer Magnetic Pull", ar: "انجذاب مغناطيسي للمؤشر" } },

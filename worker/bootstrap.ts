@@ -20,6 +20,8 @@ const DDL_STATEMENTS = [
   `CREATE INDEX IF NOT EXISTS audit_log_created ON audit_log(created_at DESC)`,
   `CREATE TABLE IF NOT EXISTS inventory (product_id TEXT NOT NULL REFERENCES products(id), size INTEGER NOT NULL CHECK(size > 0), quantity INTEGER NOT NULL DEFAULT 0 CHECK(quantity >= 0), PRIMARY KEY (product_id, size))`,
   `CREATE TABLE IF NOT EXISTS shipping_rates (city TEXT PRIMARY KEY, amount INTEGER NOT NULL CHECK(amount >= 0), free_threshold INTEGER CHECK(free_threshold IS NULL OR free_threshold >= 0))`,
+  `CREATE TABLE IF NOT EXISTS checkout_discount_context (order_id TEXT PRIMARY KEY, quantity INTEGER NOT NULL CHECK(quantity > 0))`,
+  `CREATE TABLE IF NOT EXISTS discount_rules (id TEXT PRIMARY KEY, kind TEXT NOT NULL CHECK(kind IN ('quantity','amount')), threshold INTEGER NOT NULL CHECK(threshold > 0), percent INTEGER NOT NULL CHECK(percent BETWEEN 1 AND 100), enabled INTEGER NOT NULL CHECK(enabled IN (0,1)))`,
   `CREATE TABLE IF NOT EXISTS coupons (code TEXT PRIMARY KEY, percent INTEGER NOT NULL CHECK(percent BETWEEN 1 AND 100), max_uses INTEGER NOT NULL CHECK(max_uses > 0), uses INTEGER NOT NULL DEFAULT 0 CHECK(uses >= 0), expires_at TEXT, enabled INTEGER NOT NULL DEFAULT 1 CHECK(enabled IN (0,1)))`,
   `CREATE TABLE IF NOT EXISTS analytics_daily (day TEXT NOT NULL, event_type TEXT NOT NULL CHECK(event_type IN ('page_view','product_click')), page_path TEXT NOT NULL, target_id TEXT NOT NULL DEFAULT '', visitor_hash TEXT NOT NULL, event_count INTEGER NOT NULL DEFAULT 1 CHECK(event_count >= 1), PRIMARY KEY(day,event_type,page_path,target_id,visitor_hash), CHECK((event_type='page_view' AND target_id='') OR (event_type='product_click' AND target_id<>'')))`,
   `CREATE INDEX IF NOT EXISTS analytics_daily_pages ON analytics_daily(event_type,day,page_path)`,
@@ -82,21 +84,6 @@ const TRIGGER_STATEMENTS = [
       SELECT SUM(quantity) FROM order_items WHERE order_id=NEW.id AND product_id=inventory.product_id AND size=inventory.size
     ),0)
     WHERE EXISTS (SELECT 1 FROM order_items WHERE order_id=NEW.id AND product_id=inventory.product_id AND size=inventory.size);
-  END`,
-  `CREATE TRIGGER IF NOT EXISTS validate_checkout BEFORE INSERT ON orders WHEN NEW.tracking_hash IS NOT NULL BEGIN
-    SELECT CASE WHEN NEW.subtotal < 0 OR NEW.discount < 0 OR NEW.shipping < 0 THEN RAISE(ABORT, 'invalid_checkout') END;
-    SELECT CASE WHEN NEW.coupon_code IS NULL AND NEW.discount != 0 THEN RAISE(ABORT, 'coupon_changed') END;
-    SELECT CASE WHEN NEW.coupon_code IS NOT NULL AND NOT EXISTS (
-      SELECT 1 FROM coupons c WHERE c.code=NEW.coupon_code AND c.enabled=1 AND c.uses<c.max_uses
-        AND (c.expires_at IS NULL OR datetime(c.expires_at)>datetime('now'))
-        AND NEW.discount=CAST(NEW.subtotal*c.percent/100 AS INTEGER)
-    ) THEN RAISE(ABORT, 'coupon_changed') END;
-    SELECT CASE WHEN NOT EXISTS (
-      SELECT 1 FROM shipping_rates r WHERE r.city=NEW.city AND NEW.shipping = CASE WHEN r.free_threshold IS NOT NULL AND NEW.subtotal-NEW.discount>=r.free_threshold THEN 0 ELSE r.amount END
-    ) THEN RAISE(ABORT, 'shipping_changed') END;
-  END`,
-  `CREATE TRIGGER IF NOT EXISTS consume_coupon AFTER INSERT ON orders WHEN NEW.tracking_hash IS NOT NULL AND NEW.coupon_code IS NOT NULL BEGIN
-    UPDATE coupons SET uses=uses+1 WHERE code=NEW.coupon_code;
   END`,
   `CREATE TRIGGER IF NOT EXISTS prevent_deleted_images_insert BEFORE INSERT ON products BEGIN
     SELECT CASE WHEN EXISTS (SELECT 1 FROM deleted_images d, json_each(NEW.data, '$.images') j WHERE instr(j.value, '/api/images/' || d.key)>0) OR EXISTS (SELECT 1 FROM deleted_images d WHERE instr(COALESCE(json_extract(NEW.data,'$.cutout'),''),'/api/images/' || d.key)>0) THEN RAISE(ABORT, 'deleted_image') END;
@@ -200,6 +187,24 @@ async function removeOldImages(db: D1Database): Promise<void> {
   ]);
 }
 
+// Upgrade initialized installations without touching historic orders or coupon records.
+const DISCOUNT_TRIGGER = `CREATE TRIGGER validate_checkout BEFORE INSERT ON orders WHEN NEW.tracking_hash IS NOT NULL BEGIN
+  SELECT CASE WHEN NEW.subtotal < 0 OR NEW.discount < 0 OR NEW.shipping < 0 OR NEW.coupon_code IS NOT NULL OR (NOT EXISTS (SELECT 1 FROM checkout_discount_context WHERE order_id=NEW.id) AND (NEW.discount != 0 OR EXISTS (SELECT 1 FROM discount_rules WHERE enabled=1))) THEN RAISE(ABORT, 'discount_changed') END;
+  SELECT CASE WHEN EXISTS (SELECT 1 FROM checkout_discount_context WHERE order_id=NEW.id) AND NEW.discount != CAST(NEW.subtotal * COALESCE((SELECT MAX(percent) FROM discount_rules WHERE enabled=1 AND ((kind='quantity' AND (SELECT quantity FROM checkout_discount_context WHERE order_id=NEW.id)>=threshold) OR (kind='amount' AND NEW.subtotal>=threshold))),0) / 100 AS INTEGER) THEN RAISE(ABORT, 'discount_changed') END;
+  SELECT CASE WHEN NOT EXISTS (SELECT 1 FROM shipping_rates r WHERE r.city=NEW.city AND NEW.shipping = CASE WHEN r.free_threshold IS NOT NULL AND NEW.subtotal-NEW.discount>=r.free_threshold THEN 0 ELSE r.amount END) THEN RAISE(ABORT, 'shipping_changed') END;
+END`;
+async function ensureDiscountRules(db: D1Database): Promise<void> {
+  await db.prepare(DDL_STATEMENTS.find(sql => sql.includes('CREATE TABLE IF NOT EXISTS discount_rules'))!).run();
+  await db.prepare(DDL_STATEMENTS.find(sql => sql.includes('CREATE TABLE IF NOT EXISTS checkout_discount_context'))!).run();
+  const marker = await db.prepare("SELECT value FROM store_meta WHERE key='automatic_discounts_v1'").first();
+  if (!marker) await db.batch([
+    db.prepare('DROP TRIGGER IF EXISTS validate_checkout'),
+    db.prepare('DROP TRIGGER IF EXISTS consume_coupon'),
+    db.prepare(DISCOUNT_TRIGGER),
+    db.prepare("INSERT OR IGNORE INTO store_meta(key,value) VALUES('automatic_discounts_v1','1')"),
+  ]);
+}
+
 async function initialize(db: D1Database): Promise<void> {
   let initialized = false;
   try {
@@ -212,6 +217,7 @@ async function initialize(db: D1Database): Promise<void> {
     // Existing databases also need the additive table before accepting new orders.
     await db.prepare(`CREATE TABLE IF NOT EXISTS order_contacts (order_id TEXT PRIMARY KEY REFERENCES orders(id) ON DELETE CASCADE, additional_phone TEXT NOT NULL)`).run();
     for (const sql of DDL_STATEMENTS.filter(statement => /analytics_daily|analytics_actions|analytics_presence/.test(statement))) await db.prepare(sql).run();
+    await ensureDiscountRules(db);
     await applyVlorBrandMigration(db);
     await ensureRequestedScents(db);
     await removeOldImages(db);
@@ -232,6 +238,8 @@ async function initialize(db: D1Database): Promise<void> {
   for (const sql of TRIGGER_STATEMENTS) {
     await db.prepare(sql).run();
   }
+
+  await ensureDiscountRules(db);
 
   // Seed initial bootstrap owner ('admin') only if no admin accounts exist yet,
   // or refresh the untouched bootstrap hash to 100k PBKDF2 iterations if still awaiting first password change.

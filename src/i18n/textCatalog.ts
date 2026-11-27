@@ -352,7 +352,7 @@ export const inlineTexts: readonly { en: string; ar: string; file: string }[] = 
   },
   {
     "en": "Daily 11:00–22:00 · Online",
-    "ar": "أونلاين · يومياً ١١:٠٠–٢٢:٠٠",
+    "ar": "أونلاين · يومياً 11:00–22:00",
     "file": "pages/Contact/ContactHero.tsx"
   },
   {

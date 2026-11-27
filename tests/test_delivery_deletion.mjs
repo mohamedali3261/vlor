@@ -12,5 +12,4 @@ let r;await act(async()=>{r=create(React.createElement(module.exports.Delivery))
 const rate=()=>root.findByProps({'aria-label':'حذف شحن Cairo'});
 await act(async()=>rate().props.onClick());assert.equal(calls.filter(x=>x[1]==='DELETE').length,0);assert.ok(rate());
 confirm=true;await act(async()=>rate().props.onClick());assert.equal(calls.at(-1)[0],'/api/admin/shipping/Cairo');assert.equal(root.findAllByProps({'aria-label':'حذف شحن Cairo'}).length,0);
-await act(async()=>root.findByProps({'aria-label':'حذف كوبون SAVE'}).props.onClick());assert.equal(calls.at(-1)[0],'/api/admin/coupons/SAVE');assert.equal(root.findAllByProps({'aria-label':'حذف كوبون SAVE'}).length,0);
-await act(async()=>r.unmount());console.log('Shipping and coupon deletion requires confirmation and removes only the selected row.');
+await act(async()=>r.unmount());console.log('Shipping deletion requires confirmation and removes only the selected row.');

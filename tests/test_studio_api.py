@@ -29,7 +29,7 @@ class StudioApiTests(unittest.TestCase):
         except urllib.error.HTTPError as error: response=error
         return response.status, json.loads(response.read())
 
-    def test_direct_save_conflicts_shipping_coupon_and_historical_orders(self):
+    def test_direct_save_conflicts_shipping_discounts_and_historical_orders(self):
         self.assertEqual(self.request('/api/products')[0], 200)
         db=sqlite3.connect(DB_PATH)
         token=secrets.token_hex(32); staff_token=secrets.token_hex(32); now=int(time.time()*1000)
@@ -60,20 +60,20 @@ class StudioApiTests(unittest.TestCase):
         self.assertEqual(public['content']['data']['announcements'][0]['ar'],'رسالة جديدة')
         self.assertEqual(self.request('/api/admin/storefront-config/settings','PUT',{'version':None,'data':settings},token)[0],409)
         rate={'city':'Cairo','amount':30,'freeThreshold':None}
-        coupon={'code':'TESTDEL','percent':20,'maxUses':10,'expiresAt':None,'enabled':True}
+        rule={'id':str(uuid.uuid4()),'kind':'quantity','threshold':1,'percent':20,'enabled':True}
         self.assertEqual(self.request('/api/admin/shipping','PUT',rate,token)[0],200)
-        self.assertEqual(self.request('/api/admin/coupons','PUT',coupon,token)[0],200)
+        self.assertEqual(self.request('/api/admin/discount-rules','PUT',rule,token)[0],200)
         item={'productId':product,'ml':ml,'qty':1}
-        status,quote=self.request('/api/quote','POST',{'city':'Cairo','coupon':'TESTDEL','items':[item]});self.assertEqual(status,200,quote)
-        body={'customer':{'name':'Test User','phone':'01012345678','city':'Cairo','address':'Test address','note':''},'coupon':'TESTDEL','expectedShipping':quote['shipping'],'expectedDiscount':quote['discount'],'items':[{**item,'expectedPrice':price}]}
+        status,quote=self.request('/api/quote','POST',{'city':'Cairo','items':[item]});self.assertEqual(status,200,quote)
+        body={'customer':{'name':'Test User','phone':'01012345678','city':'Cairo','address':'Test address','note':''},'expectedShipping':quote['shipping'],'expectedDiscount':quote['discount'],'items':[{**item,'expectedPrice':price}]}
         status,order=self.request('/api/orders','POST',body,key=str(uuid.uuid4()));self.assertEqual(status,201,order)
         order_before=db.execute('SELECT subtotal,shipping,discount,coupon_code FROM orders WHERE id=?',(order['id'],)).fetchone()
         self.assertEqual(self.request('/api/admin/shipping/Cairo','DELETE',token=staff_token)[0],403)
         self.assertEqual(self.request('/api/admin/shipping/Cairo','DELETE',token=token)[0],200)
         self.assertEqual(self.request('/api/quote','POST',{'city':'Cairo','items':[item]})[0],400)
-        self.assertEqual(self.request('/api/admin/coupons/TESTDEL','DELETE',token=token)[0],200)
+        self.assertEqual(self.request('/api/admin/discount-rules/'+rule['id'],'DELETE',token=token)[0],200)
         self.assertEqual(self.request('/api/admin/shipping','PUT',rate,token)[0],200)
-        self.assertEqual(self.request('/api/quote','POST',{'city':'Cairo','coupon':'TESTDEL','items':[item]})[0],400)
+        self.assertEqual(self.request('/api/quote','POST',{'city':'Cairo','items':[item]})[1]['discount'],0)
         self.assertEqual(db.execute('SELECT subtotal,shipping,discount,coupon_code FROM orders WHERE id=?',(order['id'],)).fetchone(),order_before)
         self.assertEqual(db.execute('SELECT quantity FROM inventory WHERE product_id=? AND size=?',(product,ml)).fetchone()[0],3)
         db.close()

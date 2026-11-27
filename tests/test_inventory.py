@@ -60,22 +60,22 @@ class InventoryTests(unittest.TestCase):
         self.db.execute("INSERT INTO products(id,slug,category_id,data) VALUES(?,?,?,?) ON CONFLICT(id) DO UPDATE SET data=excluded.data", ('p','p','woody',data))
         self.assertEqual(self.db.execute('SELECT quantity FROM inventory WHERE product_id=?', ('p',)).fetchone()[0], 1)
 
-    def test_coupon_and_shipping_rechecked_and_rolled_back(self):
+    def test_discount_and_shipping_rechecked_and_rolled_back(self):
         self.db.execute("INSERT INTO shipping_rates VALUES ('Cairo',30,200)")
-        self.db.execute("INSERT INTO coupons(code,percent,max_uses) VALUES ('SAVE',10,1)")
+        self.db.execute("INSERT INTO discount_rules VALUES ('rule','quantity',1,10,1)")
+        self.db.execute("INSERT INTO coupons(code,percent,max_uses) VALUES ('OLD',10,10)")
         self.db.commit()
         def order(order_id, shipping, discount, size):
-            self.db.execute("INSERT INTO orders(id,customer_name,phone,city,address,note,subtotal,stock_reserved,shipping,discount,coupon_code,tracking_hash) VALUES (?,?,?,?,?,?,?,1,?,?,?,?)",(order_id,'a','1','Cairo','a','',100,shipping,discount,'SAVE','hash-'+order_id))
+            self.db.execute("INSERT INTO checkout_discount_context VALUES (?,1)", (order_id,))
+            self.db.execute("INSERT INTO orders(id,customer_name,phone,city,address,note,subtotal,stock_reserved,shipping,discount,tracking_hash) VALUES (?,?,?,?,?,?,?,1,?,?,?)",(order_id,'a','1','Cairo','a','',100,shipping,discount,'hash-'+order_id))
             self.db.execute('INSERT INTO order_items VALUES (?,?,?,?,?,?,?)', ('item-'+order_id,order_id,'p','name',size,100,1))
-        with self.assertRaises(sqlite3.IntegrityError):
-            with self.db: order('bad-shipping', 0, 10, 50)
-        with self.assertRaises(sqlite3.IntegrityError):
-            with self.db: order('bad-stock', 30, 10, 100)
-        self.assertEqual(self.db.execute("SELECT uses FROM coupons WHERE code='SAVE'").fetchone()[0],0)
+            self.db.execute('DELETE FROM checkout_discount_context WHERE order_id=?', (order_id,))
+        for args in [('bad-shipping',0,10,50), ('bad-discount',30,0,50), ('bad-stock',30,10,100)]:
+            with self.assertRaises(sqlite3.IntegrityError):
+                with self.db: order(*args)
+        self.assertEqual(self.db.execute('SELECT count(*) FROM checkout_discount_context').fetchone()[0],0)
         with self.db: order('good',30,10,50)
-        self.assertEqual(self.db.execute("SELECT uses FROM coupons WHERE code='SAVE'").fetchone()[0],1)
-        with self.assertRaises(sqlite3.IntegrityError):
-            with self.db: order('second',30,10,50)
+        self.assertEqual(self.db.execute("SELECT uses FROM coupons WHERE code='OLD'").fetchone()[0],0)
         self.assertEqual(self.db.execute('SELECT count(*) FROM orders').fetchone()[0],1)
 
     def test_cancellation_restores_stock_once(self):
