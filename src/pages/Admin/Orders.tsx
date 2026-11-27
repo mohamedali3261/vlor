@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Select } from '@/components/ui/Select';
 import { useLang } from '@/i18n/LanguageContext';
 
-type Order = { id:string; customer_name:string; phone:string; city:string; address:string; note:string; subtotal:number; shipping:number; discount:number; status:string; created_at:string };
+type Order = { id:string; customer_name:string; phone:string; additional_phone?:string | null; city:string; address:string; note:string; subtotal:number; shipping:number; discount:number; status:string; created_at:string };
 type Item = { id:string; order_id:string; name:string; size:number; unit_price:number; quantity:number };
 const statuses=['new','confirmed','shipped','completed','cancelled'] as const;
 const statusText = (status: string, ar: boolean) => {
@@ -137,6 +137,7 @@ export function Orders() {
                   <p className="text-sm font-bold">{o.customer_name}</p>
                   <span className="text-xs text-mist">·</span>
                   <a href={`tel:${o.phone}`} className="text-sm font-medium text-plum underline" dir="ltr">{o.phone}</a>
+                  {o.additional_phone && <span className="text-xs text-mist">{ar ? 'رقم إضافي:' : 'Additional phone:'} <a href={`tel:${o.additional_phone}`} className="font-medium text-plum underline" dir="ltr">{o.additional_phone}</a></span>}
                   <StatusBadge status={o.status} ar={ar} />
                 </div>
                 <span className="text-[11px] text-mist">{new Date(o.created_at).toLocaleString(ar?'ar-EG':'en-GB')} · {o.id.slice(0,8)}</span>

@@ -1,0 +1,16 @@
+.checkout-header { background: linear-gradient(135deg, color-mix(in srgb, var(--color-acid) 13%, var(--color-bone)), var(--color-bone)); }
+.checkout-section { padding: 1rem; border: 1px solid color-mix(in srgb, var(--color-ink) 11%, transparent); border-radius: 1.15rem; background: color-mix(in srgb, var(--color-surface) 52%, var(--color-bone)); }
+.checkout-heading { color: var(--color-ink); font-size: .875rem; font-weight: 800; }
+.checkout-count { color: var(--color-ink); background: color-mix(in srgb, var(--color-acid) 22%, var(--color-bone)); border-radius: 999px; padding: .25rem .65rem; font-size: .7rem; font-weight: 700; }
+.checkout-item { display: flex; align-items: center; gap: .75rem; min-width: 0; padding: .6rem; border-radius: .9rem; background: var(--color-bone); border: 1px solid color-mix(in srgb, var(--color-ink) 8%, transparent); }
+.checkout-item__photo { width: 82px; height: 94px; flex-shrink: 0; border-radius: .7rem; }
+.checkout-item__name { overflow-wrap: anywhere; color: var(--color-ink); font-size: .9rem; font-weight: 800; line-height: 1.4; }
+.checkout-item__price { flex-shrink: 0; font-size: .8rem; color: var(--color-ink); }
+.checkout-field { display: block; }
+.checkout-field > span { display: block; margin-bottom: .4rem; color: var(--color-ink); font-size: .75rem; font-weight: 700; }
+.checkout-totals { display: grid; gap: .55rem; color: var(--color-ink); font-size: .8rem; }
+.checkout-totals > div { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; }
+.checkout-total { border-top: 1px solid color-mix(in srgb, var(--color-ink) 15%, transparent); padding-top: .65rem; font-size: 1rem; font-weight: 800; }
+.checkout-payment { display: flex; align-items: center; gap: .5rem; margin-top: .9rem; border-radius: .7rem; background: color-mix(in srgb, var(--color-acid) 26%, var(--color-bone)); color: var(--color-ink); padding: .65rem .75rem; font-size: .75rem; font-weight: 800; }
+.checkout-actions { padding-bottom: max(.75rem, env(safe-area-inset-bottom)); }
+@media (max-width: 380px) { .checkout-item__photo { width: 68px; height: 82px; } .checkout-item { flex-wrap: wrap; } }

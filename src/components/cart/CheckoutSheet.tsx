@@ -1,22 +1,16 @@
 import { Button } from "@/components/ui/Button";
-import { Portal } from "@/components/ui/Primitives";
-import { ArrowRight, Check, Copy, Messenger, Send, Truck, Whatsapp, X } from "@/components/ui/icons";
+import { Portal, SmartImage } from "@/components/ui/Primitives";
+import { Check, Copy, Truck, X } from "@/components/ui/icons";
 import { useCart } from "@/context/CartContext";
 import { useStore } from "@/context/StoreContext";
 import { useToast } from "@/context/ToastContext";
 import { useBodyLock } from "@/hooks/useUi";
 import { useLang } from "@/i18n/LanguageContext";
 import { formatPrice } from "@/lib/format";
-import {
-  cartMessage,
-  copyText,
-  messengerUrl,
-  openChannel,
-  whatsappUrl,
-  type OrderCustomer,
-} from "@/lib/messaging";
+import { cartMessage, copyText, type OrderCustomer } from "@/lib/messaging";
 import { cn } from "@/utils/cn";
 import { useEffect, useRef, useState, type FormEvent } from "react";
+import "@/styles/checkout.css";
 
 const governorates = [
   { en: "Cairo", ar: "القاهرة" },
@@ -48,300 +42,158 @@ const governorates = [
   { en: "New Valley", ar: "الوادي الجديد" },
 ] as const;
 
-interface CheckoutSheetProps {
-  open: boolean;
-  onClose: () => void;
-}
+
+type Quote = { signature: string; subtotal: number; shipping: number; discount: number; total: number; prices: {productId:string; ml:number; price:number}[] };
+interface CheckoutSheetProps { open: boolean; onClose: () => void; }
 
 export function CheckoutSheet({ open, onClose }: CheckoutSheetProps) {
   const { lines, count, clear, close: closeCart } = useCart();
   const { settings } = useStore();
   const { lang, t, l } = useLang();
   const { push } = useToast();
+  const ar = lang === "ar";
   useBodyLock(open);
-
   const [step, setStep] = useState<"details" | "sent">("details");
-  const [customer, setCustomer] = useState<OrderCustomer>({ name: "", phone: "", city: "", address: "", note: "" });
-  const [errors, setErrors] = useState<{ name?: boolean; phone?: boolean; city?: boolean; address?: boolean }>({});
+  const [customer, setCustomer] = useState<OrderCustomer>({ name: "", phone: "", additionalPhone: "", city: "", address: "", note: "" });
+  const [errors, setErrors] = useState<{ name?: boolean; phone?: boolean; additionalPhone?: boolean; city?: boolean; address?: boolean }>({});
   const [submitting, setSubmitting] = useState(false);
-  const [coupon, setCoupon] = useState('');
-  const [quote, setQuote] = useState<{signature:string;subtotal:number;shipping:number;discount:number;total:number;prices:{productId:string;ml:number;price:number}[]} | null>(null);
-  const [tracking, setTracking] = useState('');
-  const [confirmedSubtotal, setConfirmedSubtotal] = useState<number | null>(null);
-  const nameRef = useRef<HTMLInputElement>(null);
-  const displayedSubtotal = lines.reduce((sum, line) => sum + line.price * line.qty, 0);
-  const quoteInput = { city: customer.city, ...(coupon.trim() ? {coupon: coupon.trim().toUpperCase()} : {}), items: lines.map(({productId,ml,qty}) => ({productId,ml,qty})) };
+  const submittingRef = useRef(false);
+  const pendingRef = useRef<{digest:string; key:string} | null>(null);
+  const [coupon, setCoupon] = useState("");
+  const [quote, setQuote] = useState<Quote | null>(null);
+  const [quoteState, setQuoteState] = useState<"idle" | "loading" | "error" | "ready">("idle");
+  const [quoteAttempt, setQuoteAttempt] = useState(0);
+  const [confirmation, setConfirmation] = useState<{ id: string; tracking: string; total: number; message: string } | null>(null);
+  const quoteInput = { city: customer.city, ...(coupon.trim() ? { coupon: coupon.trim().toUpperCase() } : {}), items: lines.map(({ productId, ml, qty }) => ({ productId, ml, qty })) };
   const quoteSignature = JSON.stringify(quoteInput);
   const activeQuote = quote?.signature === quoteSignature ? quote : null;
+  const displayedSubtotal = lines.reduce((sum, line) => sum + line.price * line.qty, 0);
 
   useEffect(() => {
     if (!open) return;
-    setStep("details");
-    setConfirmedSubtotal(null);
-    setQuote(null);
-    setTracking('');
-    setErrors({});
+    setStep("details"); setConfirmation(null); setQuote(null); setErrors({}); setQuoteState("idle");
   }, [open]);
-
   useEffect(() => {
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onClose();
-    };
+    const onKey = (event: KeyboardEvent) => { if (event.key === "Escape" && !submittingRef.current) onClose(); };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
 
-  const set = (key: keyof OrderCustomer, value: string) =>
-    setCustomer((prev) => ({ ...prev, [key]: value }));
+  // Refresh the server's price, discount and shipping whenever the order changes.
+  useEffect(() => {
+    if (!open || step !== "details" || !customer.city || !lines.length) { setQuoteState("idle"); return; }
+    const controller = new AbortController();
+    setQuoteState("loading");
+    const timer = window.setTimeout(async () => {
+      try {
+        const response = await fetch("/api/quote", { method: "POST", headers: { "Content-Type": "application/json" }, body: quoteSignature, signal: controller.signal });
+        if (!response.ok) throw new Error("quote unavailable");
+        const result = await response.json();
+        if (!controller.signal.aborted) { setQuote({ ...result, signature: quoteSignature }); setQuoteState("ready"); }
+      } catch { if (!controller.signal.aborted) { setQuote(null); setQuoteState("error"); } }
+    }, 350);
+    return () => { window.clearTimeout(timer); controller.abort(); };
+  }, [open, step, quoteSignature, quoteAttempt, customer.city, lines.length]);
 
+  const set = (key: keyof OrderCustomer, value: string) => setCustomer((previous) => ({ ...previous, [key]: value }));
+  const validPhone = (phone: string) => /^[+\d\s()-]{8,30}$/.test(phone.trim()) && phone.replace(/\D/g, "").length >= 8;
   const validate = () => {
-    const next = {
-      name: customer.name.trim().length < 2,
-      phone: customer.phone.replace(/\D/g, "").length < 8,
-      city: !customer.city,
-      address: customer.address.trim().length < 6,
-    };
+    const next = { name: customer.name.trim().length < 2, phone: !validPhone(customer.phone), additionalPhone: Boolean(customer.additionalPhone?.trim()) && !validPhone(customer.additionalPhone ?? ""), city: !customer.city, address: customer.address.trim().length < 6 };
     setErrors(next);
-    if (next.phone) push(t("cart.phoneInvalid"), "error");
-    else if (Object.values(next).some(Boolean)) push(t("cart.required"), "error");
+    if (Object.values(next).some(Boolean)) push(ar ? "راجع البيانات المطلوبة وأرقام الموبيل." : "Check the required details and mobile numbers.", "error");
     return !Object.values(next).some(Boolean);
   };
-
-  const finish = () => {
-    setStep("sent");
-    closeCart();
-    push(t("cart.successTitle"));
+  const orderText = () => {
+    const pricedLines = activeQuote ? lines.map((line) => ({ ...line, price: activeQuote.prices.find((p) => p.productId === line.productId && p.ml === line.ml)?.price ?? line.price })) : lines;
+    return cartMessage(pricedLines, lang, settings, customer) + (activeQuote ? `\n${ar ? "الشحن" : "Shipping"}: ${formatPrice(activeQuote.shipping, lang)}\n${ar ? "الخصم" : "Discount"}: ${formatPrice(activeQuote.discount, lang)}\n${ar ? "الإجمالي شامل الشحن" : "Total including shipping"}: ${formatPrice(activeQuote.total, lang)}` : "");
   };
-
-  const submitOrder = async (channel: "whatsapp" | "messenger") => {
-    if (submitting || !validate()) { nameRef.current?.focus(); return; }
-    setSubmitting(true);
-    try {
-      if (!activeQuote) {
-        const response=await fetch('/api/quote',{method:'POST',headers:{'Content-Type':'application/json'},body:quoteSignature});
-        if (!response.ok) { push(lang === 'ar' ? 'الشحن غير متاح للمحافظة أو الكوبون غير صالح. تواصل مع المتجر.' : 'Shipping is unavailable for this city or the coupon is invalid. Contact the store.', 'error'); return; }
-        const result=await response.json();setQuote({...result,signature:quoteSignature});return;
-      }
-      const body = JSON.stringify({ customer, ...(coupon.trim() ? {coupon:coupon.trim().toUpperCase()} : {}), expectedShipping:activeQuote.shipping, expectedDiscount:activeQuote.discount, items: lines.map(({productId, ml, qty}) => ({productId, ml, qty, expectedPrice: activeQuote.prices.find(x=>x.productId===productId&&x.ml===ml)!.price})) });
-      const digest = Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(body))), x => x.toString(16).padStart(2, '0')).join('');
-      let pending: {digest:string;key:string} | null = null;
-      try { pending = JSON.parse(sessionStorage.getItem('malika.pendingOrder') || 'null'); } catch { /* create a new key */ }
-      if (!pending || pending.digest !== digest) { pending = {digest, key: crypto.randomUUID()}; sessionStorage.setItem('malika.pendingOrder', JSON.stringify(pending)); }
-      const response = await fetch('/api/orders', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Idempotency-Key': pending.key }, body });
-      const result = await response.json();
-      if (response.status === 409 && result.error === 'Prices changed') { setQuote(null); push(lang === 'ar' ? 'تغير السعر؛ احسب الإجمالي مجددًا.' : 'Prices changed; recalculate your total.', 'error'); return; }
-      if (response.status === 409) { setQuote(null); push(lang === 'ar' ? 'تغير السعر أو المخزون. راجع السلة وأعد المحاولة.' : 'Price or stock changed. Refresh your cart and try again.', 'error'); return; }
-      if (!response.ok) throw new Error('Order failed');
-      // The optional message uses the server's recalculated subtotal, not stale cart prices.
-      const message = `${lang === 'ar' ? 'رقم الطلب' : 'Order'}: ${result.id}\n${lang === 'ar' ? 'الإجمالي قبل الشحن' : 'Subtotal before shipping'}: ${result.subtotal}`;
-      if (channel === 'whatsapp') openChannel(whatsappUrl(settings.whatsapp, message));
-      else { await copyText(message); openChannel(messengerUrl(settings.messenger)); }
-      setConfirmedSubtotal(result.total);
-      setTracking(result.trackingToken);
-      finish();
-    } catch { push(lang === 'ar' ? 'تعذر حفظ الطلب، حاول مجدداً.' : 'Could not save order. Please try again.', 'error'); }
-    finally { setSubmitting(false); }
-  };
-  const sendWhatsapp = () => void submitOrder('whatsapp');
-  const sendMessenger = () => void submitOrder('messenger');
-
   const copyOrder = async () => {
-    const ok = await copyText(cartMessage(lines, lang, settings, customer));
-    push(ok ? t("cart.copied") : t("cart.copy"), ok ? "success" : "error");
+    const ok = await copyText(confirmation?.message ?? orderText());
+    push(ok ? t("cart.copied") : (ar ? "تعذر نسخ الطلب." : "Could not copy the order."), ok ? "success" : "error");
   };
-
+  const submitOrder = async (event: FormEvent) => {
+    event.preventDefault();
+    if (submittingRef.current || !validate() || !activeQuote || quoteState !== "ready" || !lines.length) return;
+    submittingRef.current = true; setSubmitting(true);
+    try {
+      const body = JSON.stringify({ customer, ...(coupon.trim() ? { coupon: coupon.trim().toUpperCase() } : {}), expectedShipping: activeQuote.shipping, expectedDiscount: activeQuote.discount, items: lines.map(({ productId, ml, qty }) => ({ productId, ml, qty, expectedPrice: activeQuote.prices.find((p) => p.productId === productId && p.ml === ml)!.price })) });
+      const digest = Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(body))), (byte) => byte.toString(16).padStart(2, "0")).join("");
+      let pending = pendingRef.current;
+      try { pending = pending ?? JSON.parse(sessionStorage.getItem("malika.pendingOrder") || "null"); } catch { /* memory fallback */ }
+      if (!pending || pending.digest !== digest) {
+        pending = { digest, key: crypto.randomUUID() }; pendingRef.current = pending;
+        try { sessionStorage.setItem("malika.pendingOrder", JSON.stringify(pending)); } catch { /* retain key in memory */ }
+      }
+      const response = await fetch("/api/orders", { method: "POST", headers: { "Content-Type": "application/json", "Idempotency-Key": pending.key }, body });
+      const result = await response.json();
+      if (response.status === 409) {
+        setQuote(null); setQuoteState("loading"); setQuoteAttempt((value) => value + 1);
+        push(ar ? "تغير السعر أو الشحن أو المخزون. راجع الإجمالي المحدث قبل إعادة الطلب." : "Price, shipping or stock changed. Review the updated total before retrying.", "error");
+        return;
+      }
+      if (!response.ok) throw new Error("Order failed");
+      const message = `${ar ? "رقم الطلب" : "Order"}: ${result.id}\n${orderText()}`;
+      setConfirmation({ id: result.id, tracking: result.trackingToken, total: result.total, message });
+      setStep("sent"); closeCart(); clear();
+      pendingRef.current = null; try { sessionStorage.removeItem("malika.pendingOrder"); } catch { /* no action needed */ }
+      push(ar ? "تم تسجيل طلبك بنجاح." : "Your order was placed successfully.");
+    } catch { push(ar ? "تعذر حفظ الطلب، حاول مجدداً." : "Could not save the order. Please try again.", "error"); }
+    finally { submittingRef.current = false; setSubmitting(false); }
+  };
+  const close = () => { if (!submittingRef.current) onClose(); };
   if (!open) return null;
 
-  return (
-    <Portal>
-    <div className="fixed inset-0 z-[125] flex items-end justify-center sm:items-center sm:p-6" role="dialog" aria-modal="true" aria-label={t("cart.detailsTitle")}>
-      <div onClick={onClose} className="anim-fade absolute inset-0 bg-ink/55 backdrop-blur-sm" />
-      <div className="anim-pop safe-bottom relative flex max-h-[94dvh] w-full flex-col overflow-hidden rounded-t-[1.6rem] bg-bone shadow-2xl sm:max-h-[90vh] sm:max-w-lg sm:rounded-[1.8rem]">
-        <div className="flex items-start justify-between gap-3 border-b border-ink/10 px-4 py-4 sm:px-5">
-          <div>
-            <p className="flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-[0.18em] text-mist">
-              <Truck className="h-3.5 w-3.5" /> {t("cart.deliveryEstimate")}
-            </p>
-            <h2 className="font-display mt-1 text-2xl leading-none sm:text-3xl">
-              {step === "details" ? t("cart.detailsTitle") : t("cart.successTitle")}
-            </h2>
-          </div>
-          <button
-            onClick={onClose}
-            className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-ink/15 transition hover:bg-ink hover:text-bone"
-            aria-label={t("common.close")}
-          >
-            <X className="h-4 w-4" />
-          </button>
+  return <Portal>
+    <div className="fixed inset-0 z-[125] flex items-end justify-center sm:items-center sm:p-6" role="dialog" aria-modal="true" aria-labelledby="checkout-title">
+      <div onClick={close} className="anim-fade absolute inset-0 bg-ink/55 backdrop-blur-sm" />
+      <div className="checkout-sheet anim-pop relative flex max-h-[94dvh] w-full flex-col overflow-hidden rounded-t-[1.6rem] bg-bone shadow-2xl sm:max-h-[90vh] sm:max-w-xl sm:rounded-[1.8rem]">
+        <div className="checkout-header flex items-start justify-between gap-3 border-b border-ink/10 px-5 py-4">
+          <div><p className="flex items-center gap-2 text-xs font-bold text-mist"><Truck className="h-4 w-4" /> {ar ? "بيانات التوصيل" : "Delivery details"}</p><h2 id="checkout-title" className="font-display mt-1 text-3xl">{step === "details" ? t("cart.detailsTitle") : (ar ? "تم تسجيل طلبك" : "Order placed")}</h2></div>
+          <button type="button" onClick={close} disabled={submitting} className="grid h-10 w-10 shrink-0 place-items-center rounded-full border border-ink/15 transition hover:bg-ink hover:text-bone disabled:opacity-50" aria-label={t("common.close")}><X className="h-4 w-4" /></button>
         </div>
-
-        {step === "details" ? (
-          <form
-            onSubmit={(event: FormEvent) => {
-              event.preventDefault();
-              sendWhatsapp();
-            }}
-            className="flex-1 overflow-y-auto px-4 py-4 sm:px-5"
-          >
-            <p className="text-[12px] leading-relaxed text-mist">{t("cart.detailsLead")}</p>
-
-            <div className="mt-4 flex items-center justify-between rounded-xl border border-ink/10 bg-surface/50 px-3 py-2.5">
-              <div className="flex items-center gap-2">
-                <span className="text-[11px] font-semibold text-ink/70">
-                  {count} {t("cart.items")} · {formatPrice(displayedSubtotal, lang)}
-                </span>
-              </div>
-              <button type="button" onClick={onClose} className="inline-flex items-center gap-1 text-[10px] font-bold text-plum underline decoration-acid decoration-2 underline-offset-2">
-                {t("cart.back")}
-              </button>
+        {step === "details" ? <form onSubmit={submitOrder} className="flex-1 overflow-y-auto px-4 py-4 sm:px-5">
+          <section className="checkout-section" aria-label={ar ? "منتجات طلبك" : "Your order items"}>
+            <div className="flex items-center justify-between gap-2"><h3 className="checkout-heading">{ar ? "منتجات طلبك" : "Your items"}</h3><span className="checkout-count">{count} {t("cart.items")}</span></div>
+            <div className="mt-3 space-y-2">{lines.map((line) => {
+              const price = activeQuote?.prices.find((item) => item.productId === line.productId && item.ml === line.ml)?.price ?? line.price;
+              return <div key={line.key} className="checkout-item"><SmartImage src={line.image} alt={l(line.name)} className="checkout-item__photo" /><div className="min-w-0 flex-1"><p className="checkout-item__name">{l(line.name)}</p><p className="mt-1 text-xs text-mist"><bdi>{line.ml} {ar ? "مل" : "ml"}</bdi> · {ar ? "الكمية" : "Qty"}: {line.qty}</p></div><strong className="checkout-item__price">{formatPrice(price * line.qty, lang)}</strong></div>;
+            })}</div>
+          </section>
+          <fieldset disabled={submitting} className="checkout-section mt-4 space-y-3 disabled:opacity-70">
+            <legend className="sr-only">{ar ? "بيانات التوصيل" : "Delivery details"}</legend>
+            <h3 className="checkout-heading">{ar ? "بيانات التوصيل" : "Delivery details"}</h3>
+            <label className="checkout-field"><span>{t("cart.fullName")} *</span><input value={customer.name} onChange={(e) => set("name", e.target.value)} className={cn("field", errors.name && "border-rose-400 bg-rose-50")} autoComplete="name" aria-invalid={!!errors.name} /></label>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <label className="checkout-field"><span>{ar ? "رقم الموبيل" : "Mobile number"} *</span><input type="tel" value={customer.phone} onChange={(e) => set("phone", e.target.value)} className={cn("field", errors.phone && "border-rose-400 bg-rose-50")} inputMode="tel" dir="ltr" autoComplete="tel" aria-invalid={!!errors.phone} /></label>
+              <label className="checkout-field"><span>{ar ? "رقم إضافي (اختياري)" : "Additional number (optional)"}</span><input type="tel" value={customer.additionalPhone ?? ""} onChange={(e) => set("additionalPhone", e.target.value)} className={cn("field", errors.additionalPhone && "border-rose-400 bg-rose-50")} inputMode="tel" dir="ltr" aria-invalid={!!errors.additionalPhone} /></label>
             </div>
-
-            <div className="mt-4 space-y-3">
-              <div className="grid gap-3 sm:grid-cols-2">
-                <label className="block">
-                  <span className="mb-1.5 block text-[9px] font-bold uppercase tracking-[0.14em] text-mist">{t("cart.fullName")} *</span>
-                  <input
-                    ref={nameRef}
-                    value={customer.name}
-                    onChange={(event) => set("name", event.target.value)}
-                    className={cn("field", errors.name && "border-rose-400 bg-rose-50")}
-                    placeholder={t("cart.namePh")}
-                    autoComplete="name"
-                  />
-                </label>
-                <label className="block">
-                  <span className="mb-1.5 block text-[9px] font-bold uppercase tracking-[0.14em] text-mist">{t("cart.phone")} *</span>
-                  <input
-                    value={customer.phone}
-                    onChange={(event) => set("phone", event.target.value)}
-                    className={cn("field", errors.phone && "border-rose-400 bg-rose-50")}
-                    placeholder={t("cart.phonePh")}
-                    inputMode="tel"
-                    dir="ltr"
-                    autoComplete="tel"
-                  />
-                </label>
-              </div>
-
-              <label className="block">
-                <span className="mb-1.5 block text-[9px] font-bold uppercase tracking-[0.14em] text-mist">{t("cart.city")} *</span>
-                <div className="relative">
-                  <select
-                    value={customer.city}
-                    onChange={(event) => set("city", event.target.value)}
-                    className={cn("field appearance-none pe-10", errors.city && "border-rose-400 bg-rose-50")}
-                  >
-                    <option value="">{t("cart.cityPh")}</option>
-                    {governorates.map((governorate) => (
-                      <option key={governorate.en} value={governorate.en}>
-                        {l(governorate)}
-                      </option>
-                    ))}
-                  </select>
-                  <svg viewBox="0 0 24 24" className="pointer-events-none absolute end-4 top-1/2 h-4 w-4 -translate-y-1/2 text-mist" fill="none" stroke="currentColor" strokeWidth={1.6}>
-                    <path d="m6 9 6 6 6-6" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                </div>
-              </label>
-
-              <label className="block">
-                <span className="mb-1.5 block text-[9px] font-bold uppercase tracking-[0.14em] text-mist">{t("cart.address")} *</span>
-                <textarea
-                  value={customer.address}
-                  onChange={(event) => set("address", event.target.value)}
-                  rows={2}
-                  className={cn("field resize-none", errors.address && "border-rose-400 bg-rose-50")}
-                  placeholder={t("cart.addressPh")}
-                  autoComplete="street-address"
-                />
-              </label>
-
-              <label className="block">
-                <span className="mb-1.5 block text-[9px] font-bold uppercase tracking-[0.14em] text-mist">{t("cart.noteField")}</span>
-                <input
-                  value={customer.note}
-                  onChange={(event) => set("note", event.target.value)}
-                  className="field"
-                  placeholder={t("cart.notePh")}
-                />
-              </label>
+            <label className="checkout-field"><span>{t("cart.city")} *</span><select value={customer.city} onChange={(e) => set("city", e.target.value)} className={cn("field", errors.city && "border-rose-400 bg-rose-50")} aria-invalid={!!errors.city}><option value="">{t("cart.cityPh")}</option>{governorates.map((governorate) => <option key={governorate.en} value={governorate.en}>{l(governorate)}</option>)}</select></label>
+            <label className="checkout-field"><span>{t("cart.address")} *</span><textarea value={customer.address} onChange={(e) => set("address", e.target.value)} rows={2} className={cn("field resize-y", errors.address && "border-rose-400 bg-rose-50")} placeholder={t("cart.addressPh")} autoComplete="street-address" aria-invalid={!!errors.address} /></label>
+            <label className="checkout-field"><span>{t("cart.noteField")}</span><input value={customer.note} onChange={(e) => set("note", e.target.value)} className="field" placeholder={t("cart.notePh")} /></label>
+            <label className="checkout-field"><span>{ar ? "كود الخصم (اختياري)" : "Coupon code (optional)"}</span><input className="field" value={coupon} maxLength={40} onChange={(e) => setCoupon(e.target.value)} dir="ltr" /></label>
+          </fieldset>
+          <section className="checkout-section mt-4" aria-label={ar ? "ملخص الحساب" : "Order summary"}>
+            <h3 className="checkout-heading">{ar ? "ملخص الحساب" : "Order summary"}</h3>
+            <div className="checkout-totals mt-3"><div><span>{ar ? "المنتجات" : "Subtotal"}</span><b>{formatPrice(activeQuote?.subtotal ?? displayedSubtotal, lang)}</b></div>
+              {activeQuote && activeQuote.discount > 0 && <div><span>{ar ? "الخصم" : "Discount"}</span><b>− {formatPrice(activeQuote.discount, lang)}</b></div>}
+              <div><span>{ar ? "الشحن" : "Shipping"}</span><b>{activeQuote ? formatPrice(activeQuote.shipping, lang) : (ar ? "بعد اختيار المحافظة" : "Choose a governorate")}</b></div>
+              {activeQuote && <div className="checkout-total"><span>{ar ? "الإجمالي" : "Total"}</span><b>{formatPrice(activeQuote.total, lang)}</b></div>}
             </div>
-
-            <label className="mt-3 block"><span className="text-xs">{lang === 'ar' ? 'كود الخصم (اختياري)' : 'Coupon code (optional)'}</span><input className="field" value={coupon} maxLength={40} onChange={e=>setCoupon(e.target.value)} /></label>
-            {activeQuote && <div className="mt-4 rounded-xl border border-ink/10 p-3 text-sm" role="status">
-              <p className="font-bold">{lang === 'ar' ? 'راجع الأسعار قبل تأكيد الطلب:' : 'Review prices before confirming:'}</p>
-              {activeQuote.prices.map(p=><p key={`${p.productId}:${p.ml}`}>{lines.find(x=>x.productId===p.productId && x.ml===p.ml)?.name[lang]} · {p.ml} ml: {formatPrice(p.price,lang)}</p>)}
-              <p>{lang === 'ar' ? 'المنتجات' : 'Subtotal'}: {formatPrice(activeQuote.subtotal,lang)}</p><p>{lang === 'ar' ? 'الخصم' : 'Discount'}: {formatPrice(activeQuote.discount,lang)}</p><p>{lang === 'ar' ? 'الشحن' : 'Shipping'}: {formatPrice(activeQuote.shipping,lang)}</p><strong>{lang === 'ar' ? 'الإجمالي' : 'Total'}: {formatPrice(activeQuote.total,lang)}</strong>
-            </div>}
-            <div className="mt-4 rounded-xl border border-ink/10 bg-surface/40 p-3">
-              <div className="flex items-center justify-between text-[12px]">
-                <span className="text-mist">{t("cart.subtotal")}</span>
-                <span className="font-display text-xl">{formatPrice(displayedSubtotal, lang)}</span>
-              </div>
-              <div className="mt-1 flex items-center justify-between text-[10px] text-mist">
-                <span>{t("cart.shipping")}</span>
-                <span>{activeQuote ? formatPrice(activeQuote.shipping, lang) : t("cart.calc")}</span>
-              </div>
-              <p className="mt-2 flex items-center gap-1.5 rounded-lg bg-acid/40 px-2 py-1.5 text-[10px] font-semibold text-ink">
-                <Check className="h-3.5 w-3.5 shrink-0" /> {t("cart.cod")}
-              </p>
-            </div>
-
-            <div className="sticky bottom-0 -mx-4 mt-4 space-y-2 border-t border-ink/10 bg-bone/95 px-4 pb-1 pt-3 backdrop-blur sm:-mx-5 sm:px-5">
-              <Button type="submit" disabled={submitting} variant="acid" full size="lg" icon={<Whatsapp className="h-4 w-4" />} iconPosition="start">
-                {activeQuote ? (lang === "ar" ? "تأكيد الطلب" : "Confirm order") : (lang === "ar" ? "حساب الإجمالي" : "Calculate total")}
-              </Button>
-              <div className="grid grid-cols-2 gap-2">
-                <Button type="button" variant="outline" size="sm" disabled={submitting} onClick={sendMessenger} icon={<Messenger className="h-3.5 w-3.5" />} iconPosition="start">
-                  {activeQuote ? t("cart.sendMessenger") : (lang === "ar" ? "حساب الإجمالي" : "Calculate total")}
-                </Button>
-                <Button type="button" variant="ghost" size="sm" onClick={copyOrder} icon={<Copy className="h-3.5 w-3.5" />} iconPosition="start">
-                  {t("cart.copy")}
-                </Button>
-              </div>
-              <p className="pb-1 text-center text-[10px] leading-relaxed text-mist">{t("cart.note")}</p>
-            </div>
-          </form>
-        ) : (
-          <div className="flex flex-1 flex-col items-center justify-center px-6 py-10 text-center">
-            <span className="grid h-16 w-16 place-items-center rounded-full bg-acid">
-              <Check className="h-7 w-7 text-ink" />
-            </span>
-            <h3 className="font-display mt-4 text-3xl">{t("cart.successTitle")}</h3>
-            <p className="mt-2 max-w-xs text-[12px] leading-relaxed text-mist">{t("cart.successBody")}</p>
-            {confirmedSubtotal !== null && <p className="mt-2">{lang === "ar" ? "الإجمالي المؤكد" : "Confirmed total"}: {formatPrice(confirmedSubtotal, lang)}</p>}
-            {tracking && <a className="mt-3 underline" href={`#/track/${tracking}`}>{lang === "ar" ? "تتبع طلبك — احفظ الرابط" : "Track your order — save this link"}</a>}
-            <div className="mt-6 w-full space-y-2">
-              <Button
-                variant="acid"
-                full
-                href={whatsappUrl(settings.whatsapp, lang === "ar" ? "تم تسجيل طلبي" : "My order has been placed")}
-                icon={<Whatsapp className="h-4 w-4" />}
-                iconPosition="start"
-              >
-                {t("cart.sendOrder")}
-              </Button>
-              <Button variant="outline" full onClick={onClose} icon={<ArrowRight className="h-4 w-4" />}>
-                {t("cart.keepBag")}
-              </Button>
-              <Button
-                variant="ghost"
-                full
-                size="sm"
-                onClick={() => {
-                  clear();
-                  sessionStorage.removeItem("malika.pendingOrder");
-                  onClose();
-                }}
-              >
-                {t("cart.clearBag")}
-              </Button>
-            </div>
-            <Send className="mt-6 h-4 w-4 text-mist/50" />
+            {quoteState === "loading" && <p role="status" className="mt-2 text-xs text-mist">{ar ? "جاري حساب الشحن والإجمالي…" : "Calculating shipping and total…"}</p>}
+            {quoteState === "error" && <p role="alert" className="mt-2 text-xs text-rose-700">{ar ? "تعذر حساب الشحن أو الكوبون غير صالح. راجع المحافظة والكود." : "Could not calculate shipping or the coupon is invalid. Check the governorate and code."}</p>}
+            <p className="checkout-payment"><Check className="h-4 w-4 shrink-0" /> {ar ? "الدفع عند الاستلام" : "Cash on delivery"}</p>
+          </section>
+          <div className="checkout-actions sticky bottom-0 -mx-4 mt-4 grid gap-2 border-t border-ink/10 bg-bone/95 px-4 pb-3 pt-3 backdrop-blur sm:-mx-5 sm:px-5">
+            <Button type="submit" disabled={submitting || !activeQuote || quoteState !== "ready" || !lines.length} variant="acid" full size="lg">{submitting ? (ar ? "جاري إتمام الطلب…" : "Placing order…") : (ar ? "إتمام الطلب" : "Place order")}</Button>
+            <Button type="button" variant="ghost" size="sm" disabled={submitting || !lines.length} onClick={copyOrder} icon={<Copy className="h-4 w-4" />} iconPosition="start">{ar ? "نسخ الطلب" : "Copy order"}</Button>
           </div>
-        )}
+        </form> : <div className="flex flex-1 flex-col items-center justify-center overflow-y-auto px-6 py-10 text-center">
+          <span className="grid h-16 w-16 place-items-center rounded-full bg-acid"><Check className="h-7 w-7 text-ink" /></span>
+          <h3 className="font-display mt-4 text-3xl">{ar ? "تم تسجيل طلبك" : "Order placed"}</h3>
+          <p className="mt-2 text-sm text-mist">{ar ? "شكرًا لك، تم تسجيل طلبك بنجاح." : "Thank you. Your order has been placed."}</p>
+          {confirmation && <><p className="mt-3 text-xs text-mist">{ar ? "رقم الطلب" : "Order"}: <bdi>{confirmation.id}</bdi></p><p className="mt-2 font-bold">{ar ? "الإجمالي المؤكد" : "Confirmed total"}: {formatPrice(confirmation.total, lang)}</p><a className="mt-4 underline" href={`#/track/${confirmation.tracking}`}>{ar ? "تتبع طلبك — احفظ الرابط" : "Track your order — save this link"}</a><Button variant="outline" className="mt-5" onClick={copyOrder} icon={<Copy className="h-4 w-4" />} iconPosition="start">{ar ? "نسخ الطلب" : "Copy order"}</Button></>}
+        </div>}
       </div>
     </div>
-    </Portal>
-  );
+  </Portal>;
 }

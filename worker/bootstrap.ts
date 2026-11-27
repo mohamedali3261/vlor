@@ -10,6 +10,7 @@ const DDL_STATEMENTS = [
   `CREATE TABLE IF NOT EXISTS sessions (token_hash TEXT PRIMARY KEY, admin_id TEXT NOT NULL REFERENCES admins(id) ON DELETE CASCADE, expires_at INTEGER NOT NULL, last_seen INTEGER NOT NULL DEFAULT 0)`,
   `CREATE TABLE IF NOT EXISTS login_attempts (key TEXT PRIMARY KEY, count INTEGER NOT NULL, expires_at INTEGER NOT NULL)`,
   `CREATE TABLE IF NOT EXISTS orders (id TEXT PRIMARY KEY, customer_name TEXT NOT NULL, phone TEXT NOT NULL, city TEXT NOT NULL, address TEXT NOT NULL, note TEXT NOT NULL, subtotal INTEGER NOT NULL, status TEXT NOT NULL DEFAULT 'new', created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, idempotency_key TEXT, request_hash TEXT, stock_reserved INTEGER NOT NULL DEFAULT 0 CHECK(stock_reserved IN (0, 1)), shipping INTEGER NOT NULL DEFAULT 0, discount INTEGER NOT NULL DEFAULT 0, coupon_code TEXT, tracking_hash TEXT)`,
+  `CREATE TABLE IF NOT EXISTS order_contacts (order_id TEXT PRIMARY KEY REFERENCES orders(id) ON DELETE CASCADE, additional_phone TEXT NOT NULL)`,
   `CREATE TABLE IF NOT EXISTS order_items (id TEXT PRIMARY KEY, order_id TEXT NOT NULL REFERENCES orders(id), product_id TEXT NOT NULL REFERENCES products(id), name TEXT NOT NULL, size INTEGER NOT NULL, unit_price INTEGER NOT NULL, quantity INTEGER NOT NULL)`,
   `CREATE INDEX IF NOT EXISTS order_items_order ON order_items(order_id)`,
   `CREATE INDEX IF NOT EXISTS orders_created ON orders(created_at DESC)`,
@@ -204,6 +205,8 @@ async function initialize(db: D1Database): Promise<void> {
     // Base tables or store_meta do not exist yet.
   }
   if (initialized) {
+    // Existing databases also need the additive table before accepting new orders.
+    await db.prepare(`CREATE TABLE IF NOT EXISTS order_contacts (order_id TEXT PRIMARY KEY REFERENCES orders(id) ON DELETE CASCADE, additional_phone TEXT NOT NULL)`).run();
     await applyVlorBrandMigration(db);
     await ensureRequestedScents(db);
     await removeOldImages(db);

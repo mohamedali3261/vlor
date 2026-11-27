@@ -519,7 +519,7 @@ export const dict = {
   },
   "cart.fullName": { en: "Full name", ar: "الاسم بالكامل" },
   "cart.namePh": { en: "e.g. Nour El-Sayed", ar: "مثال: نور السيد" },
-  "cart.phone": { en: "WhatsApp number", ar: "رقم الواتساب" },
+  "cart.phone": { en: "Mobile number", ar: "رقم الموبيل" },
   "cart.phonePh": { en: "010 1234 5678", ar: "٠١٠ ١٢٣٤ ٥٦٧٨" },
   "cart.city": { en: "Governorate", ar: "المحافظة" },
   "cart.cityPh": { en: "Choose your governorate", ar: "اختر محافظتك" },
@@ -532,7 +532,7 @@ export const dict = {
   "cart.quickSend": { en: "Send bag right away on WhatsApp", ar: "إرسال السلة فوراً على واتساب" },
   "cart.back": { en: "Back to bag", ar: "رجوع إلى السلة" },
   "cart.items": { en: "Items", ar: "القطع" },
-  "cart.cod": { en: "Cash on delivery · confirmed on chat", ar: "الدفع عند الاستلام · التأكيد على الشات" },
+  "cart.cod": { en: "Cash on delivery", ar: "الدفع عند الاستلام" },
   "cart.deliveryEstimate": {
     en: "Cairo & Giza 1–2 days · other governorates 2–4 days",
     ar: "القاهرة والجيزة ١–٢ يوم · باقي المحافظات ٢–٤ أيام",
