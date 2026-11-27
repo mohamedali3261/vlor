@@ -43,8 +43,14 @@ class AnalyticsApiTests(unittest.TestCase):
         admin = 'analytics-test-' + uuid.uuid4().hex
         db.execute('INSERT INTO admins(id,username,salt,password_hash,role,must_change_password) VALUES(?,?,?,?,?,0)', (admin,admin,'x','x','owner'))
         db.execute('INSERT INTO sessions(token_hash,admin_id,expires_at,last_seen) VALUES(?,?,?,?)', (hashlib.sha256(token.encode()).hexdigest(),admin,now+600000,now))
+        staff_token = secrets.token_hex(32)
+        staff = 'analytics-staff-' + uuid.uuid4().hex
+        db.execute('INSERT INTO admins(id,username,salt,password_hash,role,must_change_password) VALUES(?,?,?,?,?,0)', (staff,staff,'x','x','orders'))
+        db.execute('INSERT INTO sessions(token_hash,admin_id,expires_at,last_seen) VALUES(?,?,?,?)', (hashlib.sha256(staff_token.encode()).hexdigest(),staff,now+600000,now))
+        product_slug = db.execute('SELECT slug FROM products WHERE archived=0 LIMIT 1').fetchone()[0]
         db.commit()
         self.assertEqual(self.request('/api/admin/analytics')[0], 401)
+        self.assertEqual(self.request('/api/admin/analytics', token=staff_token)[0], 403)
         a, b = str(uuid.uuid4()), str(uuid.uuid4())
         def event(kind, visitor, path='/', **extra):
             return self.request('/api/analytics/event', {'type':kind,'visitorId':visitor,'pagePath':path,**extra})
@@ -55,6 +61,10 @@ class AnalyticsApiTests(unittest.TestCase):
         self.assertEqual(event('interaction',a,'/shop',action='add-to-cart')[0], 200)
         self.assertEqual(event('interaction',a,'/shop',action='add-to-cart')[0], 200)
         self.assertEqual(event('interaction',b,'/shop',action='checkout')[0], 200)
+        self.assertEqual(event('product_click',a,'/shop',productSlug=product_slug)[0], 200)
+        self.assertEqual(event('product_click',b,'/shop',productSlug=product_slug)[0], 200)
+        self.assertEqual(event('interaction',a,'/shop',action='product:'+product_slug)[0], 200)
+        self.assertEqual(event('product_click',a,'/shop',productSlug='nonexistent-product-123')[0], 404)
         self.assertEqual(event('interaction',a,'/shop',action='private customer text')[0], 400)
         self.assertTrue(event('heartbeat',a,'/studio')[1]['ignored'])
         status, result = self.request('/api/admin/analytics?days=400', token=token)
@@ -62,6 +72,10 @@ class AnalyticsApiTests(unittest.TestCase):
         self.assertEqual(result['activeVisitors'], 2)
         self.assertEqual(result['retainedTotals'], {'visitors':2,'pageViews':3})
         self.assertEqual(result['summary']['visitors'], 2)
+        self.assertEqual(result['summary']['productClicks'], 2)
+        product = next(x for x in result['products'] if x['slug'] == product_slug)
+        self.assertEqual((product['clicks'],product['visitors']), (2,2))
+        self.assertEqual(next(x for x in result['pages'] if x['path'] == '/shop')['views'], 1)
         action = next(x for x in result['actions'] if x['action']=='add-to-cart')
         self.assertEqual((action['path'],action['clicks'],action['visitors']), ('/shop',2,1))
         # Old heartbeats are not online; no raw browser IDs were persisted.

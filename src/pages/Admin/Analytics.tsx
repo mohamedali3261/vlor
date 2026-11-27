@@ -108,11 +108,12 @@ export function Analytics() {
         return (await response.json()) as AnalyticsPayload;
       })
       .then((result) => {
+        if (controller.signal.aborted) return;
         setData(result);
         setStatus("ready");
       })
-      .catch((error: unknown) => {
-        if (error instanceof DOMException && error.name === "AbortError") return;
+      .catch(() => {
+        if (controller.signal.aborted) return;
         setStatus("error");
       });
     return () => controller.abort();
@@ -144,7 +145,7 @@ export function Analytics() {
             buttonClassName="h-10"
             value={days}
             options={rangeOptions}
-            onChange={setDays}
+            onChange={(value) => { if (value !== days) { setData(null); setStatus("loading"); setDays(value); } }}
             dir={ar ? "rtl" : "ltr"}
           />
           <button

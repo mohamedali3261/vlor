@@ -1,5 +1,6 @@
 """Exercise the analytics daily aggregate schema and its view/click semantics."""
 import sqlite3
+import re
 import tempfile
 import unittest
 from pathlib import Path
@@ -62,6 +63,26 @@ class AnalyticsMigrationTests(unittest.TestCase):
                 "INSERT INTO analytics_daily(day,event_type,page_path,target_id,visitor_hash) VALUES(?,?,?,?,?)",
                 ("2026-11-08", "product_click", "/", "", "hash-a"),
             )
+
+    def test_additive_bootstrap_preserves_existing_data_and_restores_missing_tables(self):
+        source = (ROOT / 'worker' / 'bootstrap.ts').read_text()
+        self.assertIn('/analytics_daily|analytics_actions|analytics_presence/', source)
+        statements = [value for value in re.findall(r'`([^`]+)`', source) if re.search(r'analytics_daily|analytics_actions|analytics_presence', value) and value.startswith('CREATE ')]
+        self.assertGreaterEqual(len(statements), 6)
+        self.db.execute("INSERT INTO analytics_daily(day,event_type,page_path,target_id,visitor_hash) VALUES('2026-11-08','page_view','/','','old-visitor')")
+        self.db.execute('DROP TABLE analytics_actions')
+        self.db.execute('DROP TABLE analytics_presence')
+        for statement in statements:
+            self.db.execute(statement)
+        self.assertEqual(self.db.execute('SELECT visitor_hash FROM analytics_daily').fetchone()[0], 'old-visitor')
+        self.db.execute("INSERT INTO analytics_actions(day,page_path,action,visitor_hash) VALUES('2026-11-08','/','checkout','old-visitor')")
+        self.db.execute("INSERT INTO analytics_presence VALUES('old-visitor',100)")
+        # An even older initialized database can lack the original analytics table.
+        self.db.execute('DROP TABLE analytics_daily')
+        for statement in statements:
+            self.db.execute(statement)
+        self.assertEqual(self.db.execute('SELECT count(*) FROM analytics_daily').fetchone()[0], 0)
+        self.assertEqual(self.db.execute('SELECT count(*) FROM analytics_actions').fetchone()[0], 1)
 
     def test_interaction_counts_are_separate_from_legacy_analytics(self):
         self.db.execute("INSERT INTO analytics_daily(day,event_type,page_path,target_id,visitor_hash) VALUES('2026-11-08','page_view','/','','hash-a')")

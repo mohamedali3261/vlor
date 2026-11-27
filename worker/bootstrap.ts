@@ -211,7 +211,7 @@ async function initialize(db: D1Database): Promise<void> {
   if (initialized) {
     // Existing databases also need the additive table before accepting new orders.
     await db.prepare(`CREATE TABLE IF NOT EXISTS order_contacts (order_id TEXT PRIMARY KEY REFERENCES orders(id) ON DELETE CASCADE, additional_phone TEXT NOT NULL)`).run();
-    for (const sql of DDL_STATEMENTS.filter(statement => /analytics_actions|analytics_presence/.test(statement))) await db.prepare(sql).run();
+    for (const sql of DDL_STATEMENTS.filter(statement => /analytics_daily|analytics_actions|analytics_presence/.test(statement))) await db.prepare(sql).run();
     await applyVlorBrandMigration(db);
     await ensureRequestedScents(db);
     await removeOldImages(db);
