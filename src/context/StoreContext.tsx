@@ -1,3 +1,4 @@
+import { migrateSocialSettings } from "@/lib/migrateSocialSettings";
 import { clearOldImageStorage } from "@/lib/clearOldImageStorage";
 import { publishedAt, publishedContent, publishedSettings } from "@/data/published";
 import { defaultSettings } from "@/data/site";
@@ -39,7 +40,14 @@ function initialSettings(): SiteSettings {
     if (typeof window !== "undefined") old = JSON.parse(window.localStorage.getItem(`malika.settings.v2${catalogueVersion}`) || "null");
   } catch { /* use published settings */ }
   const initial = { ...defaultSettings, ...publishedSettings, ...old };
-  if (old) return { ...initial, whatsapp: defaultSettings.whatsapp, phone: defaultSettings.phone };
+  if (old) return {
+    ...initial,
+    whatsapp: defaultSettings.whatsapp,
+    phone: defaultSettings.phone,
+    facebook: old.facebook?.trim() ? old.facebook : defaultSettings.facebook,
+    youtube: old.youtube?.trim() ? old.youtube : defaultSettings.youtube,
+    tiktok: old.tiktok?.trim() ? old.tiktok : defaultSettings.tiktok,
+  };
   return {
     ...initial,
     whatsapp: initial.whatsapp === "201234567890" ? defaultSettings.whatsapp : initial.whatsapp,
@@ -49,7 +57,12 @@ function initialSettings(): SiteSettings {
 
 export function StoreProvider({ children }: { children: ReactNode }) {
   useState(() => {
-    try { if (typeof window !== "undefined") clearOldImageStorage(window.localStorage); } catch { /* Storage may be blocked. */ }
+    try {
+      if (typeof window !== "undefined") {
+        clearOldImageStorage(window.localStorage);
+        migrateSocialSettings(window.localStorage, `malika.settings.v3${catalogueVersion}`, defaultSettings);
+      }
+    } catch { /* Storage may be blocked. */ }
   });
   const [products, setProducts] = useState<Product[]>([]);
   useEffect(() => {

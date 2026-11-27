@@ -73,3 +73,11 @@ export function renderProductPhotos() {
     <Gallery product={product} /><ProductPhoto src={product.images[0]} alt="card" fallback={null} />
   </LanguageProvider></StoreProvider>);
 }
+
+import { SocialLinks } from '@/components/ui/SocialLinks';
+import { Hero } from '@/pages/Home/Hero';
+export function renderSocialAndHero() {
+  return renderToStaticMarkup(<StoreProvider><LanguageProvider><Hero /><SocialLinks /></LanguageProvider></StoreProvider>);
+}
+export { migrateSocialSettings } from '@/lib/migrateSocialSettings';
+export { defaultSettings } from '@/data/site';

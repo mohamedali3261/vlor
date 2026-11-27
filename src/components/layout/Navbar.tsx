@@ -81,13 +81,21 @@ export function Navbar() {
         )}
       >
         <div className="mx-auto flex h-[72px] max-w-[1400px] items-center justify-between gap-2 px-4 sm:gap-4 sm:px-6 lg:px-10">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 lg:gap-3">
             <button
               onClick={() => setMobileOpen(true)}
               className="grid h-10 w-10 place-items-center rounded-full border border-ink/12 text-ink transition hover:bg-ink hover:text-bone lg:hidden"
               aria-label={t("nav.menu")}
             >
               <Menu className="h-4.5 w-4.5" />
+            </button>
+            <button
+              type="button"
+              onClick={toggle}
+              className="grid h-10 w-10 shrink-0 place-items-center rounded-full border border-ink/12 text-[11px] font-bold text-ink transition hover:border-ink/40 lg:hidden"
+              aria-label={t("lang.switch")}
+            >
+              {lang === "ar" ? "EN" : "ع"}
             </button>
             <nav className="hidden items-center gap-1 rounded-full border border-ink/10 bg-surface/40 p-1.5 lg:flex">
               {links.map((link) => {
@@ -128,7 +136,7 @@ export function Navbar() {
           <div className="flex items-center gap-1.5 sm:gap-2">
             <button
               onClick={toggle}
-              className="hidden h-10 items-center gap-1.5 rounded-full border border-ink/12 px-3 text-[11px] font-bold uppercase tracking-widest text-ink transition hover:border-ink/40 sm:flex"
+              className="hidden h-10 items-center gap-1.5 rounded-full border border-ink/12 px-3 text-[11px] font-bold uppercase tracking-widest text-ink transition hover:border-ink/40 lg:flex"
               aria-label={t("lang.switch")}
             >
               <Globe className="h-3.5 w-3.5" />

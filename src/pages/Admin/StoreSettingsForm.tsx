@@ -73,7 +73,10 @@ export function StoreSettingsForm({
           <Field label={lang === "ar" ? "رابط فيسبوك" : "Facebook URL"} hint="https://facebook.com/yourpage">
             <input value={draft.facebook} onChange={(event) => set("facebook", event.target.value)} className="field" dir="ltr" />
           </Field>
-          <Field label={lang === "ar" ? "رابط يوتيوب" : "YouTube URL"} hint="https://youtube.com/@yourchannel">
+          <Field label={lang === "ar" ? "رابط تيك توك" : "TikTok URL"} hint="https://www.tiktok.com/@youraccount">
+            <input value={draft.tiktok} onChange={(event) => set("tiktok", event.target.value)} className="field" dir="ltr" />
+          </Field>
+          <Field label={lang === "ar" ? "رابط يوتيوب (غير ظاهر ضمن أيقونات السوشيال)" : "YouTube URL (not shown in social icons)"} hint="https://youtube.com/@yourchannel">
             <input value={draft.youtube} onChange={(event) => set("youtube", event.target.value)} className="field" dir="ltr" />
           </Field>
           <Field label="Display phone">

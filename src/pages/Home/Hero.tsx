@@ -1,22 +1,19 @@
 import { Button } from "@/components/ui/Button";
 import { Reveal } from "@/components/ui/Reveal";
-import { ArrowDown, ArrowUpRight, Whatsapp } from "@/components/ui/icons";
-import { useStore } from "@/context/StoreContext";
+import { ArrowDown, ArrowUpRight } from "@/components/ui/icons";
+import { SocialLinks } from "@/components/ui/SocialLinks";
 import { useBrand } from "@/hooks/useBrand";
 import { useContent } from "@/hooks/useContent";
 import { useLang } from "@/i18n/LanguageContext";
-import { openChannel, whatsappUrl } from "@/lib/messaging";
 import { useMagnetic } from "@/motion";
 import "@/styles/home-scroll.css";
 
 export function Hero() {
   const { t, x } = useLang();
   const { c, lc } = useContent();
-  const { settings } = useStore();
   const { wordmark } = useBrand();
   const magneticCta = useMagnetic<HTMLDivElement>(6);
 
-  const greeting = x("Hello VLOR, help me find my scent", "مرحباً ڨلور، أرغب في مساعدتي لاختيار عطر");
 
   return (
     <section className="grain relative overflow-hidden bg-ink text-bone">
@@ -35,6 +32,7 @@ export function Hero() {
 
       <div className="relative mx-auto flex max-w-[920px] flex-col items-center hero-pad px-4 text-center sm:px-6 lg:px-10">
         <Reveal variant="m-blur-rise">
+          <p className="hero-eyebrow"><span />{x("A world of scent", "عالم من العطور")}<span /></p>
           <h1 className="font-display hd-hero leading-[0.94] tracking-[-0.03em]">
             <span className="block overflow-hidden py-0.5">
               <span className="m-text-mask-up block">{lc(c.hero.titleLine1)}</span>
@@ -85,15 +83,14 @@ export function Hero() {
             >
               {lc(c.hero.secondaryCta)}
             </Button>
-            <button
-              onClick={() => openChannel(whatsappUrl(settings.whatsapp, greeting))}
-              className="m-press-spring grid h-12 w-12 shrink-0 place-items-center rounded-full border border-bone/15 text-bone/70 transition hover:border-acid hover:text-acid"
-              aria-label={t("nav.order")}
-            >
-              <Whatsapp className="h-5 w-5" />
-            </button>
+
           </div>
         </Reveal>
+
+        <div className="hero-social mt-9">
+          <div className="hero-social__heading"><span />{x("Find us on", "تابعنا على")}<span /></div>
+          <SocialLinks variant="hero" />
+        </div>
 
         <a
           href="#runway-lookbook"
