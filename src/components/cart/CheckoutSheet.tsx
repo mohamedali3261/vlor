@@ -1,3 +1,5 @@
+import { governorates } from "@/lib/governorates";
+import { loadProfile, saveProfile, type ProfileDetails } from "@/lib/localProfile";
 import { Button } from "@/components/ui/Button";
 import { Portal, SmartImage } from "@/components/ui/Primitives";
 import { Check, Copy, Truck, X } from "@/components/ui/icons";
@@ -12,35 +14,7 @@ import { cn } from "@/utils/cn";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import "@/styles/checkout.css";
 
-const governorates = [
-  { en: "Cairo", ar: "القاهرة" },
-  { en: "Giza", ar: "الجيزة" },
-  { en: "Alexandria", ar: "الإسكندرية" },
-  { en: "Qalyubia", ar: "القليوبية" },
-  { en: "Sharqia", ar: "الشرقية" },
-  { en: "Dakahlia", ar: "الدقهلية" },
-  { en: "Gharbia", ar: "الغربية" },
-  { en: "Monufia", ar: "المنوفية" },
-  { en: "Beheira", ar: "البحيرة" },
-  { en: "Kafr El Sheikh", ar: "كفر الشيخ" },
-  { en: "Damietta", ar: "دمياط" },
-  { en: "Port Said", ar: "بورسعيد" },
-  { en: "Ismailia", ar: "الإسماعيلية" },
-  { en: "Suez", ar: "السويس" },
-  { en: "Faiyum", ar: "الفيوم" },
-  { en: "Beni Suef", ar: "بني سويف" },
-  { en: "Minya", ar: "المنيا" },
-  { en: "Asyut", ar: "أسيوط" },
-  { en: "Sohag", ar: "سوهاج" },
-  { en: "Qena", ar: "قنا" },
-  { en: "Luxor", ar: "الأقصر" },
-  { en: "Aswan", ar: "أسوان" },
-  { en: "Red Sea", ar: "البحر الأحمر" },
-  { en: "Matrouh", ar: "مطروح" },
-  { en: "North Sinai", ar: "شمال سيناء" },
-  { en: "South Sinai", ar: "جنوب سيناء" },
-  { en: "New Valley", ar: "الوادي الجديد" },
-] as const;
+
 
 
 type Quote = { signature: string; subtotal: number; shipping: number; discount: number; total: number; prices: {productId:string; ml:number; price:number}[] };
@@ -54,7 +28,8 @@ export function CheckoutSheet({ open, onClose }: CheckoutSheetProps) {
   const ar = lang === "ar";
   useBodyLock(open);
   const [step, setStep] = useState<"details" | "sent">("details");
-  const [customer, setCustomer] = useState<OrderCustomer>({ name: "", phone: "", additionalPhone: "", city: "", address: "", note: "" });
+  const [customer, setCustomer] = useState<OrderCustomer>(() => ({ ...(loadProfile()?.details ?? { name: "", phone: "", additionalPhone: "", city: "", address: "" }), note: "" }));
+  const [remember, setRemember] = useState(() => !!loadProfile());
   const [errors, setErrors] = useState<{ name?: boolean; phone?: boolean; additionalPhone?: boolean; city?: boolean; address?: boolean }>({});
   const [submitting, setSubmitting] = useState(false);
   const submittingRef = useRef(false);
@@ -102,6 +77,15 @@ export function CheckoutSheet({ open, onClose }: CheckoutSheetProps) {
     if (Object.values(next).some(Boolean)) push(ar ? "راجع البيانات المطلوبة وأرقام الموبيل." : "Check the required details and mobile numbers.", "error");
     return !Object.values(next).some(Boolean);
   };
+  const saveDeliveryDetails = () => {
+    if (!validate()) return;
+    const prior=loadProfile();
+    const details:ProfileDetails={name:customer.name.trim(),phone:customer.phone.trim(),additionalPhone:(customer.additionalPhone ?? '').trim(),city:customer.city,address:customer.address.trim()};
+    if (saveProfile({...prior,details,orders:prior?.orders ?? []})) {
+      setRemember(true);
+      push(ar ? "تم حفظ بيانات التوصيل على هذا المتصفح للطلبات القادمة." : "Delivery details saved on this browser for future orders.");
+    } else push(ar ? "تعذر حفظ البيانات على هذا المتصفح." : "Could not save details on this browser.","error");
+  };
   const orderText = () => {
     const pricedLines = activeQuote ? lines.map((line) => ({ ...line, price: activeQuote.prices.find((p) => p.productId === line.productId && p.ml === line.ml)?.price ?? line.price })) : lines;
     return cartMessage(pricedLines, lang, settings, customer) + (activeQuote ? `\n${ar ? "الشحن" : "Shipping"}: ${formatPrice(activeQuote.shipping, lang)}\n${ar ? "الخصم" : "Discount"}: ${formatPrice(activeQuote.discount, lang)}\n${ar ? "الإجمالي شامل الشحن" : "Total including shipping"}: ${formatPrice(activeQuote.total, lang)}` : "");
@@ -131,6 +115,12 @@ export function CheckoutSheet({ open, onClose }: CheckoutSheetProps) {
         return;
       }
       if (!response.ok) throw new Error("Order failed");
+      if (remember) {
+        const details: ProfileDetails = { name: customer.name.trim(), phone: customer.phone.trim(), additionalPhone: (customer.additionalPhone ?? "").trim(), city: customer.city, address: customer.address.trim() };
+        const prior = loadProfile();
+        const ok = saveProfile({ ...prior, details, orders: [{ id: result.id, token: result.trackingToken }, ...(prior?.orders ?? []).filter(order => order.id !== result.id)].slice(0, 20) });
+        if (!ok) push(ar ? "تم الطلب، لكن تعذر حفظ البروفيل على هذا المتصفح. احفظ رابط التتبع." : "Order placed, but this browser could not save the profile. Save your tracking link.", "error");
+      }
       const message = `${ar ? "رقم الطلب" : "Order"}: ${result.id}\n${orderText()}`;
       setConfirmation({ id: result.id, tracking: result.trackingToken, total: result.total, message });
       setStep("sent"); closeCart(); clear();
@@ -169,6 +159,8 @@ export function CheckoutSheet({ open, onClose }: CheckoutSheetProps) {
             <label className="checkout-field"><span>{t("cart.city")} *</span><select value={customer.city} onChange={(e) => set("city", e.target.value)} className={cn("field", errors.city && "border-rose-400 bg-rose-50")} aria-invalid={!!errors.city}><option value="">{t("cart.cityPh")}</option>{governorates.map((governorate) => <option key={governorate.en} value={governorate.en}>{l(governorate)}</option>)}</select></label>
             <label className="checkout-field"><span>{t("cart.address")} *</span><textarea value={customer.address} onChange={(e) => set("address", e.target.value)} rows={2} className={cn("field resize-y", errors.address && "border-rose-400 bg-rose-50")} placeholder={t("cart.addressPh")} autoComplete="street-address" aria-invalid={!!errors.address} /></label>
             <label className="checkout-field"><span>{t("cart.noteField")}</span><input value={customer.note} onChange={(e) => set("note", e.target.value)} className="field" placeholder={t("cart.notePh")} /></label>
+            <button type="button" onClick={saveDeliveryDetails} className="rounded-full border border-ink/20 px-4 py-2 text-xs font-bold">{ar ? "حفظ بيانات التوصيل" : "Save delivery details"}</button>
+            <label className="flex items-start gap-2 rounded-xl border border-ink/10 bg-bone/60 p-3 text-xs leading-relaxed"><input type="checkbox" className="mt-0.5" checked={remember} onChange={e=>setRemember(e.target.checked)} /><span>{ar ? "احفظ بياناتي ورابط الطلب في بروفيل على هذا المتصفح فقط. لا تستخدمه على جهاز مشترك." : "Save my details and tracking link in a profile on this browser only. Avoid this on shared devices."}</span></label>
           </fieldset>
           <section className="checkout-section checkout-summary mt-4" aria-label={ar ? "ملخص الحساب" : "Order summary"}>
             <h3 className="checkout-heading">{ar ? "ملخص الحساب" : "Order summary"}</h3>

@@ -1,3 +1,4 @@
+import { ProfileAnalytics } from "@/pages/Admin/ProfileAnalytics";
 import { latinDigits } from "@/lib/format";
 import { ArrowUpRight, Eye, Lock, Refresh, Sparkles } from "@/components/ui/icons";
 import { Select } from "@/components/ui/Select";
@@ -174,6 +175,7 @@ export function Analytics() {
         </div>
       ) : data ? (
         <>
+          <ProfileAnalytics days={days} reload={reload} actionLabel={action=>actionLabel(action,ar,data.products)} pageLabel={path=>pageLabel(path,ar)} />
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <MetricCard label={ar ? "الزوار الحاليون" : "Visitors online"} value={number.format(data.activeVisitors)} detail={ar ? "متصفحات نشطة خلال آخر 5 دقائق — تحديث تلقائي" : "Browsers active in the last 5 minutes — refreshes automatically"} icon={<span className="h-3 w-3 rounded-full bg-emerald-500" />} />
             <MetricCard label={ar ? "إجمالي الزوار المتاح" : "Total available visitors"} value={number.format(data.retainedTotals.visitors)} detail={ar ? "متصفحات مميزة خلال آخر 400 يوم" : "Unique browsers over the last 400 days"} icon={<Sparkles className="h-5 w-5" />} />

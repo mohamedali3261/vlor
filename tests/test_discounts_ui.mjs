@@ -12,12 +12,21 @@ let r;await act(async()=>{r=create(React.createElement(module.exports.DiscountRu
 const inputs=()=>r.root.findAllByType('input');
 await act(async()=>{inputs()[0].props.onChange({target:{value:'3'}});inputs()[1].props.onChange({target:{value:'15'}})});
 await act(async()=>r.root.findByType('form').props.onSubmit({preventDefault(){}}));
-assert.equal(rules.length,1);assert.equal(rules[0].kind,'quantity');assert.equal(rules[0].threshold,3);assert.equal(rules[0].percent,15);assert.ok(events.includes('vlor:discounts-changed'));
+assert.equal(rules.length,1);assert.equal(rules[0].kind,'quantity');assert.equal(rules[0].threshold,3);assert.equal(rules[0].discountAmount,15);assert.ok(events.includes('vlor:discounts-changed'));
 await act(async()=>r.root.findAllByType('button').find(x=>x.children.includes('تعديل')).props.onClick());
 await act(async()=>{r.root.findByType('select').props.onChange({target:{value:'amount'}});inputs()[0].props.onChange({target:{value:'500'}})});
 await act(async()=>r.root.findByType('form').props.onSubmit({preventDefault(){}}));
 assert.equal(rules[0].kind,'amount');assert.equal(rules[0].threshold,500);
 await act(async()=>r.root.findAllByType('button').find(x=>x.children.includes('حذف')).props.onClick());
 assert.equal(rules.length,0);assert.ok(requests.some(x=>x.opts.method==='DELETE'));
+// A percentage rule from before the upgrade remains a disabled draft until edited.
+rules=[{id:'legacy',kind:'quantity',threshold:2,discountAmount:null,legacyPercent:10,enabled:0}];
+await act(async()=>{r.unmount();r=create(React.createElement(module.exports.DiscountRules));});
+assert.ok(JSON.stringify(r.toJSON()).includes('عرض سابق 10%'));
+await act(async()=>r.root.findAllByType('button').find(x=>x.children.includes('تعديل')).props.onClick());
+assert.equal(inputs()[1].props.value,'');assert.equal(inputs()[2].props.checked,false);
+await act(async()=>{inputs()[1].props.onChange({target:{value:'50'}});inputs()[2].props.onChange({target:{checked:true}})});
+await act(async()=>r.root.findByType('form').props.onSubmit({preventDefault(){}}));
+assert.equal(rules[0].discountAmount,50);assert.equal(rules[0].enabled,1);
 await act(async()=>r.unmount());
 console.log('Automatic discount offers can be added, edited and deleted from the studio.');

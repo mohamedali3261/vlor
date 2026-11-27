@@ -13,16 +13,18 @@ import { CartProvider, useCart } from "@/context/CartContext";
 import { StoreProvider } from "@/context/StoreContext";
 import { ToastProvider } from "@/context/ToastContext";
 import { LanguageProvider } from "@/i18n/LanguageContext";
+import { loadProfile } from "@/lib/localProfile";
 import { protectStorefrontImages } from "@/lib/protectStorefrontImages";
 import { useRoute } from "@/lib/router";
 import { HomePage } from "@/pages/Home";
 import { NotFoundPage } from "@/pages/NotFound/NotFoundPage";
-import { Suspense, lazy, useCallback, useEffect, useState } from "react";
+import { Suspense, lazy, useCallback, useEffect, useRef, useState } from "react";
 
 const ShopPage = lazy(() => import("@/pages/Shop").then((m) => ({ default: m.ShopPage })));
 const WishlistPage = lazy(() => import("@/pages/Wishlist").then((m) => ({ default: m.WishlistPage })));
 const ProductPage = lazy(() => import("@/pages/Product").then((m) => ({ default: m.ProductPage })));
 const ContactPage = lazy(() => import("@/pages/Contact").then((m) => ({ default: m.ContactPage })));
+const ProfilePage = lazy(() => import("@/pages/Profile").then((m) => ({ default: m.ProfilePage })));
 const TrackOrder = lazy(() => import("@/pages/TrackOrder").then((m) => ({ default: m.TrackOrder })));
 const StudioGate = lazy(() => import("@/pages/Admin/StudioGate").then((m) => ({ default: m.StudioGate })));
 const CheckoutSheet = lazy(() => import("@/components/cart/CheckoutSheet").then((m) => ({ default: m.CheckoutSheet })));
@@ -45,6 +47,15 @@ function AppShell() {
   const [homeLoaderOpen, setHomeLoaderOpen] = useState(() => path === "/");
   const closeHomeLoader = useCallback(() => setHomeLoaderOpen(false), []);
   useSecretKeyword();
+  const registeredProfile=useRef<string | null>(null);
+  useEffect(() => {
+    if (/^\/(studio|admin)(\/|$)/i.test(path)) return;
+    const profile=loadProfile();
+    if (!profile?.displayName || !profile.analyticsToken || registeredProfile.current === profile.analyticsToken) return;
+    registeredProfile.current=profile.analyticsToken;
+    // Re-register a consented local profile if its inactive server record expired.
+    void fetch('/api/analytics/profile',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:profile.analyticsToken,name:profile.displayName})}).then(response=>{if(!response.ok && registeredProfile.current===profile.analyticsToken) registeredProfile.current=null;}).catch(()=>{if(registeredProfile.current===profile.analyticsToken) registeredProfile.current=null;});
+  }, [path]);
   useStorefrontAnalytics(path);
 
   useEffect(() => {
@@ -61,6 +72,7 @@ function AppShell() {
     if (path === "/") return <HomePage />;
     if (path === "/shop") return <ShopPage />;
     if (path === "/wishlist" || path === "/favorites" || path === "/saved") return <WishlistPage />;
+    if (path === "/profile") return <ProfilePage />;
     if (path === "/contact") return <ContactPage />;
     if (path.startsWith("/track/")) return <TrackOrder />;
     if (path === "/studio" || path === "/admin") return <StudioGate />;

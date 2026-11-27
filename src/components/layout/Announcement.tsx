@@ -7,7 +7,7 @@ import { Sparkle } from "@/components/ui/icons";
 export function Announcement() {
   const { c, lc } = useContent();
   const { lang } = useLang();
-  const [offers, setOffers] = useState<{id:string;kind:'quantity'|'amount';threshold:number;percent:number}[]>([]);
+  const [offers, setOffers] = useState<{id:string;kind:'quantity'|'amount';threshold:number;discountAmount:number}[]>([]);
   useEffect(() => {
     let controller: AbortController | undefined;
     const refresh = () => {
@@ -46,7 +46,7 @@ export function Announcement() {
         className="relative h-9"
         trackClassName="h-9"
       >
-        {offers.map(offer => <span key={offer.id} className="flex shrink-0 items-center gap-3 px-5 text-[10px] font-bold tracking-wide text-bone"><Sparkle className="h-3 w-3 shrink-0 text-acid" /><span className="whitespace-nowrap">{lang === 'ar' ? `خصم ${offer.percent}% عند شراء ${offer.kind === 'quantity' ? `${offer.threshold} زجاجات أو أكثر` : `بـ ${offer.threshold} ج.م أو أكثر`}` : `${offer.percent}% off ${offer.kind === 'quantity' ? `${offer.threshold}+ bottles` : `orders of EGP ${offer.threshold} or more`}`}</span></span>)}
+        {offers.map(offer => <span key={offer.id} className="flex shrink-0 items-center gap-3 px-5 text-[10px] font-bold tracking-wide text-bone"><Sparkle className="h-3 w-3 shrink-0 text-acid" /><span className="whitespace-nowrap">{lang === 'ar' ? `خصم ${offer.discountAmount} ج.م عند شراء ${offer.kind === 'quantity' ? `${offer.threshold} زجاجات أو أكثر` : `بـ ${offer.threshold} ج.م أو أكثر`}` : `EGP ${offer.discountAmount} off ${offer.kind === 'quantity' ? `${offer.threshold}+ bottles` : `orders of EGP ${offer.threshold} or more`}`}</span></span>)}
         {messages.map((message, index) => (
           <span
             key={`${message.en}-${index}`}

@@ -14,13 +14,11 @@ import type { Product } from "@/types";
 import { cn } from "@/utils/cn";
 import { useState } from "react";
 
-export function PurchasePanel({ product }: { product: Product }) {
+export function PurchasePanel({ product, ml, onSizeChange }: { product: Product; ml:number; onSizeChange:(ml:number)=>void }) {
   const { t, lang, l } = useLang();
   const { add, open } = useCart();
   const { settings, toggleWishlist, isWished } = useStore();
   const { push } = useToast();
-  const initial = product.sizes.find((size) => size.ml === 50) ?? product.sizes[0];
-  const [ml, setMl] = useState(initial?.ml ?? 50);
   const [qty, setQty] = useState(1);
 
   const selected = product.sizes.find((size) => size.ml === ml) ?? product.sizes[0];
@@ -83,7 +81,7 @@ export function PurchasePanel({ product }: { product: Product }) {
             <button
               key={size.ml}
               data-analytics="choose-size"
-              onClick={() => setMl(size.ml)}
+              onClick={() => onSizeChange(size.ml)}
               className={cn(
                 "relative flex flex-col items-start gap-0.5 rounded-xl border px-3 py-2.5 text-start transition",
                 ml === size.ml

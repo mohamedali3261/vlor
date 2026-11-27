@@ -8,7 +8,7 @@ import "@/styles/product-gallery.css";
 const SLIDE_DELAY = 5000;
 const SWIPE_THRESHOLD = 48;
 
-export function Gallery({ product }: { product: Product }) {
+export function Gallery({ product, selectedSize }: { product: Product; selectedSize?:number }) {
   const { l, lang, x } = useLang();
   const [index, setIndex] = useState(0);
   const [playing, setPlaying] = useState(() => typeof window === "undefined" || !window.matchMedia?.("(prefers-reduced-motion: reduce)").matches);
@@ -18,11 +18,22 @@ export function Gallery({ product }: { product: Product }) {
   const touchStart = useRef<{ id: number; x: number; y: number } | null>(null);
   const [visible, setVisible] = useState(() => typeof document === "undefined" || !document.hidden);
   const [loadedSrc, setLoadedSrc] = useState("");
+  const [stock, setStock] = useState<{id:string; state:"loading"|"ready"|"error"; rows:{image:string;size:number;available:number}[]}>({id:product.id,state:"loading",rows:[]});
   const [zoomPoint, setZoomPoint] = useState<{ x: number; y: number } | null>(null);
   const images = productImages(product);
   const count = images.length;
   const activeIndex = count ? Math.min(index, count - 1) : 0;
   const src = images[activeIndex];
+  const size = selectedSize ?? (product.sizes?.find(item => item.ml === 50) ?? product.sizes?.[0])?.ml;
+  const availability = stock.id === product.id && stock.state === "ready" ? stock.rows : [];
+  const unavailable = (url:string) => availability.some(row => row.image === url && row.size === size && row.available === 0);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    setStock({id:product.id,state:"loading",rows:[]});
+    fetch(`/api/products/${encodeURIComponent(product.id)}/image-stock`,{signal:controller.signal}).then(async r=>{if(!r.ok)throw Error();const rows=await r.json();if(!Array.isArray(rows))throw Error();return rows;}).then(rows=>{if(!controller.signal.aborted)setStock({id:product.id,state:"ready",rows});}).catch(()=>{if(!controller.signal.aborted)setStock({id:product.id,state:"error",rows:[]});});
+    return ()=>controller.abort();
+  },[product.id]);
 
   useEffect(() => { setIndex(0); setZoomPoint(null); touchStart.current = null; setTouching(false); }, [product.id]);
   useEffect(() => { setZoomPoint(null); }, [src]);
@@ -102,11 +113,14 @@ export function Gallery({ product }: { product: Product }) {
             <p>{l(product.tagline)}</p>
           </div>} />
         </div>
+        {src && unavailable(src) && <span className="product-gallery__availability" role="status">{lang === "ar" ? `غير متوفر · ${size} مل` : `Out of stock · ${size} ml`}</span>}
         {count > 0 && <span className="product-gallery__counter" dir="ltr" aria-hidden="true">{String(activeIndex + 1).padStart(2, "0")} / {String(count).padStart(2, "0")}</span>}
         {src && loadedSrc === src && <span className="product-gallery__zoom-hint" aria-hidden="true">{x("Hover to zoom", "حرّك المؤشر للتكبير")}</span>}
         {count > 1 && <span className="product-gallery__swipe-hint" aria-hidden="true">{x("Swipe to see more", "اسحب لمشاهدة الصور")}</span>}
       </div>
 
+      {stock.id === product.id && stock.state === "error" && <p role="status" className="mt-2 text-xs text-mist">{lang === "ar" ? "تعذر تحميل حالة الصور." : "Could not load image availability."}</p>}
+      {availability.length > 0 && <p className="mt-2 text-xs leading-relaxed text-mist">{lang === "ar" ? "حالة الصور حسب الكميات المسجلة يدويًا؛ مخزون المنتج يُراجع عند الطلب." : "Image availability is manually maintained; product stock is checked at checkout."}</p>}
       {count > 1 && <>
         <p className="sr-only" aria-live={playing && !focused && !hovered ? "off" : "polite"}>{`${x("Image", "الصورة")} ${activeIndex + 1} ${x("of", "من")} ${count}`}</p>
         <div className="product-gallery__toolbar">
@@ -118,8 +132,9 @@ export function Gallery({ product }: { product: Product }) {
           </div>
         </div>
         <div className="product-gallery__thumbnails" role="group" aria-label={x("Choose an image", "اختر صورة")}>
-          {images.map((image, i) => <button data-analytics="gallery" type="button" key={`${image}-${i}`} onClick={() => select(i)} aria-pressed={activeIndex === i} aria-label={`${x("Image", "الصورة")} ${i + 1}${i === 0 ? ` · ${x("Main", "الأساسية")}` : ""}`}>
+          {images.map((image, i) => <button data-analytics="gallery" type="button" key={`${image}-${i}`} onClick={() => select(i)} aria-pressed={activeIndex === i} aria-label={`${x("Image", "الصورة")} ${i + 1}${i === 0 ? ` · ${x("Main", "الأساسية")}` : ""}${unavailable(image) ? ` · ${x("Out of stock", "غير متوفر")} · ${size} ml` : ""}`}>
             <img src={image} alt="" loading="lazy" decoding="async" />
+            {unavailable(image) && <span className="product-gallery__thumbnail-status">{lang === "ar" ? "غير متوفر" : "Sold out"}</span>}
           </button>)}
         </div>
       </>}

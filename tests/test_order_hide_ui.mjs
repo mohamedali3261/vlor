@@ -1,0 +1,17 @@
+import assert from 'node:assert/strict';
+import {createRequire} from 'node:module';
+import {build} from 'esbuild';
+const require=createRequire(import.meta.url),React=require('react'),{act,create}=require('react-test-renderer');
+globalThis.IS_REACT_ACT_ENVIRONMENT=true;
+let confirm=false,calls=[],hidden=false;
+globalThis.window={confirm:()=>confirm,setInterval:()=>1,clearInterval:()=>{}};
+globalThis.fetch=async (url,options={})=>{calls.push([url,options.method]);if(options.method==='DELETE'){hidden=true;return {ok:true}};return {ok:true,json:async()=>({orders:hidden?[]:[{id:'o1',customer_name:'Customer',phone:'01012345678',city:'Cairo',address:'Address',note:'',subtotal:100,discount:0,shipping:20,status:'new',created_at:'2026-01-01'}],items:[],hasMore:false})}};
+const mocks={'@/i18n/LanguageContext':`exports.useLang=()=>({lang:'ar'})`,'@/components/ui/Select':`const React=require('react');exports.Select=p=>React.createElement('select',{'aria-label':p.ariaLabel})`};
+const bundle=await build({entryPoints:['src/pages/Admin/Orders.tsx'],bundle:true,platform:'node',format:'cjs',packages:'external',jsx:'automatic',write:false,alias:{'@':process.cwd()+'/src'},plugins:[{name:'mock',setup(b){b.onResolve({filter:/^@\//},a=>mocks[a.path]?{path:a.path,namespace:'mock'}:undefined);b.onLoad({filter:/.*/,namespace:'mock'},a=>({contents:mocks[a.path],loader:'js',resolveDir:process.cwd()}));}}]});
+const mod={exports:{}};new Function('require','module','exports',bundle.outputFiles[0].text)(require,mod,mod.exports);
+let r;await act(async()=>{r=create(React.createElement(mod.exports.Orders,{canHide:true}))});
+const button=()=>r.root.findAllByType('button').find(x=>x.children.includes('حذف من الاستوديو'));
+assert.ok(button());await act(async()=>button().props.onClick());assert.equal(calls.filter(x=>x[1]==='DELETE').length,0);
+confirm=true;await act(async()=>button().props.onClick());assert.equal(calls.filter(x=>x[1]==='DELETE').length,1);assert.equal(button(),undefined);
+await act(async()=>r.unmount());hidden=false;await act(async()=>{r=create(React.createElement(mod.exports.Orders))});assert.equal(button(),undefined);await act(async()=>r.unmount());
+console.log('Only the owner sees remove from studio, and removal requires confirmation.');

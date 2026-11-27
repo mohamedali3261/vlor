@@ -5,6 +5,8 @@ import { Security } from "@/pages/Admin/Security";
 import { Orders } from "@/pages/Admin/Orders";
 import { AdminHeader, type AdminTab } from "@/pages/Admin/AdminHeader";
 import { ProductForm } from "@/pages/Admin/ProductForm";
+import { ImageStockEditor } from "@/pages/Admin/ImageStockEditor";
+import { UnifyProductImages } from "@/pages/Admin/UnifyProductImages";
 import { ProductTable } from "@/pages/Admin/ProductTable";
 import { ContentEditor } from "@/pages/Admin/ContentEditor";
 import { StoreSettingsForm } from "@/pages/Admin/StoreSettingsForm";
@@ -21,7 +23,7 @@ import { useEffect, useRef, useState } from "react";
 
 export function AdminPage() {
   const { t, lang, l } = useLang();
-  const { products, settings, wishlist, saveProduct, deleteProduct, resetCatalogue, replaceCatalogue, updateSettings, content, configStatus, reloadConfig } = useStore();
+  const { products, settings, wishlist, saveProduct, reloadProducts, deleteProduct, resetCatalogue, replaceCatalogue, updateSettings, content, configStatus, reloadConfig } = useStore();
   const { push } = useToast();
   const [tab, setTab] = useState<AdminTab>("products");
   const [formOpen, setFormOpen] = useState(false);
@@ -46,12 +48,19 @@ export function AdminPage() {
     return () => { window.removeEventListener('beforeunload', warn); document.removeEventListener('click', leaving, true); };
   }, [lang]);
 
+  const requireSavedProductDrafts = () => {
+    if (!countDirtyDrafts()) return true;
+    push(lang === "ar" ? "احفظ كميات الصور أو تجاهل تعديلاتك أولًا." : "Save or discard image quantity edits first.", "error");
+    return false;
+  };
   const openNew = () => {
+    if (!requireSavedProductDrafts()) return;
     setEditing(null);
     setFormOpen(true);
   };
 
   const openEdit = (product: Product) => {
+    if (!requireSavedProductDrafts()) return;
     setEditing(product);
     setFormOpen(true);
   };
@@ -96,6 +105,7 @@ export function AdminPage() {
   };
 
   const handleDelete = async (product: Product) => {
+    if (!requireSavedProductDrafts()) return;
     if (window.confirm(`${t("admin.deleteConfirm")}\n${product.name[lang]}`)) {
       try { await deleteProduct(product.id); } catch { push(lang === "ar" ? "تعذرت أرشفة المنتج" : "Could not archive product", "error"); return; }
       push(t("admin.deleted"), "error");
@@ -103,6 +113,7 @@ export function AdminPage() {
   };
 
   const handleReset = () => {
+    if (!requireSavedProductDrafts()) return;
     if (window.confirm(t("admin.resetConfirm"))) {
       try { resetCatalogue(); } catch { push(lang === "ar" ? "استعادة الكتالوج بالكامل غير متاحة." : "Bulk reset is unavailable.", "error"); return; }
       push(t("admin.resetDone"), "info");
@@ -133,6 +144,7 @@ export function AdminPage() {
         ) {
           throw new Error("invalid");
         }
+        if (!requireSavedProductDrafts()) return;
         if (!window.confirm(lang === "ar" ? `استيراد ${next.length} منتج؟ سيتم تحديث المنتجات الموجودة بنفس المعرّف ولن تُحذف المنتجات الأخرى.` : `Import ${next.length} products? Matching IDs will be updated; other products will not be deleted.`)) return;
         await replaceCatalogue(next as Product[]);
         push(lang === "ar" ? "تم استيراد الكتالوج." : "Catalogue imported.");
@@ -195,12 +207,14 @@ export function AdminPage() {
                   </Button>
                 </div>
               </div>
+              <UnifyProductImages products={products} reloadProducts={reloadProducts} disabled={formOpen} />
+              <ImageStockEditor products={products} disabled={formOpen} />
               <ProductTable products={products} onEdit={openEdit} onDelete={handleDelete} />
             </>
           )}
 
           {tab === "analytics" && <Analytics />}
-          {tab === "orders" && <Orders />}
+          {tab === "orders" && <Orders canHide />}
           {tab === "delivery" && content.studioDeliveryTab && <Delivery />}
           {tab === "discounts" && <DiscountRules />}
           {tab === "security" && <Security />}

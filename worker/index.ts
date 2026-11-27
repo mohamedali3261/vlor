@@ -16,11 +16,12 @@ const product = z.object({
   images: z.array(z.string().max(2048)).max(20), cutout: z.string().max(2048).optional(), accent: text(50), showOnHome: z.boolean().optional(), showOnShop: z.boolean().optional(), featured: z.boolean().optional(), isNew: z.boolean().optional(), bestseller: z.boolean().optional(), rating: z.number().min(0).max(5), reviews: z.number().int().min(0), longevity: text(100), sillage: localized, createdAt: text(100)
 }).strict();
 const order = z.object({ expectedShipping: z.number().int().min(0).max(10000000), expectedDiscount: z.number().int().min(0).max(500000000), customer: z.object({ name: text(120).min(2), phone: text(30).regex(/^[+\d\s()-]{8,30}$/), additionalPhone: z.string().trim().max(30).refine(v => !v || (/^[+\d\s()-]+$/.test(v) && v.replace(/\D/g, "").length >= 8)).optional(), city: text(100), address: text(500).min(6), note: z.string().trim().max(1000) }), items: z.array(z.object({ productId: text(100), ml: z.number().int().positive(), qty: z.number().int().min(1).max(20), expectedPrice: z.number().int().min(0).max(10000000) })).min(1).max(50) }).strict();
+const analyticsProfile = { profileToken:z.string().uuid().optional() };
 const analyticsEvent = z.discriminatedUnion('type', [
-  z.object({ type: z.literal('page_view'), pagePath: text(180).regex(/^\/[a-z0-9/_-]*$/i), visitorId: z.string().uuid() }).strict(),
-  z.object({ type: z.literal('product_click'), pagePath: text(180).regex(/^\/[a-z0-9/_-]*$/i), visitorId: z.string().uuid(), productSlug: z.string().regex(/^[a-z0-9-]{1,100}$/) }).strict(),
-  z.object({ type: z.literal('heartbeat'), pagePath: text(180).regex(/^\/[a-z0-9/_-]*$/i), visitorId: z.string().uuid() }).strict(),
-  z.object({ type: z.literal('interaction'), pagePath: text(180).regex(/^\/[a-z0-9/_-]*$/i), visitorId: z.string().uuid(), action: z.string().max(108).regex(/^(?:open-cart|checkout|place-order|copy-order|add-to-cart|wishlist|choose-size|quantity|gallery|menu|language|filter|remove-from-cart|carousel|other-button|link-home|link-shop|link-wishlist|link-contact|link-track|link-other|social-whatsapp|social-instagram|social-facebook|social-tiktok|social-messenger|social-other|product:[a-z0-9-]{1,100})$/) }).strict(),
+  z.object({ type: z.literal('page_view'), pagePath: text(180).regex(/^\/[a-z0-9/_-]*$/i), visitorId: z.string().uuid(), ...analyticsProfile }).strict(),
+  z.object({ type: z.literal('product_click'), pagePath: text(180).regex(/^\/[a-z0-9/_-]*$/i), visitorId: z.string().uuid(), productSlug: z.string().regex(/^[a-z0-9-]{1,100}$/), ...analyticsProfile }).strict(),
+  z.object({ type: z.literal('heartbeat'), pagePath: text(180).regex(/^\/[a-z0-9/_-]*$/i), visitorId: z.string().uuid(), ...analyticsProfile }).strict(),
+  z.object({ type: z.literal('interaction'), pagePath: text(180).regex(/^\/[a-z0-9/_-]*$/i), visitorId: z.string().uuid(), action: z.string().max(108).regex(/^(?:open-cart|checkout|place-order|copy-order|add-to-cart|wishlist|choose-size|quantity|gallery|menu|language|filter|remove-from-cart|carousel|other-button|link-home|link-shop|link-wishlist|link-contact|link-track|link-other|social-whatsapp|social-instagram|social-facebook|social-tiktok|social-messenger|social-other|product:[a-z0-9-]{1,100})$/), ...analyticsProfile }).strict(),
 ]);
 const encoder = new TextEncoder();
 const hex = (b: ArrayBuffer) => Array.from(new Uint8Array(b), x => x.toString(16).padStart(2,'0')).join('');
@@ -37,7 +38,7 @@ function normalizeAnalyticsPath(input: string): string | null {
   if (/^\/track(\/|$)/.test(path)) return '/track';
   if (path === '/favorites' || path === '/saved') return '/wishlist';
   if (/^\/product\/[a-z0-9-]{1,100}$/.test(path)) return path;
-  if (['/', '/shop', '/wishlist', '/contact'].includes(path)) return path;
+  if (['/', '/shop', '/wishlist', '/contact', '/profile'].includes(path)) return path;
   return '/404';
 }
 let analyticsCleanupDay = '';
@@ -45,8 +46,9 @@ async function pruneOldAnalytics(db: D1Database, today: string): Promise<void> {
   if (analyticsCleanupDay === today) return;
   analyticsCleanupDay = today;
   const cutoff = new Date(Date.now() - 400 * 86_400_000).toISOString().slice(0, 10);
+  const profileCutoff = new Date(Date.now() - 399 * 86_400_000).toISOString().slice(0, 10);
   try {
-    await db.batch([db.prepare('DELETE FROM analytics_daily WHERE day < ?').bind(cutoff), db.prepare('DELETE FROM analytics_actions WHERE day < ?').bind(cutoff), db.prepare('DELETE FROM analytics_presence WHERE last_seen < ?').bind(Date.now()-300_000)]);
+    await db.batch([db.prepare('DELETE FROM analytics_daily WHERE day < ?').bind(cutoff), db.prepare('DELETE FROM analytics_actions WHERE day < ?').bind(cutoff), db.prepare('DELETE FROM analytics_presence WHERE last_seen < ?').bind(Date.now()-300_000), db.prepare('DELETE FROM analytics_profile_events WHERE day < ?').bind(profileCutoff), db.prepare('DELETE FROM analytics_profiles WHERE last_seen < ?').bind(Date.now()-400*86_400_000), db.prepare('DELETE FROM analytics_profile_revocations WHERE deleted_at < ?').bind(Date.now()-400*86_400_000)]);
   } catch {
     analyticsCleanupDay = '';
   }
@@ -120,6 +122,26 @@ app.get('/api/admin/analytics', async c => {
     pages:pages.results.map(row=>({path:row.page_path,views:row.views,visitors:row.visitors})),
     products:products.results.map(row=>({slug:row.slug,name:{en:row.name_en,ar:row.name_ar},clicks:row.clicks,visitors:row.visitors,archived:Boolean(row.archived)})),
   });
+});
+// Owner-only named profile reports use separate, opt-in counters, never the anonymous history.
+app.get('/api/admin/analytics/profiles', async c => {
+  const range=z.enum(['7','30','90','365','400']).safeParse(c.req.query('days') || '30');
+  if(!range.success) return c.json({error:'Invalid analytics range'},400);
+  const offset=z.coerce.number().int().min(0).max(10000000).safeParse(c.req.query('offset') || '0');if(!offset.success)return c.json({error:'Invalid offset'},400);
+  const start=new Date(Date.now()-(Number(range.data)-1)*86_400_000).toISOString().slice(0,10);
+  await pruneOldAnalytics(c.env.DB,new Date().toISOString().slice(0,10));
+  const rows=await c.env.DB.prepare(`SELECT p.profile_hash AS id,p.name,p.last_seen,COALESCE(SUM(CASE WHEN e.kind='page_view' THEN e.event_count ELSE 0 END),0) AS views,COALESCE(SUM(CASE WHEN e.kind='interaction' THEN e.event_count ELSE 0 END),0) AS clicks,COALESCE(SUM(CASE WHEN e.kind='product_click' THEN e.event_count ELSE 0 END),0) AS product_clicks FROM analytics_profiles p LEFT JOIN analytics_profile_events e ON e.profile_hash=p.profile_hash AND e.day>=? GROUP BY p.profile_hash,p.name,p.last_seen ORDER BY p.last_seen DESC,p.profile_hash LIMIT 51 OFFSET ?`).bind(start,offset.data).all();
+  return c.json({profiles:rows.results.slice(0,50),hasMore:rows.results.length>50});
+});
+app.get('/api/admin/analytics/profiles/:id', async c => {
+  const id=c.req.param('id');const range=z.enum(['7','30','90','365','400']).safeParse(c.req.query('days') || '30');
+  if(!/^[a-f0-9]{64}$/.test(id) || !range.success)return c.json({error:'Invalid report'},400);
+  const exists=await c.env.DB.prepare('SELECT name,last_seen FROM analytics_profiles WHERE profile_hash=?').bind(id).first();
+  if(!exists)return c.json({error:'Profile not found'},404);
+  const offset=z.coerce.number().int().min(0).max(10000000).safeParse(c.req.query('offset') || '0');if(!offset.success)return c.json({error:'Invalid offset'},400);
+  const start=new Date(Date.now()-(Number(range.data)-1)*86_400_000).toISOString().slice(0,10);
+  const result=await c.env.DB.prepare('SELECT kind,page_path AS path,target,SUM(event_count) AS count FROM analytics_profile_events WHERE profile_hash=? AND day>=? GROUP BY kind,page_path,target ORDER BY count DESC,kind,page_path,target LIMIT 101 OFFSET ?').bind(id,start,offset.data).all();
+  return c.json({profile:exists,events:result.results.slice(0,100),hasMore:result.results.length>100});
 });
 // Shared storefront configuration is stored independently from products and orders.
 // Revision checks prevent an older studio session from overwriting newer edits.
@@ -203,6 +225,21 @@ app.delete('/api/admin/accounts/:id', async c => {
 app.get('/api/admin/audit', async c => c.json((await c.env.DB.prepare('SELECT id,admin_id,action,target_id,created_at FROM audit_log ORDER BY created_at DESC LIMIT 100').all()).results));
 app.get('/api/categories', async c => c.json((await c.env.DB.prepare('SELECT * FROM categories ORDER BY id').all()).results));
 app.get('/api/products', async c => c.json((await c.env.DB.prepare('SELECT data FROM products WHERE archived=0 ORDER BY updated_at DESC').all<{data:string}>()).results.map(x => JSON.parse(x.data))));
+app.post('/api/analytics/profile', async c => {
+  const input=z.object({token:z.string().uuid(),name:z.string().trim().min(1).max(80)}).strict().safeParse(await jsonBody(c));
+  if(!input.success)return c.json({error:'Invalid profile'},400);
+  const hash=await sha(`analytics-profile-v1:${input.data.token}`);
+  const result=await c.env.DB.prepare('INSERT INTO analytics_profiles(profile_hash,name,last_seen) SELECT ?,?,? WHERE NOT EXISTS (SELECT 1 FROM analytics_profile_revocations WHERE profile_hash=?) ON CONFLICT(profile_hash) DO UPDATE SET name=excluded.name,last_seen=excluded.last_seen').bind(hash,input.data.name,Date.now(),hash).run();
+  if(!result.meta.changes)return c.json({error:'Profile deleted'},410);
+  return c.json({ok:true});
+});
+app.post('/api/analytics/profile/delete', async c => {
+  const input=z.object({token:z.string().uuid()}).strict().safeParse(await jsonBody(c));
+  if(!input.success)return c.json({error:'Invalid profile'},400);
+  const hash=await sha(`analytics-profile-v1:${input.data.token}`);
+  await c.env.DB.batch([c.env.DB.prepare('INSERT INTO analytics_profile_revocations(profile_hash,deleted_at) VALUES(?,?) ON CONFLICT(profile_hash) DO UPDATE SET deleted_at=excluded.deleted_at').bind(hash,Date.now()),c.env.DB.prepare('DELETE FROM analytics_profile_events WHERE profile_hash=?').bind(hash),c.env.DB.prepare('DELETE FROM analytics_profiles WHERE profile_hash=?').bind(hash)]);
+  return c.json({ok:true});
+});
 app.post('/api/analytics/event', async c => {
   const input = analyticsEvent.safeParse(await jsonBody(c));
   if (!input.success) return c.json({error:'Invalid analytics event'},400);
@@ -219,9 +256,20 @@ app.post('/api/analytics/event', async c => {
   const today = new Date().toISOString().slice(0,10);
   await pruneOldAnalytics(c.env.DB,today);
   const visitorHash = await sha(`analytics-v1:${input.data.visitorId}`);
+  const recordProfile=async (kind:string,target:string) => {
+    if(!input.data.profileToken)return;
+    const hash=await sha(`analytics-profile-v1:${input.data.profileToken}`);
+    const now=Date.now();
+    if(kind==='heartbeat') { await c.env.DB.prepare('UPDATE analytics_profiles SET last_seen=? WHERE profile_hash=?').bind(now,hash).run();return; }
+    await c.env.DB.batch([
+      c.env.DB.prepare(`INSERT INTO analytics_profile_events(profile_hash,day,kind,page_path,target,event_count) SELECT profile_hash,?,?,?,?,1 FROM analytics_profiles WHERE profile_hash=? ON CONFLICT(profile_hash,day,kind,page_path,target) DO UPDATE SET event_count=event_count+1`).bind(today,kind,pagePath,target,hash),
+      c.env.DB.prepare('UPDATE analytics_profiles SET last_seen=? WHERE profile_hash=?').bind(now,hash),
+    ]);
+  };
   if (input.data.type === 'heartbeat') {
     const now = Date.now();
     await c.env.DB.batch([c.env.DB.prepare('DELETE FROM analytics_presence WHERE last_seen < ?').bind(now-300_000), c.env.DB.prepare('INSERT INTO analytics_presence(visitor_hash,last_seen) VALUES (?,?) ON CONFLICT(visitor_hash) DO UPDATE SET last_seen=excluded.last_seen').bind(visitorHash,now)]);
+    await recordProfile('heartbeat','');
     return c.json({ok:true});
   }
   if (input.data.type === 'interaction') {
@@ -230,11 +278,13 @@ app.post('/api/analytics/event', async c => {
       if (!found) return c.json({error:'Product not found'},404);
     }
     await c.env.DB.prepare('INSERT INTO analytics_actions(day,page_path,action,visitor_hash,event_count) VALUES(?,?,?,?,1) ON CONFLICT(day,page_path,action,visitor_hash) DO UPDATE SET event_count=analytics_actions.event_count+1').bind(today,pagePath,input.data.action,visitorHash).run();
+    await recordProfile('interaction',input.data.action);
     return c.json({ok:true});
   }
   await c.env.DB.prepare("INSERT INTO analytics_daily(day,event_type,page_path,target_id,visitor_hash,event_count) VALUES(?,?,?,?,?,1) ON CONFLICT(day,event_type,page_path,target_id,visitor_hash) DO UPDATE SET event_count=analytics_daily.event_count+1")
     .bind(today,input.data.type,pagePath,targetId,visitorHash)
     .run();
+  await recordProfile(input.data.type,targetId);
   return c.json({ok:true});
 });
 app.post('/api/admin/products/import', async c => {
@@ -247,6 +297,35 @@ app.post('/api/admin/products/import', async c => {
   } catch { return c.json({error:'Import failed; check for conflicting slugs'},409); }
   return c.json({ok:true,count:products.length});
 });
+// Apply only images from the selected product. The complete image snapshot prevents
+// overwriting a concurrent image edit, product addition, or archive after confirmation.
+app.post('/api/admin/products/unify-images', async c => {
+  const snapshotItem=z.object({id:text(100).regex(/^[\w-]+$/),images:z.array(z.string().max(2048)).max(20),cutout:z.string().max(2048).nullable()}).strict();
+  const input=z.object({sourceId:text(100).regex(/^[\w-]+$/),products:z.array(snapshotItem).min(2).max(500)}).strict().safeParse(await jsonBody(c));
+  if (!input.success || new Set(input.data.products.map(p=>p.id)).size !== input.data.products.length) return c.json({error:'Invalid product snapshot'},400);
+  const source=input.data.products.find(p=>p.id===input.data.sourceId);
+  if (!source) return c.json({error:'Source unavailable'},400);
+  const images=source.images.filter(image=>image.trim().length>0);
+  if (!images.length && source.cutout?.trim()) images.push(source.cutout);
+  if (!images.length) return c.json({error:'Source has no images'},400);
+  const expected=JSON.stringify(input.data.products);
+  try {
+    const [result]=await c.env.DB.batch([
+      c.env.DB.prepare(`UPDATE products AS p SET data=json_remove(json_set(p.data, '$.images', json(?)), '$.cutout'), updated_at=CURRENT_TIMESTAMP
+        WHERE p.archived=0 AND p.id<>?
+          AND (SELECT count(*) FROM products WHERE archived=0)=json_array_length(?)
+          AND NOT EXISTS (
+            SELECT 1 FROM products current LEFT JOIN json_each(?) expected ON json_extract(expected.value,'$.id')=current.id
+            WHERE current.archived=0 AND (expected.value IS NULL
+              OR COALESCE(json(json_extract(current.data,'$.images')),'[]') != json(json_extract(expected.value,'$.images'))
+              OR COALESCE(json_extract(current.data,'$.cutout'),'') != COALESCE(json_extract(expected.value,'$.cutout'),''))
+          )`).bind(JSON.stringify(images),input.data.sourceId,expected,expected),
+      c.env.DB.prepare('INSERT INTO audit_log(id,admin_id,action,target_id) SELECT ?,?,?,? WHERE changes()>0').bind(crypto.randomUUID(),c.get('adminId'),'product_images_unified',input.data.sourceId),
+    ]);
+    if (!result.meta.changes) return c.json({error:'Product images changed; refresh and try again'},409);
+    return c.json({ok:true,count:result.meta.changes});
+  } catch { return c.json({error:'Could not apply images; check image availability'},422); }
+});
 app.put('/api/admin/products/:id', async c => {
   const data = product.safeParse(await jsonBody(c));
   if (!data.success || data.data.id !== c.req.param('id')) return c.json({error:'Invalid product'},400);
@@ -257,6 +336,38 @@ app.put('/api/admin/products/:id', async c => {
   return c.json({ok:true});
 });
 app.delete('/api/admin/products/:id', async c => { const result=await c.env.DB.prepare('UPDATE products SET archived=1 WHERE id=? AND archived=0').bind(c.req.param('id')).run(); if (!result.meta.changes) return c.json({error:'Not found'},404); await c.env.DB.prepare('INSERT INTO audit_log(id,admin_id,action,target_id) VALUES(?,?,?,?)').bind(crypto.randomUUID(),c.get('adminId'),'product_archived',c.req.param('id')).run(); return c.json({ok:true}); });
+// Image availability is manual display information and never reserves order stock.
+app.get('/api/products/:id/image-stock', async c => {
+  const id=z.string().regex(/^[\w-]{1,100}$/).safeParse(c.req.param('id')); if (!id.success) return c.json({error:'Invalid product'},400);
+  const rows=await c.env.DB.prepare(`SELECT s.image_url AS image,s.size,CASE WHEN s.quantity=0 THEN 0 ELSE 1 END AS available FROM image_stock s JOIN products p ON p.id=s.product_id WHERE s.product_id=? AND p.archived=0 AND s.quantity IS NOT NULL AND EXISTS (SELECT 1 FROM json_each(p.data,'$.sizes') n WHERE json_extract(n.value,'$.ml')=s.size) AND (EXISTS (SELECT 1 FROM json_each(p.data,'$.images') j WHERE j.value=s.image_url) OR (NOT EXISTS (SELECT 1 FROM json_each(p.data,'$.images') valid WHERE valid.type='text' AND length(trim(valid.value))>0) AND json_extract(p.data,'$.cutout')=s.image_url))`).bind(id.data).all();
+  return c.json(rows.results);
+});
+app.get('/api/admin/products/:id/image-stock', async c => {
+  const id=z.string().regex(/^[\w-]{1,100}$/).safeParse(c.req.param('id')); if(!id.success) return c.json({error:'Invalid product'},400);
+  const exists=await c.env.DB.prepare('SELECT 1 FROM products WHERE id=? AND archived=0').bind(id.data).first();
+  if(!exists)return c.json({error:'Product unavailable'},404);
+  return c.json((await c.env.DB.prepare('SELECT image_url AS image,size,quantity FROM image_stock WHERE product_id=?').bind(id.data).all()).results);
+});
+app.put('/api/admin/products/:id/image-stock', async c => {
+  const id=z.string().regex(/^[\w-]{1,100}$/).safeParse(c.req.param('id'));
+  const entry=z.object({size:z.number().int().min(1).max(10000),quantity:z.number().int().min(0).max(1000000).nullable(),expected:z.number().int().min(0).max(1000000).nullable()}).strict();
+  const input=z.object({image:z.string().min(1).max(2048),sizes:z.array(entry).min(1).max(30)}).strict().safeParse(await jsonBody(c));
+  if(!id.success || !input.success || new Set(input.data.sizes.map(s=>s.size)).size!==input.data.sizes.length) return c.json({error:'Invalid image stock'},400);
+  const {image,sizes}=input.data, expected=JSON.stringify(sizes);
+  const [result]=await c.env.DB.batch([
+    c.env.DB.prepare(`INSERT INTO image_stock(product_id,image_url,size,quantity)
+      SELECT ?,?,CAST(json_extract(item.value,'$.size') AS INTEGER),json_extract(item.value,'$.quantity') FROM json_each(?) item
+      WHERE EXISTS (SELECT 1 FROM products p WHERE p.id=? AND p.archived=0 AND (EXISTS (SELECT 1 FROM json_each(p.data,'$.images') img WHERE img.value=?) OR (NOT EXISTS (SELECT 1 FROM json_each(p.data,'$.images') valid WHERE valid.type='text' AND length(trim(valid.value))>0) AND json_extract(p.data,'$.cutout')=?)))
+      AND (SELECT count(*) FROM products p,json_each(p.data,'$.sizes') size WHERE p.id=?)=json_array_length(?)
+      AND NOT EXISTS (SELECT 1 FROM json_each(?) wanted WHERE
+        NOT EXISTS (SELECT 1 FROM products p,json_each(p.data,'$.sizes') size WHERE p.id=? AND json_extract(size.value,'$.ml')=json_extract(wanted.value,'$.size'))
+        OR (SELECT s.quantity FROM image_stock s WHERE s.product_id=? AND s.image_url=? AND s.size=json_extract(wanted.value,'$.size')) IS NOT json_extract(wanted.value,'$.expected'))
+      ON CONFLICT(product_id,image_url,size) DO UPDATE SET quantity=excluded.quantity`).bind(id.data,image,expected,id.data,image,image,id.data,expected,expected,id.data,id.data,image),
+    c.env.DB.prepare('INSERT INTO audit_log(id,admin_id,action,target_id) SELECT ?,?,?,? WHERE changes()>0').bind(crypto.randomUUID(),c.get('adminId'),'image_stock_updated',id.data),
+  ]);
+  if(result.meta.changes !== sizes.length) return c.json({error:'Image, sizes or quantities changed; refresh'},409);
+  return c.json({ok:true});
+});
 app.get('/api/admin/inventory', async c => {
   const rows = await c.env.DB.prepare("SELECT i.product_id,i.size,i.quantity,p.data FROM inventory i JOIN products p ON p.id=i.product_id WHERE p.archived=0 AND EXISTS (SELECT 1 FROM json_each(p.data,'$.sizes') s WHERE json_extract(s.value,'$.ml')=i.size) ORDER BY p.slug,i.size").all<{product_id:string,size:number,quantity:number,data:string}>();
   return c.json(rows.results.map(({data,...row}) => ({...row,name:JSON.parse(data).name})));
@@ -298,26 +409,26 @@ app.delete('/api/admin/shipping/:city', async c => {
   if(!result.meta.changes) return c.json({error:'Not found'},404);
   return c.json({ok:true});
 });
-const discountRule = z.object({id:z.string().uuid(),kind:z.enum(['quantity','amount']),threshold:z.number().int().min(1).max(10000000),percent:z.number().int().min(1).max(100),enabled:z.boolean()}).strict();
-app.get('/api/discount-rules', async c => c.json((await c.env.DB.prepare('SELECT id,kind,threshold,percent FROM discount_rules WHERE enabled=1 ORDER BY kind,threshold').all()).results));
-app.get('/api/admin/discount-rules', async c => c.json((await c.env.DB.prepare('SELECT * FROM discount_rules ORDER BY kind,threshold').all()).results));
+const discountRule = z.object({id:z.string().uuid(),kind:z.enum(['quantity','amount']),threshold:z.number().int().min(1).max(10000000),discountAmount:z.number().int().min(1).max(10000000),enabled:z.boolean()}).strict();
+app.get('/api/discount-rules', async c => c.json((await c.env.DB.prepare('SELECT id,kind,threshold,discount_amount AS discountAmount FROM discount_amount_rules WHERE enabled=1 ORDER BY kind,threshold').all()).results));
+app.get('/api/admin/discount-rules', async c => c.json((await c.env.DB.prepare('SELECT id,kind,threshold,discount_amount AS discountAmount,legacy_percent AS legacyPercent,enabled FROM discount_amount_rules ORDER BY kind,threshold').all()).results));
 app.put('/api/admin/discount-rules', async c => {
   const rule=discountRule.safeParse(await jsonBody(c)); if(!rule.success) return c.json({error:'Invalid discount rule'},400);
   const r=rule.data;
-  await c.env.DB.batch([c.env.DB.prepare('INSERT INTO discount_rules(id,kind,threshold,percent,enabled) VALUES(?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET kind=excluded.kind,threshold=excluded.threshold,percent=excluded.percent,enabled=excluded.enabled').bind(r.id,r.kind,r.threshold,r.percent,r.enabled?1:0),c.env.DB.prepare('INSERT INTO audit_log(id,admin_id,action,target_id) VALUES(?,?,?,?)').bind(crypto.randomUUID(),c.get('adminId'),'discount_rule_updated',r.id)]);
+  await c.env.DB.batch([c.env.DB.prepare('INSERT INTO discount_amount_rules(id,kind,threshold,discount_amount,enabled) VALUES(?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET kind=excluded.kind,threshold=excluded.threshold,discount_amount=excluded.discount_amount,legacy_percent=NULL,enabled=excluded.enabled').bind(r.id,r.kind,r.threshold,r.discountAmount,r.enabled?1:0),c.env.DB.prepare('INSERT INTO audit_log(id,admin_id,action,target_id) VALUES(?,?,?,?)').bind(crypto.randomUUID(),c.get('adminId'),'discount_rule_updated',r.id)]);
   return c.json({ok:true});
 });
 app.delete('/api/admin/discount-rules/:id', async c => {
   const id=z.string().uuid().safeParse(c.req.param('id')); if(!id.success) return c.json({error:'Invalid rule'},400);
-  const [result]=await c.env.DB.batch([c.env.DB.prepare('DELETE FROM discount_rules WHERE id=?').bind(id.data),c.env.DB.prepare('INSERT INTO audit_log(id,admin_id,action,target_id) SELECT ?,?,?,? WHERE changes()>0').bind(crypto.randomUUID(),c.get('adminId'),'discount_rule_deleted',id.data)]);
+  const [result]=await c.env.DB.batch([c.env.DB.prepare('DELETE FROM discount_amount_rules WHERE id=?').bind(id.data),c.env.DB.prepare('INSERT INTO audit_log(id,admin_id,action,target_id) SELECT ?,?,?,? WHERE changes()>0').bind(crypto.randomUUID(),c.get('adminId'),'discount_rule_deleted',id.data)]);
   return result.meta.changes ? c.json({ok:true}) : c.json({error:'Not found'},404);
 });
 // Quotes are previews only; the order and database triggers revalidate everything.
 async function quote(db:D1Database, city:string, subtotal:number, quantity:number) {
   const rate=await db.prepare('SELECT amount,free_threshold FROM shipping_rates WHERE city=?').bind(city).first<{amount:number,free_threshold:number|null}>();
   if (!rate) return null;
-  const rule=await db.prepare("SELECT MAX(percent) AS percent FROM discount_rules WHERE enabled=1 AND ((kind='quantity' AND threshold<=?) OR (kind='amount' AND threshold<=?))").bind(quantity,subtotal).first<{percent:number|null}>();
-  const discount=Math.floor(subtotal*(rule?.percent || 0)/100);
+  const rule=await db.prepare("SELECT MAX(discount_amount) AS amount FROM discount_amount_rules WHERE enabled=1 AND ((kind='quantity' AND threshold<=?) OR (kind='amount' AND threshold<=?))").bind(quantity,subtotal).first<{amount:number|null}>();
+  const discount=Math.min(subtotal,rule?.amount || 0);
   const shipping=rate.free_threshold!==null && subtotal-discount>=rate.free_threshold ? 0 : rate.amount;
   return {discount,shipping,total:subtotal-discount+shipping};
 }
@@ -339,7 +450,7 @@ app.post('/api/quote', async c => {
 });
 app.post('/api/track', async c => {
   const data=z.object({token:z.string().uuid()}).safeParse(await jsonBody(c)); if(!data.success) return c.json({error:'Not found'},404);
-  const row=await c.env.DB.prepare('SELECT id,status,created_at FROM orders WHERE tracking_hash=?').bind(await sha('track:'+data.data.token)).first();
+  const row=await c.env.DB.prepare("SELECT id,status,created_at, EXISTS(SELECT 1 FROM audit_log WHERE action='order_status:confirmed' AND target_id=orders.id) AS confirmed FROM orders WHERE tracking_hash=?").bind(await sha('track:'+data.data.token)).first();
   return row ? c.json(row) : c.json({error:'Not found'},404);
 });
 app.post('/api/orders', async c => {
@@ -365,7 +476,7 @@ app.post('/api/orders', async c => {
   const calculated=await quote(c.env.DB,customer.city,subtotal,rows.reduce((sum,item)=>sum+item.qty,0));
   if (!calculated || calculated.shipping!==data.data.expectedShipping || calculated.discount!==data.data.expectedDiscount) return c.json({error:'Shipping or discount changed'},409);
   try {
-    await c.env.DB.batch([c.env.DB.prepare('INSERT INTO checkout_discount_context(order_id,quantity) VALUES (?,?)').bind(id,rows.reduce((sum,item)=>sum+item.qty,0)), c.env.DB.prepare('INSERT INTO orders(id,customer_name,phone,city,address,note,subtotal,idempotency_key,request_hash,stock_reserved,shipping,discount,coupon_code,tracking_hash) VALUES (?,?,?,?,?,?,?,?,?,1,?,?,NULL,?)').bind(id,customer.name,customer.phone,customer.city,customer.address,customer.note,subtotal,key,requestHash,calculated.shipping,calculated.discount,await sha('track:'+key)), ...(customer.additionalPhone ? [c.env.DB.prepare('INSERT INTO order_contacts(order_id,additional_phone) VALUES (?,?)').bind(id,customer.additionalPhone)] : []), ...rows.map(x=>c.env.DB.prepare('INSERT INTO order_items VALUES (?,?,?,?,?,?,?)').bind(crypto.randomUUID(),id,x.id,x.name,x.ml,x.price,x.qty)), c.env.DB.prepare('DELETE FROM checkout_discount_context WHERE order_id=?').bind(id)]);
+    await c.env.DB.batch([c.env.DB.prepare('INSERT INTO checkout_amount_context(order_id,quantity) VALUES (?,?)').bind(id,rows.reduce((sum,item)=>sum+item.qty,0)), c.env.DB.prepare('INSERT INTO orders(id,customer_name,phone,city,address,note,subtotal,idempotency_key,request_hash,stock_reserved,shipping,discount,coupon_code,tracking_hash) VALUES (?,?,?,?,?,?,?,?,?,1,?,?,NULL,?)').bind(id,customer.name,customer.phone,customer.city,customer.address,customer.note,subtotal,key,requestHash,calculated.shipping,calculated.discount,await sha('track:'+key)), ...(customer.additionalPhone ? [c.env.DB.prepare('INSERT INTO order_contacts(order_id,additional_phone) VALUES (?,?)').bind(id,customer.additionalPhone)] : []), ...rows.map(x=>c.env.DB.prepare('INSERT INTO order_items VALUES (?,?,?,?,?,?,?)').bind(crypto.randomUUID(),id,x.id,x.name,x.ml,x.price,x.qty)), c.env.DB.prepare('DELETE FROM checkout_amount_context WHERE order_id=?').bind(id)]);
   } catch (error) {
     const existing = await c.env.DB.prepare('SELECT id,subtotal,shipping,discount,request_hash FROM orders WHERE idempotency_key=?').bind(key).first<{id:string,subtotal:number,shipping:number,discount:number,request_hash:string}>();
     if (!existing) { const message=String(error); if (message.includes('insufficient_stock') || message.includes('product_changed') || message.includes('discount_changed') || message.includes('shipping_changed')) return c.json({error:'Product price or stock changed. Refresh your cart and try again.'},409); throw error; }
@@ -378,17 +489,30 @@ app.get('/api/admin/orders', async c => {
   const status = c.req.query('status') || '', q = (c.req.query('q') || '').trim().slice(0,100);
   if (status && !['new','confirmed','shipped','completed','cancelled'].includes(status)) return c.json({error:'Invalid status'},400);
   const pattern = `%${q.replace(/[\\%_]/g, '\\$&')}%`;
-  const filter = "WHERE (?='' OR status=?) AND (?='' OR id LIKE ? ESCAPE '\\' OR phone LIKE ? ESCAPE '\\' OR EXISTS (SELECT 1 FROM order_contacts WHERE order_id=orders.id AND additional_phone LIKE ? ESCAPE '\\'))";
+  const filter = "WHERE NOT EXISTS (SELECT 1 FROM hidden_studio_orders h WHERE h.order_id=orders.id) AND (?='' OR status=?) AND (?='' OR id LIKE ? ESCAPE '\\' OR phone LIKE ? ESCAPE '\\' OR EXISTS (SELECT 1 FROM order_contacts WHERE order_id=orders.id AND additional_phone LIKE ? ESCAPE '\\'))";
   const orders=(await c.env.DB.prepare(`SELECT orders.*, (SELECT additional_phone FROM order_contacts WHERE order_id=orders.id) AS additional_phone FROM orders ${filter} ORDER BY created_at DESC,id DESC LIMIT 21 OFFSET ?`).bind(status,status,q,pattern,pattern,pattern,(page-1)*20).all()).results;
   const hasMore = orders.length > 20; if (hasMore) orders.pop();
   const ids=orders.map(o=>o.id); const items=ids.length ? (await c.env.DB.prepare(`SELECT * FROM order_items WHERE order_id IN (${ids.map(()=>'?').join(',')})`).bind(...ids).all()).results : [];
   return c.json({orders,items,page,hasMore});
 });
+// Hiding is owner-only and deliberately leaves the order, stock and tracking intact.
+app.delete('/api/admin/orders/:id', async c => {
+  if (c.get('role') !== 'owner') return c.json({error:'Forbidden'},403);
+  const id=z.string().regex(/^[\w-]{1,100}$/).safeParse(c.req.param('id'));
+  if (!id.success) return c.json({error:'Invalid order'},400);
+  const [result]=await c.env.DB.batch([
+    c.env.DB.prepare('INSERT OR IGNORE INTO hidden_studio_orders(order_id) SELECT id FROM orders WHERE id=?').bind(id.data),
+    c.env.DB.prepare('INSERT INTO audit_log(id,admin_id,action,target_id) SELECT ?,?,?,? WHERE changes()>0').bind(crypto.randomUUID(),c.get('adminId'),'order_hidden',id.data),
+  ]);
+  return result.meta.changes ? c.json({ok:true}) : c.json({error:'Not found or already hidden'},404);
+});
 app.patch('/api/admin/orders/:id', async c => {
   const data=z.object({status:z.enum(['new','confirmed','shipped','completed','cancelled'])}).safeParse(await jsonBody(c)); if(!data.success) return c.json({error:'Invalid status'},400);
-  let r; try { r=await c.env.DB.prepare('UPDATE orders SET status=? WHERE id=?').bind(data.data.status,c.req.param('id')).run(); } catch (error) { if (String(error).includes('cancelled_order_is_final')) return c.json({error:'Cancelled orders cannot be reopened'},409); throw error; }
+  let r; try { [r]=await c.env.DB.batch([
+    c.env.DB.prepare('UPDATE orders SET status=? WHERE id=? AND NOT EXISTS (SELECT 1 FROM hidden_studio_orders WHERE order_id=orders.id)').bind(data.data.status,c.req.param('id')),
+    c.env.DB.prepare('INSERT INTO audit_log(id,admin_id,action,target_id) SELECT ?,?,?,? WHERE changes()>0').bind(crypto.randomUUID(),c.get('adminId'),`order_status:${data.data.status}`,c.req.param('id')),
+  ]); } catch (error) { if (String(error).includes('cancelled_order_is_final')) return c.json({error:'Cancelled orders cannot be reopened'},409); throw error; }
   if (!r.meta.changes) return c.json({error:'Not found'},404);
-  await c.env.DB.prepare('INSERT INTO audit_log(id,admin_id,action,target_id) VALUES(?,?,?,?)').bind(crypto.randomUUID(),c.get('adminId'),`order_status:${data.data.status}`,c.req.param('id')).run();
   return c.json({ok:true});
 });
 const imageKey = /^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/;
