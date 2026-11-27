@@ -1,10 +1,8 @@
 import { Button } from "@/components/ui/Button";
 import { Eye, KeyRound, Lock, Refresh, Shield } from "@/components/ui/icons";
-import { PublisherProvider } from "@/context/PublisherContext";
 import { useLang } from "@/i18n/LanguageContext";
 import { AdminPage } from "@/pages/Admin/AdminPage";
 import { Orders } from "@/pages/Admin/Orders";
-import { PublishDock } from "@/pages/Admin/PublishDock";
 import { Security } from "@/pages/Admin/Security";
 import { StudioLock } from "@/pages/Admin/StudioLock";
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
@@ -192,6 +190,7 @@ function FirstPasswordSetup({ onDone, onLogout }: { onDone: () => void; onLogout
 }
 
 export function StudioGate() {
+  const { lang } = useLang();
   const [unlocked, setUnlocked] = useState(false);
   const [role, setRole] = useState<"owner" | "orders">("orders");
   const [mustChangePassword, setMustChangePassword] = useState(false);
@@ -230,14 +229,14 @@ export function StudioGate() {
     });
   };
 
-  if (loading) return <p className="p-10">Loading…</p>;
+  if (loading) return <p className="p-10">{lang === "ar" ? "جارٍ التحميل…" : "Loading…"}</p>;
   if (!unlocked) return <StudioLock onUnlocked={checkSession} />;
   if (mustChangePassword) return <FirstPasswordSetup onDone={() => setMustChangePassword(false)} onLogout={signOut} />;
   if (role === "orders") {
     return (
       <div className="mx-auto max-w-4xl p-6">
         <button className="mb-6 underline" onClick={signOut}>
-          Log out / تسجيل الخروج
+          {lang === "ar" ? "تسجيل الخروج" : "Log out"}
         </button>
         <Orders />
         <div className="mt-8">
@@ -246,10 +245,5 @@ export function StudioGate() {
       </div>
     );
   }
-  return (
-    <PublisherProvider>
-      <AdminPage />
-      <PublishDock onLock={signOut} />
-    </PublisherProvider>
-  );
+  return <AdminPage />;
 }

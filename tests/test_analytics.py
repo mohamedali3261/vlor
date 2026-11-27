@@ -63,6 +63,19 @@ class AnalyticsMigrationTests(unittest.TestCase):
                 ("2026-11-08", "product_click", "/", "", "hash-a"),
             )
 
+    def test_interaction_counts_are_separate_from_legacy_analytics(self):
+        self.db.execute("INSERT INTO analytics_daily(day,event_type,page_path,target_id,visitor_hash) VALUES('2026-11-08','page_view','/','','hash-a')")
+        sql = """INSERT INTO analytics_actions(day,page_path,action,visitor_hash,event_count)
+                 VALUES(?,?,?,?,1) ON CONFLICT(day,page_path,action,visitor_hash)
+                 DO UPDATE SET event_count=analytics_actions.event_count+1"""
+        self.db.executemany(sql, [('2026-11-08','/shop','add-to-cart','hash-a'), ('2026-11-08','/shop','add-to-cart','hash-a'), ('2026-11-08','/shop','add-to-cart','hash-b'), ('2026-11-08','/','add-to-cart','hash-a')])
+        self.assertEqual(self.db.execute("SELECT SUM(event_count),COUNT(DISTINCT visitor_hash) FROM analytics_actions WHERE page_path='/shop'").fetchone(), (3,2))
+        self.assertEqual(self.db.execute("SELECT event_count FROM analytics_daily WHERE event_type='page_view'").fetchone()[0],1)
+        self.db.execute("INSERT INTO analytics_presence VALUES('hash-a',1000)")
+        self.db.execute("INSERT INTO analytics_presence VALUES('hash-a',2000) ON CONFLICT(visitor_hash) DO UPDATE SET last_seen=excluded.last_seen")
+        self.assertEqual(self.db.execute("SELECT COUNT(*) FROM analytics_presence WHERE last_seen>=1500").fetchone()[0],1)
+        self.assertEqual(self.db.execute("SELECT COUNT(*) FROM analytics_presence WHERE last_seen>=2500").fetchone()[0],0)
+
 
 if __name__ == "__main__":
     unittest.main()

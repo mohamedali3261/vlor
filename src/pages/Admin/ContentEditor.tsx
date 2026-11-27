@@ -6,6 +6,7 @@ import { useLang } from "@/i18n/LanguageContext";
 import { Link } from "@/lib/router";
 import { siteBackground } from "@/lib/theme";
 import { Section } from "@/pages/Admin/ContentFields";
+import { StripsEditor } from "@/pages/Admin/StripsEditor";
 import { ProductImageScale } from "@/pages/Admin/ProductImageScale";
 import { ProductCardColours } from "@/pages/Admin/ProductCardColours";
 import type { SiteContent } from "@/types/content";
@@ -14,7 +15,7 @@ import { useEffect, useRef, useState } from "react";
 
 export function ContentEditor({ onManageProducts }: { onManageProducts?: () => void }) {
   const { content, products, updateContent, resetContent } = useStore();
-  const { t, lang } = useLang();
+  const { lang } = useLang();
   const { push } = useToast();
   const [draft, setDraft] = useState<SiteContent>(content);
   const [dirty, setDirty] = useState(false);
@@ -25,12 +26,10 @@ export function ContentEditor({ onManageProducts }: { onManageProducts?: () => v
     setDirty(false);
   }, [content]);
 
-  const live = useRef({ draft, dirty, updateContent });
-  live.current = { draft, dirty, updateContent };
-  useEffect(() => registerDraft({
-    isDirty: () => live.current.dirty,
-    commit: () => { live.current.updateContent(live.current.draft); return { content: live.current.draft }; },
-  }), []);
+  // Keep track of unsaved local edits so changing tabs cannot discard them silently.
+  const draftState = useRef(dirty);
+  draftState.current = dirty;
+  useEffect(() => registerDraft({isDirty: () => draftState.current, commit: () => ({})}), []);
   useEffect(() => { draftsChanged(); }, [dirty]);
 
   const edit = (mutate: (next: SiteContent) => void) => {
@@ -42,15 +41,24 @@ export function ContentEditor({ onManageProducts }: { onManageProducts?: () => v
     setDirty(true);
   };
 
-  const save = () => {
-    updateContent(draft);
-    setDirty(false);
-    push(ar ? "تم حفظ محتوى الموقع." : "Site content saved.");
+  const [saving, setSaving] = useState(false);
+  const save = async () => {
+    if (saving) return false;
+    setSaving(true);
+    try {
+      await updateContent(draft);
+      setDirty(false);
+      push(ar ? "تم حفظ المحتوى للزوار." : "Storefront content saved.");
+      return true;
+    } catch (error) {
+      push(error instanceof Error && error.message === 'Configuration changed' ? (ar ? "تغير المحتوى من جلسة أخرى. انسخ تعديلاتك ثم حدّث الصفحة." : "Content changed in another session. Copy your edits and refresh.") : (ar ? "تعذر الحفظ. تحقق من الاتصال وحاول مجددًا." : "Could not save. Check your connection and try again."), "error");
+      return false;
+    } finally { setSaving(false); }
   };
-  const reset = () => {
+  const reset = async () => {
     if (!window.confirm(ar ? "استعادة كل الأقسام الأصلية؟" : "Restore all sections?")) return;
-    resetContent();
-    push(ar ? "تمت استعادة المحتوى." : "Content restored.", "info");
+    try { await resetContent(); push(ar ? "تمت استعادة المحتوى." : "Content restored.", "info"); }
+    catch { push(ar ? "تعذرت الاستعادة. حدّث الصفحة وحاول مجددًا." : "Could not restore. Refresh and try again.", "error"); }
   };
 
   const sections: { key: keyof SiteContent["sections"]; label: string; hint: string }[] = [
@@ -60,7 +68,7 @@ export function ContentEditor({ onManageProducts }: { onManageProducts?: () => v
   ];
 
   return (
-    <div className="max-w-3xl">
+    <fieldset className="max-w-3xl" disabled={saving}>
       <div className="sticky top-[76px] z-20 -mx-1 mb-4 flex items-center justify-between gap-2 rounded-2xl border border-ink/10 bg-bone px-3 py-2 shadow-[0_8px_24px_-18px_rgba(77,51,8,0.6)]">
         <p className="flex min-w-0 items-center gap-2 text-[11px] font-semibold text-mist">
           <span className={`h-2 w-2 shrink-0 rounded-full ${dirty ? "animate-pulse bg-amber-400" : "bg-emerald-500"}`} />
@@ -69,7 +77,7 @@ export function ContentEditor({ onManageProducts }: { onManageProducts?: () => v
         <div className="flex shrink-0 items-center gap-1.5">
           <Button to="/" size="sm" variant="ghost" icon={<Eye className="h-3.5 w-3.5" />} iconPosition="start"><span className="max-sm:hidden">{ar ? "معاينة" : "Preview"}</span></Button>
           <Button size="sm" variant="outline" onClick={reset} icon={<Refresh className="h-3.5 w-3.5" />} iconPosition="start"><span className="max-sm:hidden">{ar ? "استعادة الأصل" : "Restore"}</span></Button>
-          <Button size="sm" variant="acid" onClick={save} disabled={!dirty} icon={<Check className="h-3.5 w-3.5" />} iconPosition="start">{ar ? "حفظ" : "Save"}</Button>
+          <Button size="sm" variant="acid" onClick={save} disabled={!dirty || saving} icon={<Check className="h-3.5 w-3.5" />} iconPosition="start">{ar ? "حفظ" : "Save"}</Button>
         </div>
       </div>
 
@@ -96,10 +104,16 @@ export function ContentEditor({ onManageProducts }: { onManageProducts?: () => v
         </div>
 
         <div className="mt-6 flex flex-wrap items-center gap-3 border-t border-ink/10 pt-4">
-          <Button variant="acid" onClick={save} disabled={!dirty} icon={<Check className="h-4 w-4" />} iconPosition="start">{ar ? "حفظ التغييرات" : "Save changes"}</Button>
+          <Button variant="acid" onClick={save} disabled={!dirty || saving} icon={<Check className="h-4 w-4" />} iconPosition="start">{ar ? "حفظ التغييرات" : "Save changes"}</Button>
           <Link to="/" className="text-xs font-bold text-plum underline decoration-acid decoration-2 underline-offset-4">{ar ? "معاينة الموقع ↗" : "Preview storefront ↗"}</Link>
-          <span className="text-xs text-mist">{t("admin.dirtyNote")}</span>
+          <span className="text-xs text-mist">{ar ? "احفظ التغييرات لتظهر للزوار." : "Save changes to show visitors."}</span>
         </div>
+      </div>
+
+      <div className="mt-3">
+        <Section title={ar ? "الشريط المتحرك أعلى الموقع" : "Top moving announcement bar"} description={ar ? "عدّل الرسائل والسرعة والاتجاه، ثم احفظ لتظهر للزوار." : "Edit messages, speed and direction, then save to show visitors."} defaultOpen>
+          <StripsEditor draft={draft} edit={edit} ar={ar} />
+        </Section>
       </div>
 
       <div className="mt-3">
@@ -200,13 +214,13 @@ export function ContentEditor({ onManageProducts }: { onManageProducts?: () => v
           </p>
         </div>
         {onManageProducts && (
-          <Button variant="outline" onClick={() => { if (dirty) save(); onManageProducts(); }}>
+          <Button variant="outline" onClick={async () => { if (!dirty || await save()) onManageProducts(); }}>
             {ar ? "إدارة كروت المنتجات" : "Manage product cards"}
           </Button>
         )}
       </div>
 
-      <p className="mt-3 text-center text-[11px] text-mist">{ar ? "لا تنسَ حفظ التغييرات قبل النشر." : "Remember to save your changes before publishing."}</p>
-    </div>
+      <p className="mt-3 text-center text-[11px] text-mist">{ar ? "احفظ التغييرات لتظهر للزوار." : "Save your changes to show them to visitors."}</p>
+    </fieldset>
   );
 }

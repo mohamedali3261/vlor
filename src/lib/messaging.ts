@@ -67,6 +67,7 @@ export function productMessage(product: Product, ml: number, price: number, lang
 export interface OrderCustomer {
   name: string;
   phone: string;
+  additionalPhone?: string;
   city: string;
   address: string;
   note?: string;
@@ -98,7 +99,7 @@ export function cartMessage(
     const totals = [
       "—",
       `عدد القطع: ${chatNumber(lines.reduce((sum, line) => sum + line.qty, 0), lang)}`,
-      `الإجمالي: ${chatPrice(subtotal, lang)}`,
+      `مجموع المنتجات: ${chatPrice(subtotal, lang)}`,
       `التوصيل: يُحدد حسب المحافظة`,
       `الدفع: عند الاستلام`,
     ];
@@ -108,6 +109,7 @@ export function cartMessage(
           "بيانات التوصيل:",
           `الاسم: ${customer.name}`,
           `الهاتف: ${customer.phone}`,
+          customer.additionalPhone?.trim() ? `رقم إضافي: ${customer.additionalPhone.trim()}` : "",
           `المحافظة: ${customer.city}`,
           `العنوان: ${customer.address}`,
           customer.note ? `ملاحظات: ${customer.note}` : "",
@@ -139,6 +141,7 @@ export function cartMessage(
         "Delivery details:",
         `Name: ${customer.name}`,
         `Phone: ${customer.phone}`,
+        customer.additionalPhone?.trim() ? `Additional phone: ${customer.additionalPhone.trim()}` : "",
         `City: ${customer.city}`,
         `Address: ${customer.address}`,
         customer.note ? `Notes: ${customer.note}` : "",

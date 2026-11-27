@@ -15,10 +15,12 @@ const product = z.object({
   notes: z.object({ top: z.array(localized).max(30), heart: z.array(localized).max(30), base: z.array(localized).max(30) }),
   images: z.array(z.string().max(2048)).max(20), cutout: z.string().max(2048).optional(), accent: text(50), showOnHome: z.boolean().optional(), showOnShop: z.boolean().optional(), featured: z.boolean().optional(), isNew: z.boolean().optional(), bestseller: z.boolean().optional(), rating: z.number().min(0).max(5), reviews: z.number().int().min(0), longevity: text(100), sillage: localized, createdAt: text(100)
 }).strict();
-const order = z.object({ coupon: z.string().trim().toUpperCase().regex(/^[A-Z0-9_-]{1,40}$/).optional(), expectedShipping: z.number().int().min(0).max(10000000), expectedDiscount: z.number().int().min(0).max(500000000), customer: z.object({ name: text(120).min(2), phone: text(30).regex(/^[+\d\s()-]{8,30}$/), city: text(100), address: text(500).min(6), note: z.string().trim().max(1000) }), items: z.array(z.object({ productId: text(100), ml: z.number().int().positive(), qty: z.number().int().min(1).max(20), expectedPrice: z.number().int().min(0).max(10000000) })).min(1).max(50) });
+const order = z.object({ coupon: z.string().trim().toUpperCase().regex(/^[A-Z0-9_-]{1,40}$/).optional(), expectedShipping: z.number().int().min(0).max(10000000), expectedDiscount: z.number().int().min(0).max(500000000), customer: z.object({ name: text(120).min(2), phone: text(30).regex(/^[+\d\s()-]{8,30}$/), additionalPhone: z.string().trim().max(30).refine(v => !v || (/^[+\d\s()-]+$/.test(v) && v.replace(/\D/g, "").length >= 8)).optional(), city: text(100), address: text(500).min(6), note: z.string().trim().max(1000) }), items: z.array(z.object({ productId: text(100), ml: z.number().int().positive(), qty: z.number().int().min(1).max(20), expectedPrice: z.number().int().min(0).max(10000000) })).min(1).max(50) });
 const analyticsEvent = z.discriminatedUnion('type', [
   z.object({ type: z.literal('page_view'), pagePath: text(180).regex(/^\/[a-z0-9/_-]*$/i), visitorId: z.string().uuid() }).strict(),
   z.object({ type: z.literal('product_click'), pagePath: text(180).regex(/^\/[a-z0-9/_-]*$/i), visitorId: z.string().uuid(), productSlug: z.string().regex(/^[a-z0-9-]{1,100}$/) }).strict(),
+  z.object({ type: z.literal('heartbeat'), pagePath: text(180).regex(/^\/[a-z0-9/_-]*$/i), visitorId: z.string().uuid() }).strict(),
+  z.object({ type: z.literal('interaction'), pagePath: text(180).regex(/^\/[a-z0-9/_-]*$/i), visitorId: z.string().uuid(), action: z.string().max(108).regex(/^(?:open-cart|checkout|place-order|copy-order|add-to-cart|wishlist|choose-size|quantity|gallery|menu|language|filter|remove-from-cart|carousel|other-button|link-home|link-shop|link-wishlist|link-contact|link-track|link-other|social-whatsapp|social-instagram|social-facebook|social-tiktok|social-messenger|social-other|product:[a-z0-9-]{1,100})$/) }).strict(),
 ]);
 const encoder = new TextEncoder();
 const hex = (b: ArrayBuffer) => Array.from(new Uint8Array(b), x => x.toString(16).padStart(2,'0')).join('');
@@ -44,7 +46,7 @@ async function pruneOldAnalytics(db: D1Database, today: string): Promise<void> {
   analyticsCleanupDay = today;
   const cutoff = new Date(Date.now() - 400 * 86_400_000).toISOString().slice(0, 10);
   try {
-    await db.prepare('DELETE FROM analytics_daily WHERE day < ?').bind(cutoff).run();
+    await db.batch([db.prepare('DELETE FROM analytics_daily WHERE day < ?').bind(cutoff), db.prepare('DELETE FROM analytics_actions WHERE day < ?').bind(cutoff), db.prepare('DELETE FROM analytics_presence WHERE last_seen < ?').bind(Date.now()-300_000)]);
   } catch {
     analyticsCleanupDay = '';
   }
@@ -94,24 +96,59 @@ const adminGuard: MiddlewareHandler<Env> = async (c, next) => {
 app.use('/api/admin/*', adminGuard);
 app.get('/api/admin/session', c => c.json({ok:true,role:c.get('role'),mustChangePassword:c.get('mustChangePassword')}));
 app.get('/api/admin/analytics', async c => {
-  const range = z.enum(['7','30','90','365']).safeParse(c.req.query('days') || '30');
+  const range = z.enum(['7','30','90','365','400']).safeParse(c.req.query('days') || '30');
   if (!range.success) return c.json({error:'Invalid analytics range'},400);
   const days = Number(range.data);
   const end = new Date();
   const endDay = end.toISOString().slice(0,10);
   const startDay = new Date(end.getTime() - (days - 1) * 86_400_000).toISOString().slice(0,10);
-  const [summary, clickSummary, pages, products] = await Promise.all([
+  const [summary, clickSummary, pages, products, active, total, actions] = await Promise.all([
     c.env.DB.prepare("SELECT COALESCE(SUM(event_count),0) AS page_views,COUNT(DISTINCT visitor_hash) AS visitors FROM analytics_daily WHERE event_type='page_view' AND day BETWEEN ? AND ?").bind(startDay,endDay).first<{page_views:number,visitors:number}>(),
     c.env.DB.prepare("SELECT COALESCE(SUM(event_count),0) AS clicks FROM analytics_daily WHERE event_type='product_click' AND day BETWEEN ? AND ?").bind(startDay,endDay).first<{clicks:number}>(),
     c.env.DB.prepare("SELECT page_path,COALESCE(SUM(event_count),0) AS views,COUNT(DISTINCT visitor_hash) AS visitors FROM analytics_daily WHERE event_type='page_view' AND day BETWEEN ? AND ? GROUP BY page_path ORDER BY views DESC,page_path ASC").bind(startDay,endDay).all<{page_path:string,views:number,visitors:number}>(),
     c.env.DB.prepare("SELECT p.slug,COALESCE(json_extract(p.data,'$.name.en'),p.slug) AS name_en,COALESCE(json_extract(p.data,'$.name.ar'),p.slug) AS name_ar,COALESCE(SUM(a.event_count),0) AS clicks,COUNT(DISTINCT a.visitor_hash) AS visitors,p.archived FROM products p LEFT JOIN analytics_daily a ON a.event_type='product_click' AND a.target_id=p.slug AND a.day BETWEEN ? AND ? GROUP BY p.id,p.slug,p.archived ORDER BY clicks DESC,p.slug ASC").bind(startDay,endDay).all<{slug:string,name_en:string,name_ar:string,clicks:number,visitors:number,archived:number}>(),
+    c.env.DB.prepare("SELECT COUNT(*) AS visitors FROM analytics_presence WHERE last_seen>=?").bind(Date.now()-300_000).first<{visitors:number}>(),
+    c.env.DB.prepare("SELECT COUNT(DISTINCT visitor_hash) AS visitors,COALESCE(SUM(event_count),0) AS views FROM analytics_daily WHERE event_type='page_view' AND day>=?").bind(new Date(end.getTime()-399*86_400_000).toISOString().slice(0,10)).first<{visitors:number,views:number}>(),
+    c.env.DB.prepare("SELECT page_path,action,SUM(event_count) AS clicks,COUNT(DISTINCT visitor_hash) AS visitors FROM analytics_actions WHERE day BETWEEN ? AND ? GROUP BY page_path,action ORDER BY clicks DESC,page_path,action LIMIT 300").bind(startDay,endDay).all<{page_path:string,action:string,clicks:number,visitors:number}>(),
   ]);
   return c.json({
     period:{days,startDay,endDay},
     summary:{pageViews:summary?.page_views ?? 0,visitors:summary?.visitors ?? 0,productClicks:clickSummary?.clicks ?? 0},
+    activeVisitors:active?.visitors ?? 0,
+    retainedTotals:{visitors:total?.visitors ?? 0,pageViews:total?.views ?? 0},
+    actions:actions.results.map(row=>({path:row.page_path,action:row.action,clicks:row.clicks,visitors:row.visitors})),
     pages:pages.results.map(row=>({path:row.page_path,views:row.views,visitors:row.visitors})),
     products:products.results.map(row=>({slug:row.slug,name:{en:row.name_en,ar:row.name_ar},clicks:row.clicks,visitors:row.visitors,archived:Boolean(row.archived)})),
   });
+});
+// Shared storefront configuration is stored independently from products and orders.
+// Revision checks prevent an older studio session from overwriting newer edits.
+const configLocal = z.object({en:z.string().max(5000), ar:z.string().max(5000)});
+const storefrontSettings = z.object({whatsapp:z.string().max(2048), messenger:z.string().max(2048), instagram:z.string().max(2048), facebook:z.string().max(2048), youtube:z.string().max(2048), tiktok:z.string().max(2048), email:z.string().max(2048), phone:z.string().max(2048), freeShippingThreshold:z.number().finite().min(0).max(500000000), address:configLocal, hours:configLocal}).strict();
+const storefrontContent = z.object({
+  studioDeliveryTab:z.boolean(), announcements:z.array(configLocal).max(100),
+  strips:z.object({announcement:z.object({enabled:z.boolean(),speed:z.number().finite().min(10).max(200),direction:z.enum(['left','right'])})}).passthrough(),
+  theme:z.object({ink:z.string(),bone:z.string(),accent:z.string(),lilac:z.string(),productImageScale:z.number(),headingScale:z.number(),bodyScale:z.number(),sectionSpacing:z.number()}).passthrough(),
+  sections:z.record(z.string(),z.boolean()),
+}).passthrough().and(z.record(z.string(),z.json()));
+app.get('/api/storefront-config', async c => {
+  const rows=(await c.env.DB.prepare("SELECT key,value FROM store_meta WHERE key IN ('storefront_content_v1','storefront_settings_v1')").all<{key:string,value:string}>()).results;
+  const read=(key:string) => { const row=rows.find(r=>r.key===key); if (!row) return null; try { return JSON.parse(row.value); } catch { return null; } };
+  return c.json({content:read('storefront_content_v1'),settings:read('storefront_settings_v1')});
+});
+app.put('/api/admin/storefront-config/:kind', async c => {
+  const kind=c.req.param('kind');
+  if (kind!=='content' && kind!=='settings') return c.json({error:'Invalid configuration'},400);
+  const body=z.object({version:z.string().uuid().nullable(),data:z.unknown()}).strict().safeParse(await jsonBody(c));
+  if (!body.success) return c.json({error:'Invalid configuration'},400);
+  const parsed=(kind==='content' ? storefrontContent : storefrontSettings).safeParse(body.data.data);
+  if (!parsed.success || JSON.stringify(body.data.data).length>200000) return c.json({error:'Invalid configuration'},400);
+  const version=crypto.randomUUID(), key=`storefront_${kind}_v1`, value=JSON.stringify({version,data:parsed.data});
+  const result = body.data.version === null
+    ? await c.env.DB.prepare('INSERT OR IGNORE INTO store_meta(key,value) VALUES (?,?)').bind(key,value).run()
+    : await c.env.DB.prepare("UPDATE store_meta SET value=? WHERE key=? AND json_valid(value) AND json_extract(value,'$.version')=?").bind(value,key,body.data.version).run();
+  if (!result.meta.changes) return c.json({error:'Configuration changed. Refresh and try again.'},409);
+  return c.json({ok:true,version});
 });
 app.post('/api/admin/logout', async c => { const token = getCookie(c,'__Host-malika_session'); if (token) await c.env.DB.prepare('DELETE FROM sessions WHERE token_hash=?').bind(await sha(token)).run(); deleteCookie(c,'__Host-malika_session',{secure:true,path:'/'}); return c.json({ok:true}); });
 app.post('/api/admin/password', async c => {
@@ -182,6 +219,19 @@ app.post('/api/analytics/event', async c => {
   const today = new Date().toISOString().slice(0,10);
   await pruneOldAnalytics(c.env.DB,today);
   const visitorHash = await sha(`analytics-v1:${input.data.visitorId}`);
+  if (input.data.type === 'heartbeat') {
+    const now = Date.now();
+    await c.env.DB.batch([c.env.DB.prepare('DELETE FROM analytics_presence WHERE last_seen < ?').bind(now-300_000), c.env.DB.prepare('INSERT INTO analytics_presence(visitor_hash,last_seen) VALUES (?,?) ON CONFLICT(visitor_hash) DO UPDATE SET last_seen=excluded.last_seen').bind(visitorHash,now)]);
+    return c.json({ok:true});
+  }
+  if (input.data.type === 'interaction') {
+    if (input.data.action.startsWith('product:')) {
+      const found = await c.env.DB.prepare('SELECT id FROM products WHERE slug=?').bind(input.data.action.slice(8)).first();
+      if (!found) return c.json({error:'Product not found'},404);
+    }
+    await c.env.DB.prepare('INSERT INTO analytics_actions(day,page_path,action,visitor_hash,event_count) VALUES(?,?,?,?,1) ON CONFLICT(day,page_path,action,visitor_hash) DO UPDATE SET event_count=analytics_actions.event_count+1').bind(today,pagePath,input.data.action,visitorHash).run();
+    return c.json({ok:true});
+  }
   await c.env.DB.prepare("INSERT INTO analytics_daily(day,event_type,page_path,target_id,visitor_hash,event_count) VALUES(?,?,?,?,?,1) ON CONFLICT(day,event_type,page_path,target_id,visitor_hash) DO UPDATE SET event_count=analytics_daily.event_count+1")
     .bind(today,input.data.type,pagePath,targetId,visitorHash)
     .run();
@@ -239,12 +289,30 @@ app.put('/api/admin/shipping', async c => {
   await c.env.DB.batch([c.env.DB.prepare('INSERT INTO shipping_rates VALUES(?,?,?) ON CONFLICT(city) DO UPDATE SET amount=excluded.amount,free_threshold=excluded.free_threshold').bind(v.city,v.amount,v.freeThreshold),c.env.DB.prepare('INSERT INTO audit_log(id,admin_id,action,target_id) VALUES(?,?,?,?)').bind(crypto.randomUUID(),c.get('adminId'),'shipping_updated',v.city)]);
   return c.json({ok:true});
 });
+app.delete('/api/admin/shipping/:city', async c => {
+  const city=text(100).safeParse(c.req.param('city')); if(!city.success) return c.json({error:'Invalid city'},400);
+  const [result]=await c.env.DB.batch([
+    c.env.DB.prepare('DELETE FROM shipping_rates WHERE city=?').bind(city.data),
+    c.env.DB.prepare('INSERT INTO audit_log(id,admin_id,action,target_id) SELECT ?,?,?,? WHERE changes()>0').bind(crypto.randomUUID(),c.get('adminId'),'shipping_deleted',city.data),
+  ]);
+  if(!result.meta.changes) return c.json({error:'Not found'},404);
+  return c.json({ok:true});
+});
 const couponSchema = z.object({code:z.string().trim().toUpperCase().regex(/^[A-Z0-9_-]{1,40}$/),percent:z.number().int().min(1).max(100),maxUses:z.number().int().min(1).max(1000000),expiresAt:z.string().datetime().nullable(),enabled:z.boolean()});
 app.get('/api/admin/coupons', async c => c.json((await c.env.DB.prepare('SELECT * FROM coupons ORDER BY code').all()).results));
 app.put('/api/admin/coupons', async c => {
   const parsed=couponSchema.safeParse(await jsonBody(c)); if(!parsed.success) return c.json({error:'Invalid coupon'},400);
   const v=parsed.data;
   await c.env.DB.batch([c.env.DB.prepare('INSERT INTO coupons(code,percent,max_uses,expires_at,enabled) VALUES(?,?,?,?,?) ON CONFLICT(code) DO UPDATE SET percent=excluded.percent,max_uses=excluded.max_uses,expires_at=excluded.expires_at,enabled=excluded.enabled').bind(v.code,v.percent,v.maxUses,v.expiresAt,v.enabled?1:0), c.env.DB.prepare('INSERT INTO audit_log(id,admin_id,action,target_id) VALUES(?,?,?,?)').bind(crypto.randomUUID(),c.get('adminId'),'coupon_updated',v.code)]);
+  return c.json({ok:true});
+});
+app.delete('/api/admin/coupons/:code', async c => {
+  const code=z.string().trim().toUpperCase().regex(/^[A-Z0-9_-]{1,40}$/).safeParse(c.req.param('code')); if(!code.success) return c.json({error:'Invalid coupon'},400);
+  const [result]=await c.env.DB.batch([
+    c.env.DB.prepare('DELETE FROM coupons WHERE code=?').bind(code.data),
+    c.env.DB.prepare('INSERT INTO audit_log(id,admin_id,action,target_id) SELECT ?,?,?,? WHERE changes()>0').bind(crypto.randomUUID(),c.get('adminId'),'coupon_deleted',code.data),
+  ]);
+  if(!result.meta.changes) return c.json({error:'Not found'},404);
   return c.json({ok:true});
 });
 // Quotes are previews only; the order and database triggers revalidate everything.
@@ -304,7 +372,7 @@ app.post('/api/orders', async c => {
   const calculated=await quote(c.env.DB,customer.city,data.data.coupon,subtotal);
   if (!calculated || calculated.shipping!==data.data.expectedShipping || calculated.discount!==data.data.expectedDiscount) return c.json({error:'Shipping or coupon changed'},409);
   try {
-    await c.env.DB.batch([c.env.DB.prepare('INSERT INTO orders(id,customer_name,phone,city,address,note,subtotal,idempotency_key,request_hash,stock_reserved,shipping,discount,coupon_code,tracking_hash) VALUES (?,?,?,?,?,?,?,?,?,1,?,?,?,?)').bind(id,customer.name,customer.phone,customer.city,customer.address,customer.note,subtotal,key,requestHash,calculated.shipping,calculated.discount,data.data.coupon || null,await sha('track:'+key)), ...rows.map(x=>c.env.DB.prepare('INSERT INTO order_items VALUES (?,?,?,?,?,?,?)').bind(crypto.randomUUID(),id,x.id,x.name,x.ml,x.price,x.qty))]);
+    await c.env.DB.batch([c.env.DB.prepare('INSERT INTO orders(id,customer_name,phone,city,address,note,subtotal,idempotency_key,request_hash,stock_reserved,shipping,discount,coupon_code,tracking_hash) VALUES (?,?,?,?,?,?,?,?,?,1,?,?,?,?)').bind(id,customer.name,customer.phone,customer.city,customer.address,customer.note,subtotal,key,requestHash,calculated.shipping,calculated.discount,data.data.coupon || null,await sha('track:'+key)), ...(customer.additionalPhone ? [c.env.DB.prepare('INSERT INTO order_contacts(order_id,additional_phone) VALUES (?,?)').bind(id,customer.additionalPhone)] : []), ...rows.map(x=>c.env.DB.prepare('INSERT INTO order_items VALUES (?,?,?,?,?,?,?)').bind(crypto.randomUUID(),id,x.id,x.name,x.ml,x.price,x.qty))]);
   } catch (error) {
     const existing = await c.env.DB.prepare('SELECT id,subtotal,shipping,discount,request_hash FROM orders WHERE idempotency_key=?').bind(key).first<{id:string,subtotal:number,shipping:number,discount:number,request_hash:string}>();
     if (!existing) { const message=String(error); if (message.includes('insufficient_stock') || message.includes('product_changed') || message.includes('coupon_changed') || message.includes('shipping_changed')) return c.json({error:'Product price or stock changed. Refresh your cart and try again.'},409); throw error; }
@@ -317,8 +385,8 @@ app.get('/api/admin/orders', async c => {
   const status = c.req.query('status') || '', q = (c.req.query('q') || '').trim().slice(0,100);
   if (status && !['new','confirmed','shipped','completed','cancelled'].includes(status)) return c.json({error:'Invalid status'},400);
   const pattern = `%${q.replace(/[\\%_]/g, '\\$&')}%`;
-  const filter = "WHERE (?='' OR status=?) AND (?='' OR id LIKE ? ESCAPE '\\' OR phone LIKE ? ESCAPE '\\')";
-  const orders=(await c.env.DB.prepare(`SELECT * FROM orders ${filter} ORDER BY created_at DESC,id DESC LIMIT 21 OFFSET ?`).bind(status,status,q,pattern,pattern,(page-1)*20).all()).results;
+  const filter = "WHERE (?='' OR status=?) AND (?='' OR id LIKE ? ESCAPE '\\' OR phone LIKE ? ESCAPE '\\' OR EXISTS (SELECT 1 FROM order_contacts WHERE order_id=orders.id AND additional_phone LIKE ? ESCAPE '\\'))";
+  const orders=(await c.env.DB.prepare(`SELECT orders.*, (SELECT additional_phone FROM order_contacts WHERE order_id=orders.id) AS additional_phone FROM orders ${filter} ORDER BY created_at DESC,id DESC LIMIT 21 OFFSET ?`).bind(status,status,q,pattern,pattern,pattern,(page-1)*20).all()).results;
   const hasMore = orders.length > 20; if (hasMore) orders.pop();
   const ids=orders.map(o=>o.id); const items=ids.length ? (await c.env.DB.prepare(`SELECT * FROM order_items WHERE order_id IN (${ids.map(()=>'?').join(',')})`).bind(...ids).all()).results : [];
   return c.json({orders,items,page,hasMore});

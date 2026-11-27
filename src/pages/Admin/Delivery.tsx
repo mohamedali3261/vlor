@@ -18,6 +18,7 @@ export function Delivery() {
   const [expiry, setExpiry] = useState('');
   const [enabled, setEnabled] = useState(true);
   const [message, setMessage] = useState('');
+  const [deleting, setDeleting] = useState<string | null>(null);
   const [editingRate, setEditingRate] = useState<string | null>(null);
   const [editFee, setEditFee] = useState('');
   const [editThreshold, setEditThreshold] = useState('');
@@ -93,11 +94,29 @@ export function Delivery() {
     } catch { setMessage(ar ? 'تعذر التعديل' : 'Could not update'); }
   };
 
+  const remove = async (kind: 'shipping' | 'coupons', value: string) => {
+    if (deleting) return;
+    const warning = kind === 'shipping'
+      ? (ar ? `حذف شحن ${value}؟ لن يمكن إتمام طلبات هذه المحافظة حتى تضيف سعرًا جديدًا. الطلبات السابقة لن تتأثر.` : `Delete shipping for ${value}? New orders for this governorate will be unavailable until a rate is added. Existing orders are unchanged.`)
+      : (ar ? `حذف كوبون ${value}؟ لن يمكن استخدامه في الطلبات الجديدة، ولن تتأثر الطلبات السابقة.` : `Delete coupon ${value}? It will no longer apply to new orders; existing orders are unchanged.`);
+    if (!window.confirm(warning)) return;
+    const key = `${kind}:${value}`;
+    setDeleting(key);
+    try {
+      const response = await fetch(`/api/admin/${kind}/${encodeURIComponent(value)}`, {method:'DELETE'});
+      if (!response.ok) throw Error();
+      if (kind === 'shipping') setRates(previous => previous.filter(rate => rate.city !== value));
+      else setCoupons(previous => previous.filter(coupon => coupon.code !== value));
+      setMessage(ar ? 'تم الحذف بنجاح.' : 'Deleted successfully.');
+    } catch { setMessage(ar ? 'تعذر الحذف. تحقق من الاتصال وحاول مجددًا.' : 'Could not delete. Check your connection and try again.'); }
+    finally { setDeleting(null); }
+  };
+
   return (
     <div className="space-y-5">
       <div>
         <h2 className="font-display text-2xl">{ar ? 'الشحن والخصومات' : 'Delivery'}</h2>
-        <p className="mt-1 text-xs leading-relaxed text-mist">{ar ? 'أضف سعر الشحن لكل محافظة وكوبونات الخصم — يمكنك الآن تعديل السعر مباشرة من القائمة.' : 'Set shipping per governorate and discount coupons — you can now edit the price directly in the list.'}</p>
+        <p className="mt-1 text-xs leading-relaxed text-mist">{ar ? 'أضف أو عدّل أو احذف أسعار الشحن وكوبونات الخصم من القائمة.' : 'Add, edit or delete shipping rates and discount coupons.'}</p>
       </div>
 
       {message && <p role="status" className="rounded-xl bg-ink px-4 py-2 text-sm font-medium text-bone">{message}</p>}
@@ -147,12 +166,13 @@ export function Delivery() {
                     </div>
                   </div>
                 ) : (
-                  <div className="flex items-center justify-between gap-2">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
                     <span className="text-sm font-bold">{r.city}</span>
-                    <span className="flex items-center gap-2 text-xs">
-                      <span className="rounded-full bg-ink px-2 py-1 font-bold text-bone">{r.amount} EGP</span>
+                    <span className="flex flex-wrap items-center gap-2 text-xs">
+                      <span className="rounded-full bg-ink px-2 py-1 font-bold text-bone">{r.amount} {ar ? 'ج.م' : 'EGP'}</span>
                       <span className="text-mist">{r.free_threshold === null ? '—' : `${ar ? 'مجاني فوق' : 'free ≥'} ${r.free_threshold}`}</span>
                       <button onClick={()=>startEditRate(r)} className="ms-1 rounded-full border border-ink/10 bg-surface px-3 py-1 text-[11px] font-bold hover:border-ink/30">{ar ? 'تعديل السعر' : 'Edit price'}</button>
+                      <button type="button" disabled={!!deleting} onClick={()=>void remove('shipping',r.city)} aria-label={ar ? `حذف شحن ${r.city}` : `Delete shipping for ${r.city}`} className="rounded-full border border-rose-200 px-3 py-1 text-[11px] font-bold text-rose-700 hover:bg-rose-50 disabled:opacity-50">{ar ? 'حذف' : 'Delete'}</button>
                     </span>
                   </div>
                 )}
@@ -228,6 +248,7 @@ export function Delivery() {
                       <span className="text-mist">{c.uses}/{c.max_uses}</span>
                       <span className={`rounded-full px-2 py-1 text-[10px] font-bold ${c.enabled ? 'bg-emerald-100 text-emerald-700' : 'bg-ink/10 text-mist'}`}>{c.enabled ? (ar ? 'مفعّل' : 'enabled') : (ar ? 'موقوف' : 'disabled')}</span>
                       <button onClick={()=>startEditCoupon(c)} className="ms-1 rounded-full border border-ink/10 bg-surface px-3 py-1 text-[11px] font-bold hover:border-ink/30">{ar ? 'تعديل' : 'Edit'}</button>
+                      <button type="button" disabled={!!deleting} onClick={()=>void remove('coupons',c.code)} aria-label={ar ? `حذف كوبون ${c.code}` : `Delete coupon ${c.code}`} className="rounded-full border border-rose-200 px-3 py-1 text-[11px] font-bold text-rose-700 hover:bg-rose-50 disabled:opacity-50">{ar ? 'حذف' : 'Delete'}</button>
                     </span>
                   </div>
                 )}

@@ -47,7 +47,7 @@ export function ProductCardColours({
   return (
     <div className="grid gap-5 md:grid-cols-[1fr_270px] md:items-start">
       <div>
-        <p className="text-xs leading-relaxed text-mist">{ar ? "غيّر الألوان وشاهد النتيجة فوراً. الدرجات التلقائية تتبع لون تمييز الموقع. بعد الحفظ، انشر لتظهر التغييرات للزوار." : "Change the colours to preview them instantly. Automatic shades follow the site accent. Save and publish to show visitors."}</p>
+        <p className="text-xs leading-relaxed text-mist">{ar ? "غيّر الألوان وشاهد النتيجة فوراً. الدرجات التلقائية تتبع لون تمييز الموقع. بعد الحفظ تظهر التغييرات للزوار." : "Change the colours to preview them instantly. Automatic shades follow the site accent. Save to show visitors."}</p>
         <div className="mt-4 grid gap-2">
           {fields.map(({ key, label, value }) => (
             <div key={key} className="rounded-xl border border-ink/10 bg-bone/50 p-3">

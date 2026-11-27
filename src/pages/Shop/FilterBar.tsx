@@ -75,7 +75,7 @@ export function FilterBar(props: FilterBarProps) {
               enterKeyHint="search"
             />
             {query && (
-              <button
+              <button data-analytics="filter"
                 onClick={() => setQuery("")}
                 className="absolute end-2.5 top-1/2 grid h-7 w-7 -translate-y-1/2 place-items-center rounded-full bg-ink/5 text-mist hover:text-ink"
                 aria-label={t("shop.clearSearch")}
@@ -103,7 +103,7 @@ export function FilterBar(props: FilterBarProps) {
             )}
 
             {hasMore && (
-              <button
+              <button data-analytics="filter"
                 onClick={() => setOpen((value) => !value)}
                 aria-expanded={open}
                 aria-controls="shop-more-filters"
@@ -121,7 +121,7 @@ export function FilterBar(props: FilterBarProps) {
             )}
 
             {isFiltered && (
-              <button
+              <button data-analytics="filter"
                 onClick={reset}
                 aria-label={t("shop.clear")}
                 title={t("shop.clear")}
@@ -141,7 +141,7 @@ export function FilterBar(props: FilterBarProps) {
               <span className="me-1 text-[10px] font-bold uppercase tracking-[0.14em] text-mist">{t("shop.gender")}</span>
               <div className="no-scrollbar flex items-center gap-1 overflow-x-auto">
                 {genderKeys.map((key) => (
-                  <button
+                  <button data-analytics="filter"
                     key={key}
                     onClick={() => setGender(key)}
                     aria-pressed={gender === key}
@@ -176,7 +176,7 @@ export function FilterBar(props: FilterBarProps) {
           )}
 
           {show.savedOnly && (
-            <button
+            <button data-analytics="filter"
               onClick={() => setSavedOnly(!savedOnly)}
               aria-pressed={savedOnly}
               className={cn(

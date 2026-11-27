@@ -10,6 +10,7 @@ const DDL_STATEMENTS = [
   `CREATE TABLE IF NOT EXISTS sessions (token_hash TEXT PRIMARY KEY, admin_id TEXT NOT NULL REFERENCES admins(id) ON DELETE CASCADE, expires_at INTEGER NOT NULL, last_seen INTEGER NOT NULL DEFAULT 0)`,
   `CREATE TABLE IF NOT EXISTS login_attempts (key TEXT PRIMARY KEY, count INTEGER NOT NULL, expires_at INTEGER NOT NULL)`,
   `CREATE TABLE IF NOT EXISTS orders (id TEXT PRIMARY KEY, customer_name TEXT NOT NULL, phone TEXT NOT NULL, city TEXT NOT NULL, address TEXT NOT NULL, note TEXT NOT NULL, subtotal INTEGER NOT NULL, status TEXT NOT NULL DEFAULT 'new', created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, idempotency_key TEXT, request_hash TEXT, stock_reserved INTEGER NOT NULL DEFAULT 0 CHECK(stock_reserved IN (0, 1)), shipping INTEGER NOT NULL DEFAULT 0, discount INTEGER NOT NULL DEFAULT 0, coupon_code TEXT, tracking_hash TEXT)`,
+  `CREATE TABLE IF NOT EXISTS order_contacts (order_id TEXT PRIMARY KEY REFERENCES orders(id) ON DELETE CASCADE, additional_phone TEXT NOT NULL)`,
   `CREATE TABLE IF NOT EXISTS order_items (id TEXT PRIMARY KEY, order_id TEXT NOT NULL REFERENCES orders(id), product_id TEXT NOT NULL REFERENCES products(id), name TEXT NOT NULL, size INTEGER NOT NULL, unit_price INTEGER NOT NULL, quantity INTEGER NOT NULL)`,
   `CREATE INDEX IF NOT EXISTS order_items_order ON order_items(order_id)`,
   `CREATE INDEX IF NOT EXISTS orders_created ON orders(created_at DESC)`,
@@ -22,6 +23,10 @@ const DDL_STATEMENTS = [
   `CREATE TABLE IF NOT EXISTS coupons (code TEXT PRIMARY KEY, percent INTEGER NOT NULL CHECK(percent BETWEEN 1 AND 100), max_uses INTEGER NOT NULL CHECK(max_uses > 0), uses INTEGER NOT NULL DEFAULT 0 CHECK(uses >= 0), expires_at TEXT, enabled INTEGER NOT NULL DEFAULT 1 CHECK(enabled IN (0,1)))`,
   `CREATE TABLE IF NOT EXISTS analytics_daily (day TEXT NOT NULL, event_type TEXT NOT NULL CHECK(event_type IN ('page_view','product_click')), page_path TEXT NOT NULL, target_id TEXT NOT NULL DEFAULT '', visitor_hash TEXT NOT NULL, event_count INTEGER NOT NULL DEFAULT 1 CHECK(event_count >= 1), PRIMARY KEY(day,event_type,page_path,target_id,visitor_hash), CHECK((event_type='page_view' AND target_id='') OR (event_type='product_click' AND target_id<>'')))`,
   `CREATE INDEX IF NOT EXISTS analytics_daily_pages ON analytics_daily(event_type,day,page_path)`,
+  `CREATE TABLE IF NOT EXISTS analytics_actions (day TEXT NOT NULL, page_path TEXT NOT NULL, action TEXT NOT NULL, visitor_hash TEXT NOT NULL, event_count INTEGER NOT NULL DEFAULT 1 CHECK(event_count >= 1), PRIMARY KEY(day,page_path,action,visitor_hash))`,
+  `CREATE INDEX IF NOT EXISTS analytics_actions_period ON analytics_actions(day,page_path,action)`,
+  `CREATE TABLE IF NOT EXISTS analytics_presence (visitor_hash TEXT PRIMARY KEY, last_seen INTEGER NOT NULL)`,
+  `CREATE INDEX IF NOT EXISTS analytics_presence_seen ON analytics_presence(last_seen)`,
   `CREATE INDEX IF NOT EXISTS analytics_daily_products ON analytics_daily(event_type,day,target_id)`,
   `CREATE TABLE IF NOT EXISTS deleted_images (key TEXT PRIMARY KEY, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)`,
   `CREATE TABLE IF NOT EXISTS images (key TEXT PRIMARY KEY, content_type TEXT NOT NULL CHECK(content_type IN ('image/jpeg', 'image/png', 'image/webp')), data_base64 TEXT NOT NULL CHECK(length(data_base64) BETWEEN 16 AND 1333336), size INTEGER NOT NULL CHECK(size BETWEEN 12 AND 1000000), created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)`,
@@ -204,6 +209,9 @@ async function initialize(db: D1Database): Promise<void> {
     // Base tables or store_meta do not exist yet.
   }
   if (initialized) {
+    // Existing databases also need the additive table before accepting new orders.
+    await db.prepare(`CREATE TABLE IF NOT EXISTS order_contacts (order_id TEXT PRIMARY KEY REFERENCES orders(id) ON DELETE CASCADE, additional_phone TEXT NOT NULL)`).run();
+    for (const sql of DDL_STATEMENTS.filter(statement => /analytics_actions|analytics_presence/.test(statement))) await db.prepare(sql).run();
     await applyVlorBrandMigration(db);
     await ensureRequestedScents(db);
     await removeOldImages(db);

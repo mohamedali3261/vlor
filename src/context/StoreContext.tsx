@@ -7,7 +7,7 @@ import { usePersistentState } from "@/hooks/usePersistentState";
 import type { Product, SiteSettings } from "@/types";
 import type { DeepPartial, SiteContent } from "@/types/content";
 import { createDefaultContent, mergeContent } from "@/data/defaultContent";
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 
 interface StoreValue {
   products: Product[];
@@ -17,10 +17,12 @@ interface StoreValue {
   deleteProduct: (id: string) => Promise<void>;
   resetCatalogue: () => void;
   replaceCatalogue: (products: Product[]) => Promise<void>;
-  updateSettings: (settings: SiteSettings) => void;
+  updateSettings: (settings: SiteSettings) => Promise<void>;
   content: SiteContent;
-  updateContent: (content: SiteContent) => void;
-  resetContent: () => void;
+  updateContent: (content: SiteContent) => Promise<void>;
+  resetContent: () => Promise<void>;
+  configStatus: "loading" | "ready" | "error";
+  reloadConfig: () => void;
   dirty: boolean;
   lastPublishedAt: string | null;
   markPublished: (at: string) => void;
@@ -65,6 +67,12 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         migrateInstagram(window.localStorage, [`malika.settings.v3${catalogueVersion}`, `malika.settings.v2${catalogueVersion}`], defaultSettings.instagram);
       }
     } catch { /* Storage may be blocked. */ }
+  });
+  const [legacyDraftBackup] = useState(() => {
+    try {
+      if (window.localStorage.getItem("malika.catalogue.dirty.v1") !== "true") return null;
+      return JSON.stringify({content:window.localStorage.getItem(`malika.content.v1${catalogueVersion}`),settings:window.localStorage.getItem(`malika.settings.v3${catalogueVersion}`)});
+    } catch { return null; }
   });
   const [products, setProducts] = useState<Product[]>([]);
   useEffect(() => {
@@ -114,18 +122,50 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   // with whatever the owner saved earlier.
   const content = useMemo(() => mergeContent(storedContent), [storedContent]);
 
-  const updateContent = useCallback(
-    (next: SiteContent) => {
-      setStoredContent(next);
-      setDirty(true);
-    },
-    [setStoredContent, setDirty]
-  );
+  const configVersions = useRef<{ content: string | null; settings: string | null }>({ content: null, settings: null });
+  const configLoaded = useRef(false);
+  const [configStatus, setConfigStatus] = useState<"loading" | "ready" | "error">("loading");
+  const [configAttempt, setConfigAttempt] = useState(0);
+  const reloadConfig = useCallback(() => { configLoaded.current = false; setConfigStatus("loading"); setConfigAttempt(value => value + 1); }, []);
+  useEffect(() => {
+    let cancelled = false;
+    fetch('/api/storefront-config').then(async response => {
+      if (!response.ok) throw new Error('Storefront configuration unavailable');
+      return response.json() as Promise<{content: {version:string;data:SiteContent} | null; settings: {version:string;data:SiteSettings} | null}>;
+    }).then(result => {
+      if (cancelled) return;
+      // Keep a recovery copy of older browser-only, unpublished studio edits.
+      try {
+        if ((result.content || result.settings) && legacyDraftBackup) {
+          const backupKey = `malika.pre-server-config-backup.v1${catalogueVersion}`;
+          if (!window.localStorage.getItem(backupKey)) window.localStorage.setItem(backupKey, legacyDraftBackup);
+        }
+      } catch { /* storage may be unavailable */ }
+      if (result.content) { configVersions.current.content = result.content.version; setStoredContent(result.content.data); }
+      if (result.settings) { configVersions.current.settings = result.settings.version; setSettings(result.settings.data); }
+      configLoaded.current = true;
+      setConfigStatus("ready");
+    }).catch(() => { if (!cancelled) { configLoaded.current = false; setConfigStatus("error"); console.error('Storefront configuration unavailable'); } });
+    return () => { cancelled = true; };
+  }, [setStoredContent, setSettings, configAttempt, legacyDraftBackup]);
 
-  const resetContent = useCallback(() => {
-    setStoredContent(createDefaultContent());
-    setDirty(true);
-  }, [setStoredContent, setDirty]);
+  const saveConfig = useCallback(async (kind: 'content' | 'settings', data: SiteContent | SiteSettings) => {
+    if (!configLoaded.current) throw new Error('Storefront configuration unavailable');
+    const response = await fetch(`/api/admin/storefront-config/${kind}`, {method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify({version:configVersions.current[kind],data})});
+    if (response.status === 409) throw new Error('Configuration changed');
+    if (!response.ok) throw new Error('Could not save storefront configuration');
+    const result = await response.json();
+    configVersions.current[kind] = result.version;
+  }, []);
+  const updateContent = useCallback(async (next: SiteContent) => {
+    await saveConfig('content', next);
+    setStoredContent(next);
+    setDirty(false);
+  }, [saveConfig, setStoredContent, setDirty]);
+
+  const resetContent = useCallback(async () => {
+    await updateContent(createDefaultContent());
+  }, [updateContent]);
   const [lastPublishedAt, setLastPublishedAt] = usePersistentState<string | null>(
     "malika.catalogue.publishedAt.v1",
     null
@@ -151,13 +191,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     setProducts(await refreshed.json());
   }, []);
 
-  const updateSettings = useCallback(
-    (next: SiteSettings) => {
-      setSettings(next);
-      setDirty(true);
-    },
-    [setSettings, setDirty]
-  );
+  const updateSettings = useCallback(async (next: SiteSettings) => {
+    await saveConfig('settings', next);
+    setSettings(next);
+    setDirty(false);
+  }, [saveConfig, setSettings, setDirty]);
 
   const markPublished = useCallback(
     (at: string) => {
@@ -199,6 +237,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       content,
       updateContent,
       resetContent,
+      configStatus,
+      reloadConfig,
       toggleWishlist,
       clearWishlist,
       isWished,
@@ -218,6 +258,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       content,
       updateContent,
       resetContent,
+      configStatus,
+      reloadConfig,
       toggleWishlist,
       clearWishlist,
       isWished,

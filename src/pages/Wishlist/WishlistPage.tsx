@@ -92,7 +92,7 @@ export function WishlistPage() {
 
             {savedProducts.length > 0 && (
               <div className="mt-6 flex flex-wrap items-center justify-center gap-2.5">
-                <Button variant="primary" size="md" onClick={handleAddAll} icon={<Bag className="h-4 w-4" />} iconPosition="start">
+                <Button data-analytics="add-to-cart" variant="primary" size="md" onClick={handleAddAll} icon={<Bag className="h-4 w-4" />} iconPosition="start">
                   {x("Add all to bag", "إضافة الكل إلى السلة")}
                 </Button>
                 <Button

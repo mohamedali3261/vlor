@@ -1,0 +1,16 @@
+import assert from 'node:assert/strict';
+import {createRequire} from 'node:module';
+import {build} from 'esbuild';
+const require=createRequire(import.meta.url),React=require('react'),{act,create}=require('react-test-renderer');
+globalThis.IS_REACT_ACT_ENVIRONMENT=true;
+const bundle=await build({entryPoints:['src/pages/Admin/Delivery.tsx'],bundle:true,platform:'node',format:'cjs',packages:'external',jsx:'automatic',write:false,alias:{'@':process.cwd()+'/src'},plugins:[{name:'lang',setup(b){b.onResolve({filter:/^@\/i18n\/LanguageContext$/},()=>({path:'lang',namespace:'mock'}));b.onLoad({filter:/.*/,namespace:'mock'},()=>({contents:'exports.useLang=()=>({lang:"ar"})',loader:'js'}));}}]});
+const module={exports:{}};new Function('require','module','exports',bundle.outputFiles[0].text)(require,module,module.exports);
+let calls=[], confirm=false;
+globalThis.window={confirm:()=>confirm};
+globalThis.fetch=async (url,opts={})=>{calls.push([url,opts.method]);if(opts.method==='DELETE')return {ok:true};if(url.endsWith('/shipping'))return {ok:true,json:async()=>[{city:'Cairo',amount:30,free_threshold:null}]};return {ok:true,json:async()=>[{code:'SAVE',percent:10,max_uses:10,uses:1,expires_at:null,enabled:1}]};};
+let r;await act(async()=>{r=create(React.createElement(module.exports.Delivery))});const root=r.root;
+const rate=()=>root.findByProps({'aria-label':'حذف شحن Cairo'});
+await act(async()=>rate().props.onClick());assert.equal(calls.filter(x=>x[1]==='DELETE').length,0);assert.ok(rate());
+confirm=true;await act(async()=>rate().props.onClick());assert.equal(calls.at(-1)[0],'/api/admin/shipping/Cairo');assert.equal(root.findAllByProps({'aria-label':'حذف شحن Cairo'}).length,0);
+await act(async()=>root.findByProps({'aria-label':'حذف كوبون SAVE'}).props.onClick());assert.equal(calls.at(-1)[0],'/api/admin/coupons/SAVE');assert.equal(root.findAllByProps({'aria-label':'حذف كوبون SAVE'}).length,0);
+await act(async()=>r.unmount());console.log('Shipping and coupon deletion requires confirmation and removes only the selected row.');

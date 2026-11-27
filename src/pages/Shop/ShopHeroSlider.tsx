@@ -142,7 +142,7 @@ export function ShopHeroSlider() {
           {/* arrows */}
           {count > 1 && (
             <>
-              <button
+              <button data-analytics="carousel"
                 type="button"
                 onClick={() => go(active - 1)}
                 disabled={atStart}
@@ -151,7 +151,7 @@ export function ShopHeroSlider() {
               >
                 <ArrowRight className="h-5 w-5 rotate-180 rtl:rotate-0" />
               </button>
-              <button
+              <button data-analytics="carousel"
                 type="button"
                 onClick={() => go(active + 1)}
                 disabled={atEnd}
@@ -168,7 +168,7 @@ export function ShopHeroSlider() {
         {count > 1 && (
           <div className="mt-3 flex flex-wrap items-center justify-center gap-2 lg:mt-4" role="tablist" aria-label={t("shop.slider.region")}>
             {slides.map((product, position) => (
-              <button
+              <button data-analytics="carousel"
                 key={product.id}
                 type="button"
                 role="tab"

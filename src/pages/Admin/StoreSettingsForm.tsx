@@ -20,39 +20,27 @@ export function StoreSettingsForm({
   onSave,
 }: {
   settings: SiteSettings;
-  onSave: (settings: SiteSettings) => void;
+  onSave: (settings: SiteSettings) => Promise<void>;
 }) {
   const { t, lang } = useLang();
   const [draft, setDraft] = useState<SiteSettings>(settings);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     setDraft(settings);
   }, [settings]);
 
-  // Let the Publish button see — and save — edits that are still in this form.
   const changed = JSON.stringify(draft) !== JSON.stringify(settings);
-  const live = useRef({ draft, changed, onSave });
-  live.current = { draft, changed, onSave };
-  useEffect(
-    () =>
-      registerDraft({
-        isDirty: () => live.current.changed,
-        commit: () => {
-          live.current.onSave(live.current.draft);
-          return { settings: live.current.draft };
-        },
-      }),
-    []
-  );
-  useEffect(() => {
-    draftsChanged();
-  }, [changed]);
+  const draftState = useRef(changed);
+  draftState.current = changed;
+  useEffect(() => registerDraft({isDirty: () => draftState.current, commit: () => ({})}), []);
+  useEffect(() => { draftsChanged(); }, [changed]);
 
   const set = <K extends keyof SiteSettings>(key: K, value: SiteSettings[K]) =>
     setDraft((prev) => ({ ...prev, [key]: value }));
 
   return (
-    <div className="max-w-3xl">
+    <fieldset className="max-w-3xl" disabled={saving}>
       <div className="rounded-2xl border border-ink/10 bg-surface/40 p-5">
         <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-mist">{t("admin.contactSection")}</p>
         <p className="mt-1 text-[11px] leading-relaxed text-mist">
@@ -61,10 +49,10 @@ export function StoreSettingsForm({
             : "Every order and contact button on the storefront reads from here. Use WhatsApp numbers in international format without +."}
         </p>
         <div className="mt-4 grid gap-3 sm:grid-cols-2">
-          <Field label="WhatsApp number" hint="e.g. 201276163222">
+          <Field label={lang === "ar" ? "رقم واتساب" : "WhatsApp number"} hint={lang === "ar" ? "مثال: 201276163222" : "e.g. 201276163222"}>
             <input value={draft.whatsapp} onChange={(event) => set("whatsapp", event.target.value)} className="field" dir="ltr" inputMode="tel" />
           </Field>
-          <Field label="Messenger username" hint="facebook.com/yourpage → vlor.perfumes">
+          <Field label={lang === "ar" ? "اسم مستخدم ماسنجر" : "Messenger username"} hint="facebook.com/yourpage → vlor.perfumes">
             <input value={draft.messenger} onChange={(event) => set("messenger", event.target.value)} className="field" dir="ltr" />
           </Field>
           <Field label={lang === "ar" ? "رابط أو اسم إنستجرام" : "Instagram URL or handle"} hint="@vlor.perfumes">
@@ -79,10 +67,10 @@ export function StoreSettingsForm({
           <Field label={lang === "ar" ? "رابط يوتيوب (غير ظاهر ضمن أيقونات السوشيال)" : "YouTube URL (not shown in social icons)"} hint="https://youtube.com/@yourchannel">
             <input value={draft.youtube} onChange={(event) => set("youtube", event.target.value)} className="field" dir="ltr" />
           </Field>
-          <Field label="Display phone">
+          <Field label={lang === "ar" ? "رقم الهاتف الظاهر" : "Display phone"}>
             <input value={draft.phone} onChange={(event) => set("phone", event.target.value)} className="field" dir="ltr" />
           </Field>
-          <Field label="Free shipping threshold (EGP)">
+          <Field label={lang === "ar" ? "حد الشحن المجاني (جنيه)" : "Free shipping threshold (EGP)"}>
             <input type="number" min={0} value={draft.freeShippingThreshold} onChange={(event) => set("freeShippingThreshold", Number(event.target.value))} className="field" dir="ltr" />
           </Field>
         </div>
@@ -91,18 +79,18 @@ export function StoreSettingsForm({
       <div className="mt-4 rounded-2xl border border-ink/10 bg-surface/40 p-5">
         <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-mist">{t("admin.brandSection")}</p>
         <div className="mt-4 grid gap-3 sm:grid-cols-2">
-          <Field label="Address (English)">
+          <Field label={lang === "ar" ? "العنوان بالإنجليزية" : "Address (English)"}>
             <input value={draft.address.en} onChange={(event) => set("address", { ...draft.address, en: event.target.value })} className="field" dir="ltr" />
           </Field>
-          <Field label="العنوان (عربي)">
+          <Field label={lang === "ar" ? "العنوان بالعربية" : "Address (Arabic)"}>
             <input value={draft.address.ar} onChange={(event) => set("address", { ...draft.address, ar: event.target.value })} className="field" dir="rtl" />
           </Field>
         </div>
       </div>
 
-      <Button onClick={() => onSave(draft)} variant="acid" className="mt-5" icon={<Check className="h-4 w-4" />} iconPosition="start">
+      <Button onClick={async () => { if (saving) return; setSaving(true); try { await onSave(draft); } finally { setSaving(false); } }} variant="acid" className="mt-5" icon={<Check className="h-4 w-4" />} iconPosition="start">
         {lang === "ar" ? "حفظ بيانات المتجر" : "Save storefront details"}
       </Button>
-    </div>
+    </fieldset>
   );
 }

@@ -70,13 +70,14 @@ export function BilingualField({
   rows?: number;
   hint?: string;
 }) {
+  const { lang } = useLang();
   const Input = multiline ? "textarea" : "input";
   return (
     <div className="mb-3">
       <span className="mb-1.5 block text-[9px] font-bold uppercase tracking-[0.14em] text-mist">{label}</span>
       <div className="grid gap-2 sm:grid-cols-2">
         <label className="block">
-          <span className="mb-1 block text-[8.5px] font-bold uppercase tracking-[0.1em] text-mist/70">English</span>
+          <span className="mb-1 block text-[8.5px] font-bold uppercase tracking-[0.1em] text-mist/70">{lang === "ar" ? "الإنجليزية" : "English"}</span>
           <Input
             dir="ltr"
             rows={multiline ? rows : undefined}
@@ -86,7 +87,7 @@ export function BilingualField({
           />
         </label>
         <label className="block">
-          <span className="mb-1 block text-[8.5px] font-bold uppercase tracking-[0.1em] text-mist/70">عربي</span>
+          <span className="mb-1 block text-[8.5px] font-bold uppercase tracking-[0.1em] text-mist/70">{lang === "ar" ? "العربية" : "Arabic"}</span>
           <Input
             dir="rtl"
             rows={multiline ? rows : undefined}

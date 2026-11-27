@@ -41,7 +41,9 @@ function normalizePagePath(path: string): string | null {
 
 type AnalyticsEvent =
   | { type: "page_view"; pagePath: string }
-  | { type: "product_click"; pagePath: string; productSlug: string };
+  | { type: "product_click"; pagePath: string; productSlug: string }
+  | { type: "heartbeat"; pagePath: string }
+  | { type: "interaction"; pagePath: string; action: string };
 
 function send(event: AnalyticsEvent): void {
   if (typeof window === "undefined") return;
@@ -70,4 +72,49 @@ export function trackPageView(pagePath: string): void {
 export function trackProductClick(productSlug: string, pagePath: string): void {
   if (!/^[a-z0-9-]{1,100}$/.test(productSlug)) return;
   send({ type: "product_click", pagePath, productSlug });
+}
+
+
+const ACTIONS = new Set(["open-cart", "checkout", "place-order", "copy-order", "add-to-cart", "wishlist", "choose-size", "quantity", "gallery", "menu", "language", "other-button", "social-whatsapp", "filter", "remove-from-cart", "carousel"]);
+
+/** Only fixed action labels or safe storefront destinations are sent, never text or form values. */
+export function interactionAction(element: Element): string | null {
+  const target = element.closest("button, a, [role=button]");
+  if (!target || target.matches(":disabled") || target.getAttribute("aria-disabled") === "true") return null;
+  const explicit = target.getAttribute("data-analytics");
+  if (explicit && ACTIONS.has(explicit)) return explicit;
+  if (target.tagName.toLowerCase() !== "a") return "other-button";
+  const href = target.getAttribute("href") || "";
+  if (href.startsWith("#/")) {
+    const path = normalizePagePath(href.slice(1));
+    if (!path) return null;
+    if (path.startsWith("/product/")) return `product:${path.slice(9)}`;
+    return ({"/":"link-home", "/shop":"link-shop", "/wishlist":"link-wishlist", "/contact":"link-contact", "/track":"link-track"} as Record<string,string>)[path] || "link-other";
+  }
+  try {
+    const url = new URL(href, window.location.href);
+    const host = url.hostname.toLowerCase().replace(/^www\./, "");
+    if (host === "wa.me" || host === "api.whatsapp.com") return "social-whatsapp";
+    if (host === "instagram.com" || host === "m.instagram.com") return "social-instagram";
+    if (host === "facebook.com" || host === "m.facebook.com" || host === "fb.com") return "social-facebook";
+    if (host === "tiktok.com" || host === "m.tiktok.com") return "social-tiktok";
+    if (host === "m.me" || host === "messenger.com") return "social-messenger";
+    return url.origin === window.location.origin ? "link-other" : "social-other";
+  } catch { return null; }
+}
+
+/** Run only on storefront routes; hidden tabs stop heartbeats. */
+export function startAnalyticsTracking(pagePath: string): () => void {
+  if (!normalizePagePath(pagePath)) return () => {};
+  const beat = () => { if (document.visibilityState === "visible") send({ type: "heartbeat", pagePath }); };
+  const click = (event: MouseEvent) => {
+    if (!(event.target instanceof Element)) return;
+    const action = interactionAction(event.target);
+    if (action) send({ type: "interaction", pagePath, action });
+  };
+  beat();
+  const timer = window.setInterval(beat, 60_000);
+  document.addEventListener("visibilitychange", beat);
+  document.addEventListener("click", click, true);
+  return () => { window.clearInterval(timer); document.removeEventListener("visibilitychange", beat); document.removeEventListener("click", click, true); };
 }

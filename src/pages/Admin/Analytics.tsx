@@ -6,6 +6,9 @@ import { useEffect, useMemo, useState, type ReactNode } from "react";
 type AnalyticsPayload = {
   period: { days: number; startDay: string; endDay: string };
   summary: { pageViews: number; visitors: number; productClicks: number };
+  activeVisitors: number;
+  retainedTotals: { visitors: number; pageViews: number };
+  actions: { path: string; action: string; clicks: number; visitors: number }[];
   pages: { path: string; views: number; visitors: number }[];
   products: {
     slug: string;
@@ -16,7 +19,7 @@ type AnalyticsPayload = {
   }[];
 };
 
-const RANGE_DAYS = [7, 30, 90, 365] as const;
+const RANGE_DAYS = [7, 30, 90, 365, 400] as const;
 
 function pageLabel(path: string, ar: boolean): string {
   const labels: Record<string, string> = {
@@ -32,6 +35,29 @@ function pageLabel(path: string, ar: boolean): string {
     return `${ar ? "صفحة منتج" : "Product page"} · ${path.slice("/product/".length)}`;
   }
   return path;
+}
+
+function actionLabel(action: string, ar: boolean, products: AnalyticsPayload["products"]): string {
+  if (action.startsWith("product:")) {
+    const slug = action.slice(8);
+    const product = products.find((item) => item.slug === slug);
+    return `${ar ? "فتح منتج" : "Open product"}: ${product?.name[ar ? "ar" : "en"] || slug}`;
+  }
+  const labels: Record<string, [string, string]> = {
+    "open-cart": ["فتح السلة", "Open cart"], "checkout": ["فتح إتمام الطلب", "Open checkout"],
+    "place-order": ["ضغط إتمام الطلب", "Place-order button"], "copy-order": ["نسخ الطلب", "Copy order"],
+    "add-to-cart": ["إضافة للسلة", "Add to cart"], "wishlist": ["تغيير المفضلة", "Toggle wishlist"],
+    "choose-size": ["اختيار الحجم", "Choose size"], "quantity": ["تغيير الكمية", "Change quantity"],
+    "gallery": ["معرض الصور", "Image gallery"], "menu": ["فتح القائمة", "Open menu"], "language": ["تغيير اللغة", "Change language"],
+    "filter": ["تصفية المنتجات", "Filter products"], "remove-from-cart": ["إزالة من السلة", "Remove from cart"], "carousel": ["تصفح المنتجات المتحركة", "Browse carousel"],
+    "other-button": ["زر آخر", "Other button"], "link-home": ["الرئيسية", "Homepage link"],
+    "link-shop": ["المتجر", "Shop link"], "link-wishlist": ["المفضلة", "Wishlist link"],
+    "link-contact": ["تواصل معنا", "Contact link"], "link-track": ["تتبع الطلب", "Track order link"], "link-other": ["رابط آخر", "Other link"],
+    "social-whatsapp": ["واتساب", "WhatsApp"], "social-instagram": ["إنستجرام", "Instagram"],
+    "social-facebook": ["فيسبوك", "Facebook"], "social-tiktok": ["تيك توك", "TikTok"],
+    "social-messenger": ["ماسنجر", "Messenger"], "social-other": ["رابط خارجي آخر", "Other external link"],
+  };
+  return labels[action]?.[ar ? 0 : 1] || (ar ? "تفاعل آخر" : "Other interaction");
 }
 
 function MetricCard({
@@ -70,7 +96,7 @@ export function Analytics() {
 
   const rangeOptions = RANGE_DAYS.map((value) => ({
     value: String(value),
-    label: ar ? `آخر ${number.format(value)} يوماً` : `Last ${value} days`,
+    label: value === 400 ? (ar ? "كل البيانات المتاحة (٤٠٠ يوم)" : "All available data (400 days)") : ar ? `آخر ${number.format(value)} يوماً` : `Last ${value} days`,
   }));
 
   useEffect(() => {
@@ -91,6 +117,11 @@ export function Analytics() {
       });
     return () => controller.abort();
   }, [days, reload]);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => { if (document.visibilityState === "visible") setReload((value) => value + 1); }, 30_000);
+    return () => window.clearInterval(timer);
+  }, []);
 
   const maxViews = Math.max(0, ...(data?.pages.map((page) => page.views) ?? []));
   const formatDay = (day: string) => {
@@ -141,7 +172,10 @@ export function Analytics() {
         </div>
       ) : data ? (
         <>
-          <div className="grid gap-3 sm:grid-cols-3">
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <MetricCard label={ar ? "الزوار الحاليون" : "Visitors online"} value={number.format(data.activeVisitors)} detail={ar ? "متصفحات نشطة خلال آخر ٥ دقائق — تحديث تلقائي" : "Browsers active in the last 5 minutes — refreshes automatically"} icon={<span className="h-3 w-3 rounded-full bg-emerald-500" />} />
+            <MetricCard label={ar ? "إجمالي الزوار المتاح" : "Total available visitors"} value={number.format(data.retainedTotals.visitors)} detail={ar ? "متصفحات مميزة خلال آخر ٤٠٠ يوم" : "Unique browsers over the last 400 days"} icon={<Sparkles className="h-5 w-5" />} />
+            <MetricCard label={ar ? "إجمالي المشاهدات المتاح" : "Total available views"} value={number.format(data.retainedTotals.pageViews)} detail={ar ? "مشاهدات الصفحات خلال آخر ٤٠٠ يوم" : "Page views over the last 400 days"} icon={<Eye className="h-5 w-5" />} />
             <MetricCard
               label={t("admin.analytics.pageViews")}
               value={number.format(data.summary.pageViews)}
@@ -236,6 +270,20 @@ export function Analytics() {
               )}
             </section>
           </div>
+
+          <section className="overflow-hidden rounded-2xl border border-ink/10 bg-surface" aria-labelledby="analytics-actions-title">
+            <header className="border-b border-ink/10 px-4 py-3.5 sm:px-5">
+              <h3 id="analytics-actions-title" className="text-sm font-bold">{ar ? "الضغطات في كل صفحة" : "Clicks by page"}</h3>
+              <p className="mt-1 text-xs leading-relaxed text-mist">{ar ? "يعرض أكثر ٣٠٠ تفاعل للأزرار والروابط حسب الصفحة. الأزرار غير المصنّفة تظهر كزر آخر؛ الضغط لا يعني بالضرورة نجاح الطلب. تتوفر البيانات الجديدة من وقت تفعيل هذه الميزة." : "Top 300 button and link interactions by page. Unclassified buttons appear as Other button; a click does not mean an order succeeded. New interaction data starts when this feature is enabled."}</p>
+            </header>
+            {data.actions.length === 0 ? <p className="px-5 py-8 text-center text-xs text-mist">{ar ? "لا توجد ضغطات مسجلة خلال هذه الفترة." : "No interactions recorded for this period."}</p> : <div className="max-h-[520px] overflow-auto">
+              <table className="w-full min-w-[520px] text-start text-xs"><thead className="sticky top-0 bg-bone-2 text-[10px] text-mist"><tr>
+                <th scope="col" className="px-4 py-3 text-start">{ar ? "الصفحة" : "Page"}</th><th scope="col" className="px-4 py-3 text-start">{ar ? "العنصر" : "Action"}</th><th scope="col" className="px-4 py-3 text-end">{ar ? "الضغطات" : "Clicks"}</th><th scope="col" className="px-4 py-3 text-end">{ar ? "زوار مميزون" : "Unique visitors"}</th>
+              </tr></thead><tbody className="divide-y divide-ink/5">{data.actions.map((row) => <tr key={`${row.path}:${row.action}`}>
+                <th scope="row" className="px-4 py-3 text-start font-semibold">{pageLabel(row.path, ar)}</th><td className="px-4 py-3">{actionLabel(row.action, ar, data.products)}</td><td className="px-4 py-3 text-end font-bold tabular-nums">{number.format(row.clicks)}</td><td className="px-4 py-3 text-end tabular-nums">{number.format(row.visitors)}</td>
+              </tr>)}</tbody></table>
+            </div>}
+          </section>
 
           <p className="flex items-start gap-2 rounded-xl border border-ink/8 bg-ink/[0.025] px-3.5 py-3 text-[10px] leading-relaxed text-mist">
             <Lock className="mt-0.5 h-3.5 w-3.5 shrink-0" />
