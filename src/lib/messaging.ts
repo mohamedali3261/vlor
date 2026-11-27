@@ -33,7 +33,8 @@ export function socialUrl(value: string | undefined, platform: "facebook" | "ins
   const input = value?.trim();
   if (!input || (/^[a-z][a-z0-9+.-]*:/i.test(input) && !/^https:\/\//i.test(input))) return undefined;
   const host = `${platform}.com`;
-  const urlText = /^https?:\/\//i.test(input) ? input : input.includes("/") || input.includes(".") ? `https://${input}` : `https://${host}/${platform === "tiktok" ? "@" : ""}${input.replace(/^@/, "")}`;
+  const isHandle = (platform === "instagram" || platform === "tiktok") && /^@?[a-z0-9._]+$/i.test(input) && ![host, `www.${host}`, `m.${host}`].includes(input.toLowerCase());
+  const urlText = /^https?:\/\//i.test(input) ? input : isHandle ? `https://${host}/${platform === "tiktok" ? "@" : ""}${input.replace(/^@/, "")}` : input.includes("/") || input.includes(".") ? `https://${input}` : `https://${host}/${platform === "tiktok" ? "@" : ""}${input.replace(/^@/, "")}`;
   try {
     const url = new URL(urlText);
     if (url.protocol !== "https:" || ![host, `www.${host}`, `m.${host}`].includes(url.hostname.toLowerCase()) || url.pathname === "/") return undefined;

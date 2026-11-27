@@ -12,6 +12,7 @@ import { CartProvider, useCart } from "@/context/CartContext";
 import { StoreProvider } from "@/context/StoreContext";
 import { ToastProvider } from "@/context/ToastContext";
 import { LanguageProvider } from "@/i18n/LanguageContext";
+import { protectStorefrontImages } from "@/lib/protectStorefrontImages";
 import { trackPageView } from "@/lib/analytics";
 import { useRoute } from "@/lib/router";
 import { HomePage } from "@/pages/Home";
@@ -55,6 +56,11 @@ function AppShell() {
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "auto" });
     if (path !== "/") setHomeLoaderOpen(false);
+  }, [path]);
+
+  useEffect(() => {
+    if (path === "/studio" || path === "/admin") return;
+    return protectStorefrontImages(document);
   }, [path]);
 
   const renderPage = () => {

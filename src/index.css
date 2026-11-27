@@ -109,3 +109,6 @@ html[data-theme="dark"] .border-rose-200 {
 html[data-theme="dark"] .bg-surface {
   background-color: var(--color-surface) !important;
 }
+
+/* Discourage casual image saving without blocking text selection or studio tools. */
+html.image-guard-active img { -webkit-user-drag: none; user-select: none; -webkit-touch-callout: none; }

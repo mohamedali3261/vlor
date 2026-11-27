@@ -45,3 +45,11 @@
   text-transform: uppercase;
 }
 .hero-eyebrow span { width: 26px; height: 1px; background: currentColor; opacity: .55; }
+
+/* Compact home hero without changing the studio's global spacing or text scale. */
+.home-hero .hero-pad { padding-top: calc(1.2rem * var(--ss)); padding-bottom: calc(1.5rem * var(--ss)); }
+.home-hero .hd-hero { font-size: calc(clamp(2.1rem, 6vw, 4.2rem) * var(--hs)); }
+.home-hero .hero-eyebrow { margin-bottom: .7rem; }
+.home-hero .hero-social { padding: .65rem 1.15rem .8rem; }
+.home-hero .hero-social__heading { margin-bottom: .55rem; }
+@media (min-width: 1024px) { .home-hero .hero-pad { padding-top: calc(2rem * var(--ss)); padding-bottom: calc(2.2rem * var(--ss)); } }
