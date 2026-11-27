@@ -25,7 +25,21 @@ assert.equal(image().props.src,'/main.png');
 assert.equal(root.findAllByType('img').length,4); // main plus all thumbnails
 assert.equal(byLabel('Image 1 · Main').props['aria-pressed'],true);
 await tick(); assert.equal(image().props.src,'/other.png');
-await act(async()=>root.findByType('section').props.onMouseEnter()); assert.equal(timers.size,0);
+const pointer=(x,y,id=1,isPrimary=true,pointerType='touch')=>({pointerType, isPrimary, pointerId:id, clientX:x, clientY:y, currentTarget:{setPointerCapture:()=>{}}});
+const down=async(x,y,id=1)=>act(async()=>stage().props.onPointerDown(pointer(x,y,id)));
+const up=async(x,y,id=1)=>act(async()=>stage().props.onPointerUp(pointer(x,y,id)));
+await act(async()=>root.findByType('section').props.onPointerEnter({pointerType:'touch'})); assert.equal(timers.size,1);
+await down(200,100); assert.equal(timers.size,0); await up(120,103); assert.equal(image().props.src,'/last.png'); assert.equal(timers.size,1);
+await down(120,100); await up(200,103); assert.equal(image().props.src,'/other.png');
+// Vertical scroll, short movements, cancellation and multi-touch must not change the image.
+await down(200,100); await up(190,240); assert.equal(image().props.src,'/other.png');
+await down(200,100); await up(175,100); assert.equal(image().props.src,'/other.png');
+await down(200,100); await act(async()=>stage().props.onPointerCancel(pointer(120,100))); await up(120,100); assert.equal(image().props.src,'/other.png'); assert.equal(timers.size,1);
+await down(200,100); await act(async()=>stage().props.onPointerDown(pointer(100,100,2,false))); await up(100,100); assert.equal(image().props.src,'/other.png'); assert.equal(timers.size,1);
+await act(async()=>byLabel('Image 3').props.onClick()); await down(200,100); await up(120,100); assert.equal(image().props.src,'/main.png');
+await down(120,100); await up(200,100); assert.equal(image().props.src,'/last.png');
+await act(async()=>byLabel('Image 2').props.onClick());
+await act(async()=>root.findByType('section').props.onPointerEnter({pointerType:"mouse"})); assert.equal(timers.size,0);
 await act(async()=>byLabel('Image 3').props.onClick()); assert.equal(image().props.src,'/last.png');
 await act(async()=>byLabel('Previous image').props.onClick()); assert.equal(image().props.src,'/other.png');
 await act(async()=>image().props.onLoad());
@@ -35,7 +49,7 @@ assert.equal(layer.props['data-zoomed'],true); assert.equal(layer.props.style['-
 await act(async()=>stage().props.onPointerLeave()); assert.equal(root.findByProps({className:'product-gallery__zoom-layer'}).props['data-zoomed'],false);
 await act(async()=>stage().props.onPointerMove({pointerType:'touch',clientX:80,clientY:45,currentTarget:{getBoundingClientRect:()=>({left:0,top:0,width:100,height:100})}}));
 assert.equal(root.findByProps({className:'product-gallery__zoom-layer'}).props['data-zoomed'],false);
-await act(async()=>root.findByType('section').props.onMouseLeave()); assert.equal(timers.size,1);
+await act(async()=>root.findByType('section').props.onPointerLeave({pointerType:"mouse"})); assert.equal(timers.size,1);
 await act(async()=>byLabel('Pause automatic image rotation').props.onClick()); assert.equal(timers.size,0);
 await act(async()=>byLabel('Play automatic image rotation').props.onClick()); assert.equal(timers.size,1);
 await act(async()=>{document.hidden=true;visibilityHandler();}); assert.equal(timers.size,0);
@@ -46,5 +60,6 @@ await act(async()=>{media.matches=true;mediaHandler();}); assert.equal(timers.si
 assert.ok(byLabel('Play automatic image rotation'));
 await act(async()=>renderer.update(React.createElement(Gallery,{product:{...product,id:'p2',images:['/new.png']}})));
 assert.equal(image().props.src,'/new.png'); assert.equal(timers.size,0); assert.equal(root.findAllByProps({'aria-label':'Next image'}).length,0);
+await down(200,100); await up(100,100); assert.equal(image().props.src,'/new.png');
 await act(async()=>renderer.unmount()); assert.equal(timers.size,0);assert.equal(visibilityHandler,undefined);assert.equal(mediaHandler,undefined);
-console.log('Gallery rotation, controls, visibility, focus, pointer zoom, reduced motion and cleanup passed.');
+console.log('Gallery swipe, scroll and pinch safety, rotation, zoom, reduced motion and cleanup passed.');
