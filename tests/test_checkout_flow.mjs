@@ -6,16 +6,16 @@ const React = require('react');
 const {act,create} = require('react-test-renderer');
 globalThis.IS_REACT_ACT_ENVIRONMENT = true;
 let lines = [{key:'p:50',productId:'p',ml:50,qty:2,price:100,image:'/p.png',name:{en:'Scent',ar:'عطر'}}];
-let cleared = false, copied = '', posts = [], pendingResponse, quoteFail=false;
+let cleared = false, copied = '', posts = [], pendingResponse, quoteFail=false, cartOpened=false, checkoutClosed=false;
 const local=new Map();globalThis.localStorage={getItem:k=>local.get(k)??null,setItem:(k,v)=>local.set(k,v),removeItem:k=>local.delete(k)};
 const orderId='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', tracking='bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
-globalThis.__checkout = {cart:()=>({lines,count:lines.reduce((s,l)=>s+l.qty,0),clear:()=>{cleared=true;lines=[];},close:()=>{}}),copy:(text)=>{copied=text;return true;}};
+globalThis.__checkout = {cart:()=>({lines,count:lines.reduce((s,l)=>s+l.qty,0),clear:()=>{cleared=true;lines=[];},close:()=>{},open:()=>{cartOpened=true;}}),copy:(text)=>{copied=text;return true;}};
 let timers = new Map(), nextTimer = 0;
 globalThis.window = {addEventListener(){},removeEventListener(){},setTimeout(fn){timers.set(++nextTimer,fn);return nextTimer;},clearTimeout(id){timers.delete(id)}};
 globalThis.sessionStorage = {value:null,getItem(){return this.value},setItem(_k,v){this.value=v},removeItem(){this.value=null}};
 globalThis.fetch = async (url, options) => {
   posts.push({url, body:JSON.parse(options.body), key:options.headers['Idempotency-Key']});
-  if (url === '/api/quote' && quoteFail) return {ok:false,status:503,json:async()=>({error:'unavailable'})};
+  if (url === '/api/quote' && quoteFail) return {ok:false,status:503,json:async()=>({error:quoteFail === 'size' ? 'Size unavailable' : 'unavailable'})};
   if (url === '/api/quote') return {ok:true,json:async()=>({subtotal:240,shipping:30,discount:0,total:270,prices:[{productId:'p',ml:50,price:120}]})};
   if (pendingResponse === 'network') throw Error('network');
   return pendingResponse || {ok:true,status:201,json:async()=>({id:orderId,trackingToken:tracking,total:270})};
@@ -84,6 +84,14 @@ const retryKey=posts.filter(x=>x.url==='/api/orders').at(-1).key;pendingResponse
 await act(async()=>root2.findByType('form').props.onSubmit({preventDefault(){}}));assert.equal(posts.filter(x=>x.url==='/api/orders').at(-1).key,retryKey);
 const guestSuccess=JSON.stringify(renderer.toJSON());assert.ok(guestSuccess.includes('شكرًا على ثقتك واختيارك لينا'));assert.ok(!guestSuccess.includes('Named'));assert.ok(!guestSuccess.includes('Guest Name'));assert.ok(guestSuccess.includes('عند حسن ظنك'));assert.equal(root2.findByType('a').props.href,`#/track/${tracking}`);
 await act(async()=>renderer.unmount());
+// A legacy size rejected by the server gives a way back to edit the cart.
+local.clear();quoteFail='size';lines=[{key:'p:100',productId:'p',ml:100,qty:1,price:100,image:'/p.png',name:{en:'Scent',ar:'عطر'}}];
+await act(async()=>{renderer=create(React.createElement(module.exports.CheckoutSheet,{open:true,onClose:()=>{checkoutClosed=true}}))});
+const rootUnavailable=renderer.root;const city=rootUnavailable.findAllByType('label').find(x=>x.findByType('span').children.join('').includes('cart.city')).findByType('select');
+await act(async()=>city.props.onChange({target:{value:'Cairo'}}));await quote();
+assert.ok(JSON.stringify(renderer.toJSON()).includes('أحد المنتجات أو المقاسات في السلة لم يعد متاحًا'));
+await act(async()=>rootUnavailable.findAllByType('button').find(x=>x.children.includes('العودة للسلة')).props.onClick());
+assert.equal(cartOpened,true);assert.equal(checkoutClosed,true);await act(async()=>renderer.unmount());quoteFail=false;
 // English keeps the same profile greeting and does not claim the order was confirmed.
 local.set('vlor.local-profile.v1',JSON.stringify({details:{name:'',phone:'',additionalPhone:'',city:'',address:''},orders:[],displayName:'Alice',analyticsToken:'cccccccc-cccc-4ccc-8ccc-cccccccccccc'}));
 globalThis.__checkout.lang='en';lines=[{key:'p:50',productId:'p',ml:50,qty:1,price:100,image:'/p.png',name:{en:'Scent',ar:'عطر'}}];
