@@ -26,7 +26,7 @@ const emptyDraft = {
   descAr: "",
   storyEn: "",
   storyAr: "",
-  price: 1,
+  price: 150,
   compareAt: 0,
   category: "woody" as Category,
   gender: "unisex" as Gender,
@@ -50,8 +50,8 @@ const emptyDraft = {
   sillageAr: "حضور ناعم",
   rating: 0,
   reviews: 0,
-  sizes: [{ ml: 50, price: 1 }] as SizeOption[],
-  stocks: [0] as number[],
+  sizes: [{ ml: 30, price: 150 }, { ml: 50, price: 180 }] as SizeOption[],
+  stocks: [0, 0] as number[],
 };
 
 type Draft = typeof emptyDraft;
