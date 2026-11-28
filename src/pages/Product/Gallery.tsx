@@ -102,6 +102,7 @@ export function Gallery({ product, selectedSize }: { product: Product; selectedS
       onPointerEnter={(event) => { if (event.pointerType === "mouse") setHovered(true); }}
       onPointerLeave={(event) => { if (event.pointerType === "mouse") { setHovered(false); setZoomPoint(null); } }}
       onFocus={() => setFocused(true)} onBlur={(event) => { if (!event.currentTarget.contains(event.relatedTarget)) setFocused(false); }}>
+      <div className="product-gallery__layout" data-has-thumbnails={count > 1}>
       <div className="product-gallery__stage" data-swipe={count > 1}
         onPointerDown={startTouch} onPointerUp={endTouch} onPointerCancel={(event) => cancelTouch(event.pointerId)}
         onLostPointerCapture={(event) => cancelTouch(event.pointerId)} onPointerMove={moveZoom}
@@ -120,20 +121,18 @@ export function Gallery({ product, selectedSize }: { product: Product; selectedS
         {count > 1 && <span className="product-gallery__swipe-hint" aria-hidden="true">{x("Swipe to see more", "اسحب لمشاهدة الصور")}</span>}
       </div>
 
-      {stock.id === product.id && stock.state === "error" && <p role="status" className="mt-2 text-xs text-mist">{lang === "ar" ? "تعذر تحميل حالة الصور." : "Could not load image availability."}</p>}
-      {availability.length > 0 && <p className="mt-2 text-xs leading-relaxed text-mist">{lang === "ar" ? "حالة الصور حسب الكميات المسجلة يدويًا؛ مخزون المنتج يُراجع عند الطلب." : "Image availability is manually maintained; product stock is checked at checkout."}</p>}
-      {count > 1 && <>
-        <p className="sr-only" aria-live={playing && !focused && !hovered ? "off" : "polite"}>{`${x("Image", "الصورة")} ${activeIndex + 1} ${x("of", "من")} ${count}`}</p>
-        <div className="product-gallery__toolbar">
-          <span className="product-gallery__label">{x("Explore the details", "استعرض تفاصيل العطر")}</span>
-        </div>
+      {count > 1 && <div className="product-gallery__rail">
         <div className="product-gallery__thumbnails" role="group" aria-label={x("Choose an image", "اختر صورة")}>
           {images.map((image, i) => <button data-analytics="gallery" type="button" key={`${image}-${i}`} onClick={() => select(i)} aria-pressed={activeIndex === i} aria-label={`${x("Image", "الصورة")} ${i + 1}${i === 0 ? ` · ${x("Main", "الأساسية")}` : ""}${unavailable(image) ? ` · ${x("Out of stock", "غير متوفر")} · ${size} ml` : ""}`}>
             <LoadingImage src={image} alt="" fallback={<span aria-hidden="true">—</span>} />
             {unavailable(image) && <span className="product-gallery__thumbnail-status">{lang === "ar" ? "غير متوفر" : "Sold out"}</span>}
           </button>)}
         </div>
-      </>}
+      </div>}
+      </div>
+      {stock.id === product.id && stock.state === "error" && <p role="status" className="mt-2 text-xs text-mist">{lang === "ar" ? "تعذر تحميل حالة الصور." : "Could not load image availability."}</p>}
+      {availability.length > 0 && <p className="mt-2 text-xs leading-relaxed text-mist">{lang === "ar" ? "حالة الصور حسب الكميات المسجلة يدويًا؛ مخزون المنتج يُراجع عند الطلب." : "Image availability is manually maintained; product stock is checked at checkout."}</p>}
+      {count > 1 && <p className="sr-only" aria-live={playing && !focused && !hovered ? "off" : "polite"}>{`${x("Image", "الصورة")} ${activeIndex + 1} ${x("of", "من")} ${count}`}</p>}
     </section>
   );
 }

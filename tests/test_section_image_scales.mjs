@@ -1,0 +1,25 @@
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { createRequire } from 'node:module';
+import { build } from 'esbuild';
+
+const built = await build({ entryPoints: ['tests/storefront_render_fixture.tsx'], loader: { '.css': 'empty' }, bundle: true, platform: 'node', format: 'cjs', packages: 'external', jsx: 'automatic', write: false, alias: { '@': new URL('../src', import.meta.url).pathname } });
+const module = { exports: {} };
+new Function('require', 'module', 'exports', built.outputFiles[0].text)(createRequire(import.meta.url), module, module.exports);
+const { mergeContent, renderStudioSettingsAndImages } = module.exports;
+const keys = ['homeProductImageScale', 'shopHeroProductImageScale', 'shopGridProductImageScale'];
+const legacy = mergeContent({theme:{productImageScale:125}});
+for (const key of keys) assert.equal(legacy.theme[key], 125, `legacy fallback for ${key}`);
+const edited = mergeContent({theme:{productImageScale:125, homeProductImageScale:80, shopHeroProductImageScale:130, shopGridProductImageScale:110}});
+assert.deepEqual(keys.map(k => edited.theme[k]), [80,130,110]);
+assert.deepEqual(keys.map(k => mergeContent(JSON.parse(JSON.stringify(edited))).theme[k]), [80,130,110]);
+const invalid = mergeContent({theme:{productImageScale:120, homeProductImageScale:10, shopHeroProductImageScale:200, shopGridProductImageScale:'oops'}});
+assert.deepEqual(keys.map(k => invalid.theme[k]), [50,150,120]);
+const html = renderStudioSettingsAndImages(125);
+assert.equal((html.match(/type="range"/g) || []).length, 3);
+for (const label of ['صور منتجات الصفحة الرئيسية', 'صور سلايدر أعلى صفحة المنتجات', 'صور كروت قائمة المنتجات']) assert.ok(html.includes(label));
+for (const [file, variable] of [['src/pages/Home/HomePage.tsx','--home-product-image-scale'], ['src/pages/Shop/ShopHeroSlider.tsx','--shop-hero-product-image-scale'], ['src/pages/Shop/ProductGrid.tsx','--shop-grid-product-image-scale']]) assert.ok(readFileSync(file,'utf8').includes(variable));
+const css = readFileSync('src/styles/product-card.css','utf8');
+assert.match(css,/top: calc\(50% - 8px\)/);
+assert.match(css,/\.pc-card:focus-within \.pc-bottle-link \{ top: 18px/);
+console.log('Independent image scales, legacy fallback, clamping, persistence, section scopes and raised cards passed.');

@@ -1,0 +1,14 @@
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+const gallery = readFileSync('src/styles/product-gallery.css', 'utf8');
+const mobile = readFileSync('src/styles/product-page.css', 'utf8');
+const cards = readFileSync('src/styles/product-card.css', 'utf8');
+assert.match(gallery, /data-has-thumbnails="true"\] \{ grid-template-columns: minmax\(0, 1fr\) 64px/);
+assert.match(mobile, /data-has-thumbnails="true"\] \{ grid-template-columns: minmax\(0, 1fr\) 50px/);
+assert.match(gallery, /product-gallery__thumbnails \{[^}]*flex-direction: column;[^}]*overflow-y: auto;[^}]*scrollbar-width: none/);
+assert.match(gallery, /product-gallery__thumbnails::-webkit-scrollbar \{ display: none/);
+assert.match(gallery, /product-gallery__stage \{ --product-image-scale: 1/);
+assert.match(gallery, /product-gallery__image \{[^}]*object-fit: contain/);
+assert.match(cards, /pc-bottle-link \.loading-image \{ grid-template-columns: minmax\(0, 1fr\); grid-template-rows: minmax\(0, 1fr\)/);
+assert.match(cards, /pc-user-image \{[^}]*max-width: 62%;[^}]*height: 62%;[^}]*object-fit: contain/);
+console.log('Gallery vertical thumbnails, scroll, contained image and bounded card image layout passed.');

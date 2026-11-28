@@ -15,9 +15,8 @@
     border-radius: 24px;
   }
   .product-page .product-gallery__zoom-layer { padding: 9%; }
-  .product-page .product-gallery__toolbar { margin-top: .6rem; }
-  .product-page .product-gallery__thumbnails { padding-top: .55rem; }
-  .product-page .product-gallery__thumbnails button { flex-basis: 62px; width: 62px; height: 68px; }
+  .product-page .product-gallery__layout[data-has-thumbnails="true"] { grid-template-columns: minmax(0, 1fr) 50px; gap: .4rem; }
+  .product-page .product-gallery__thumbnails button { flex-basis: 46px; width: 46px; height: 46px; padding: .2rem; border-radius: 11px; }
   .product-page .product-purchase-panel__title {
     font-size: calc(clamp(1.8rem, 7vw, 2.2rem) * var(--hs));
     overflow-wrap: anywhere;
