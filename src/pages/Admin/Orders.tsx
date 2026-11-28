@@ -74,6 +74,8 @@ export function Orders({ canHide = false }: { canHide?: boolean }) {
         if(!r.ok) return;
         const data=await r.json();
         if(stopped) return;
+        // Refresh the visible list as well as the notification count.
+        setRefreshKey(value=>value+1);
         const ids=new Set<string>(data.orders.map((o:Order)=>o.id));
         if(seenNew.current){
           const fresh=[...ids].filter(id=>!seenNew.current!.has(id));
@@ -86,7 +88,7 @@ export function Orders({ canHide = false }: { canHide?: boolean }) {
       }catch{}
     };
     void poll();
-    const timer=window.setInterval(poll,60000);
+    const timer=window.setInterval(poll,15000);
     return ()=>{stopped=true;window.clearInterval(timer);};
   },[ar]);
 
@@ -116,7 +118,7 @@ export function Orders({ canHide = false }: { canHide?: boolean }) {
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h2 className="font-display text-2xl">{ar?'الطلبات':'Orders'}</h2>
-          <p className="mt-1 text-xs text-mist">{ar?'تابع حالة الطلبات وابحث برقم الهاتف — التحديث فوري.' : 'Track and update order status — search by phone or ID.'}</p>
+          <p className="mt-1 text-xs text-mist">{ar?'تابع حالة الطلبات وابحث برقم الهاتف — تُحدّث القائمة كل 15 ثانية.' : 'Track and update orders; the list refreshes every 15 seconds.'}</p>
         </div>
         {typeof Notification !== 'undefined' && Notification.permission !== 'granted' && (
           <button className="rounded-full border border-ink/10 bg-surface px-3 py-1.5 text-xs font-bold hover:border-ink/20" onClick={()=>void Notification.requestPermission()}>{ar?'تفعيل الإشعارات':'Enable notifications'}</button>
