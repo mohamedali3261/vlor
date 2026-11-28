@@ -11,6 +11,8 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 
 interface StoreValue {
   products: Product[];
+  manualProductOrder: boolean;
+  reorderProducts: (ids: string[]) => Promise<void>;
   settings: SiteSettings;
   wishlist: string[];
   saveProduct: (product: Product) => Promise<void>;
@@ -76,9 +78,18 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     } catch { return null; }
   });
   const [products, setProducts] = useState<Product[]>([]);
-  useEffect(() => {
-    fetch('/api/products').then(async r => { if (!r.ok) throw new Error('Catalogue unavailable'); setProducts(await r.json()); }).catch(() => console.error('Catalogue unavailable'));
+  const [manualProductOrder, setManualProductOrder] = useState(false);
+  const orderVersion = useRef<string | null>(null);
+  const reloadProducts = useCallback(async () => {
+    const response = await fetch('/api/products');
+    if (!response.ok) throw new Error('Catalogue unavailable');
+    const next: Product[] = await response.json();
+    const version = response.headers.get('X-Product-Order-Version');
+    orderVersion.current = version;
+    setManualProductOrder(Boolean(version && version !== 'invalid'));
+    setProducts(next);
   }, []);
+  useEffect(() => { void reloadProducts().catch(() => console.error('Catalogue unavailable')); }, [reloadProducts]);
   const [rawSettings, setSettings] = usePersistentState<SiteSettings>(
     `malika.settings.v3${catalogueVersion}`,
     initialSettings()
@@ -172,17 +183,26 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     null
   );
 
-  const reloadProducts = useCallback(async () => {
-    const response = await fetch('/api/products');
-    if (!response.ok) throw new Error('Catalogue unavailable');
-    setProducts(await response.json());
+  const reorderProducts = useCallback(async (ids: string[]) => {
+    if (orderVersion.current === 'invalid') throw new Error('Product order unavailable');
+    const response = await fetch('/api/admin/product-order', {method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({version:orderVersion.current,ids})});
+    if (response.status === 409) throw new Error('Product order changed');
+    if (!response.ok) throw new Error('Could not save product order');
+    const result: {version:string} = await response.json();
+    orderVersion.current = result.version;
+    setManualProductOrder(true);
+    const positions = new Map(ids.map((id, index) => [id, index]));
+    setProducts(previous => [...previous].sort((a,b) => (positions.get(a.id) ?? ids.length) - (positions.get(b.id) ?? ids.length)));
   }, []);
 
   const saveProduct = useCallback(async (product: Product) => {
     const response = await fetch(`/api/admin/products/${encodeURIComponent(product.id)}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(product) });
     if (!response.ok) throw new Error('Could not save product');
-    setProducts(prev => [product, ...prev.filter(item => item.id !== product.id)]);
-  }, []);
+    setProducts(prev => {
+      if (!manualProductOrder) return [product, ...prev.filter(item => item.id !== product.id)];
+      return prev.some(item => item.id === product.id) ? prev.map(item => item.id === product.id ? product : item) : [...prev, product];
+    });
+  }, [manualProductOrder]);
   const deleteProduct = useCallback(async (id: string) => {
     const response = await fetch(`/api/admin/products/${encodeURIComponent(id)}`, {method:'DELETE'});
     if (!response.ok) throw new Error('Could not archive product');
@@ -194,9 +214,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const replaceCatalogue = useCallback(async (next: Product[]) => {
     const response=await fetch('/api/admin/products/import',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({products:next})});
     if (!response.ok) { const result=await response.json(); throw new Error(result.error || 'Import failed'); }
-    const refreshed=await fetch('/api/products'); if (!refreshed.ok) throw new Error('Import saved but refresh failed');
-    setProducts(await refreshed.json());
-  }, []);
+    try { await reloadProducts(); } catch { throw new Error('Import saved but refresh failed'); }
+  }, [reloadProducts]);
 
   const updateSettings = useCallback(async (next: SiteSettings) => {
     await saveConfig('settings', next);
@@ -234,6 +253,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const value = useMemo<StoreValue>(
     () => ({
       products,
+      manualProductOrder,
+      reorderProducts,
       settings,
       wishlist,
       saveProduct,
@@ -256,6 +277,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     }),
     [
       products,
+      manualProductOrder,
+      reorderProducts,
       settings,
       wishlist,
       saveProduct,

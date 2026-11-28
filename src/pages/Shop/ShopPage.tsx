@@ -23,7 +23,7 @@ function searchable(product: Product): string {
 
 export function ShopPage() {
   const { t } = useLang();
-  const { products, wishlist } = useStore();
+  const { products, wishlist, manualProductOrder } = useStore();
   const { c } = useContent();
   const show = c.shopFilters;
   const { query: routeQuery } = useRoute();
@@ -85,10 +85,10 @@ export function ShopPage() {
           return Date.parse(b.createdAt) - Date.parse(a.createdAt);
         case "featured":
         default:
-          return Number(Boolean(b.featured)) - Number(Boolean(a.featured));
+          return manualProductOrder ? 0 : Number(Boolean(b.featured)) - Number(Boolean(a.featured));
       }
     });
-  }, [shopProducts, eGender, eSaved, wishlist, eMax, eQuery, eSort]);
+  }, [shopProducts, eGender, eSaved, wishlist, eMax, eQuery, eSort, manualProductOrder]);
 
   const isFiltered = eQuery !== "" || eGender !== "all" || eSaved || eMax < priceCeiling;
 

@@ -5,6 +5,7 @@ import { resolveAsset } from "@/lib/assets";
 import type { Product } from "@/types";
 import type { ThemeContent } from "@/types/content";
 import { useState } from "react";
+import "@/styles/studio-image-scale.css";
 
 type ScaleKey = "homeProductImageScale" | "shopHeroProductImageScale" | "shopGridProductImageScale";
 
@@ -50,9 +51,9 @@ export function ProductImageScale({ products, theme, onChange }: {
         </div>)}
       </div>
       <div>
-        <p className="mb-2 text-xs font-bold">{ar ? "معاينة حجم الصورة" : "Image size preview"} · {activeLabel}</p>
-        <div className="flex h-56 items-center justify-center overflow-hidden rounded-2xl border border-ink/10 bg-bone-2/50 p-4">
-          {src && failedSrc !== src ? <LoadingImage key={src} src={resolveAsset(src)} alt={product ? l(product.name) : ""} onError={() => setFailedSrc(src)} style={{ transform: `scale(${scaleFor(active) / 100})` }} className="h-full w-full object-contain transition-transform" /> : <p className="text-center text-xs text-mist">{ar ? "لا توجد صورة متاحة لهذا المنتج. يمكنك إضافتها من تبويب المنتجات." : "No image is available for this product. Add one in Products."}</p>}
+        <p className="mb-2 text-xs font-bold">{ar ? "معاينة تقريبية لحجم الصورة" : "Approximate image size preview"} · {activeLabel}</p>
+        <div className="studio-image-scale-preview flex h-56 items-center justify-center overflow-hidden rounded-2xl border border-ink/10 bg-bone-2/50 p-4">
+          {src && failedSrc !== src ? <LoadingImage key={src} src={resolveAsset(src)} alt={product ? l(product.name) : ""} onError={() => setFailedSrc(src)} style={{ transform: `scale(${scaleFor(active) / 100})` }} className="studio-image-scale-preview__image transition-transform" /> : <p className="text-center text-xs text-mist">{ar ? "لا توجد صورة متاحة لهذا المنتج. يمكنك إضافتها من تبويب المنتجات." : "No image is available for this product. Add one in Products."}</p>}
         </div>
       </div>
     </div>

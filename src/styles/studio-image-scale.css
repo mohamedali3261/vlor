@@ -1,0 +1,12 @@
+/* A bounded grid prevents intrinsic image dimensions from expanding the preview.
+   Leave room for the maximum 150% scale so the whole image remains visible. */
+.studio-image-scale-preview .loading-image {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
+}
+.studio-image-scale-preview__image {
+  width: auto;
+  max-width: 60%;
+  height: 60%;
+  object-fit: contain;
+}

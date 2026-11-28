@@ -17,11 +17,12 @@ assert.deepEqual(promoteProductImage(original.images,2), ['extra2','main','extra
 const products = Array.from({length: 14}, (_,i)=>({id:String(i),showOnShop:i !== 12, featured:i === 9, price: i+1, sizes:[{ml:50, price:i+2}]}));
 const slides = shopHeroProducts(products);
 assert.equal(slides.length, 13); assert.equal(slides[0].id, '9'); assert.equal(slides[0].sizes[0].price, 11); assert.ok(slides.some(p=>p.id==='13')); assert.ok(!slides.some(p=>p.id==='12'));
+assert.deepEqual(shopHeroProducts(products, true).map(p=>p.id), products.filter(p=>p.showOnShop!==false).map(p=>p.id));
 const editor = renderImageEditor();
 assert.match(editor,/صورة المنتج الأساسية/); assert.match(editor,/صور إضافية/); assert.match(editor,/multiple=""/); assert.match(editor,/جعل الصورة 2 أساسية/); assert.match(editor,/حذف الصورة 1/); assert.doesNotMatch(editor,/صورة الكارت/);
 const gallery = renderProductPhotos();
 assert.match(gallery,/src="\/api\/images\/first"/); assert.match(gallery,/src="\/api\/images\/second"/); assert.doesNotMatch(gallery,/src="\/api\/images\/legacy"/);
 const slider = readFileSync('src/pages/Shop/ShopHeroSlider.tsx','utf8');
-assert.match(slider,/shopHeroProducts\(products\)/); assert.match(slider,/primaryProductImage\(product\)/); assert.doesNotMatch(slider,/\.slice\(0, max\)/);
+assert.match(slider,/shopHeroProducts\(products, manualProductOrder\)/); assert.match(slider,/primaryProductImage\(product\)/); assert.doesNotMatch(slider,/\.slice\(0, max\)/);
 const form = readFileSync('src/pages/Admin/ProductForm.tsx','utf8'); assert.doesNotMatch(form,/admin\.cutout/); assert.match(form,/disabled=\{uploading \|\| inventoryLoading \|\| inventoryError\}/);
 console.log('Product images, legacy fallback, gallery and automatic shop carousel tests passed.');

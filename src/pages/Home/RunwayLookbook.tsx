@@ -43,20 +43,20 @@ interface RailEntry {
 
 export function RunwayLookbook() {
   const { lang, l, t, x, dir } = useLang();
-  const { products, wishlist, toggleWishlist, isWished } = useStore();
+  const { products, manualProductOrder, wishlist, toggleWishlist, isWished } = useStore();
   const { count: cartCount, add, open: openCart } = useCart();
   const { push } = useToast();
 
   // Each displayed scent has one synchronized runway and rail position.
   const { lookProducts, railItems } = useMemo(() => {
-    const lookProducts = products.filter((product) => product.showOnHome !== false)
-      .sort((a, b) => Number(Boolean(b.featured)) - Number(Boolean(a.featured)));
+    const lookProducts = products.filter((product) => product.showOnHome !== false);
+    if (!manualProductOrder) lookProducts.sort((a, b) => Number(Boolean(b.featured)) - Number(Boolean(a.featured)));
     const railItems = lookProducts.map((product): RailEntry => {
       const size = product.sizes.find((s) => s.ml === 50) ?? product.sizes[0] ?? { ml: 50, price: product.price };
       return { key: product.id, product, ml: size.ml, price: size.price, badge: `${size.ml} ${lang === "ar" ? "مل" : "ml"}` };
     });
     return { lookProducts, railItems };
-  }, [products, lang]);
+  }, [products, lang, manualProductOrder]);
 
   const sectionRef = useRef<HTMLElement>(null);
   const stageRef = useRef<HTMLElement>(null);
