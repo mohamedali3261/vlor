@@ -12,14 +12,15 @@ import { useMemo } from "react";
 export function Featured() {
   const { t } = useLang();
   const { c, lc } = useContent();
-  const { products } = useStore();
+  const { products, manualProductOrder } = useStore();
 
   const edit = useMemo(() => {
     const available = products.filter((product) => product.showOnHome !== false);
+    if (manualProductOrder) return available.slice(0, 6);
     const featured = available.filter((product) => product.featured);
     const rest = available.filter((product) => !product.featured);
     return [...featured, ...rest].slice(0, 6);
-  }, [products]);
+  }, [products, manualProductOrder]);
 
   if (edit.length === 0) return null;
 

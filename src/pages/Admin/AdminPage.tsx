@@ -24,7 +24,7 @@ import { useEffect, useRef, useState } from "react";
 
 export function AdminPage() {
   const { t, lang, l } = useLang();
-  const { products, settings, wishlist, saveProduct, reloadProducts, deleteProduct, resetCatalogue, replaceCatalogue, updateSettings, content, configStatus, reloadConfig } = useStore();
+  const { products, settings, wishlist, saveProduct, reloadProducts, reorderProducts, deleteProduct, resetCatalogue, replaceCatalogue, updateSettings, content, configStatus, reloadConfig } = useStore();
   const { push } = useToast();
   const [tab, setTab] = useState<AdminTab>("products");
   const [formOpen, setFormOpen] = useState(false);
@@ -211,7 +211,7 @@ export function AdminPage() {
               <UnifyProductImages products={products} reloadProducts={reloadProducts} disabled={formOpen} />
               <ImageOptimization disabled={formOpen} />
               <ImageStockEditor products={products} disabled={formOpen} />
-              <ProductTable products={products} onEdit={openEdit} onDelete={handleDelete} />
+              <ProductTable products={products} onEdit={openEdit} onDelete={handleDelete} onReorder={reorderProducts} onReload={reloadProducts} />
             </>
           )}
 

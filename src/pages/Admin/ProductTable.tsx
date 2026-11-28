@@ -11,15 +11,43 @@ export function ProductTable({
   products,
   onEdit,
   onDelete,
+  onReorder,
+  onReload,
 }: {
   products: Product[];
   onEdit: (product: Product) => void;
   onDelete: (product: Product) => void;
+  onReorder: (ids: string[]) => Promise<void>;
+  onReload: () => Promise<void>;
 }) {
   const { t, lang, l } = useLang();
   const [term, setTerm] = useState("");
   const [scope, setScope] = useState<"all" | "home" | "shop">("all");
   const ar = lang === "ar";
+  const [ordering, setOrdering] = useState(false);
+  const [needsRefresh, setNeedsRefresh] = useState(false);
+  const [orderMessage, setOrderMessage] = useState("");
+  const canReorder = scope === "all" && !term.trim() && !ordering && !needsRefresh && products.length <= 1000;
+  const move = async (index: number, delta: number) => {
+    const target = index + delta;
+    if (!canReorder || target < 0 || target >= products.length) return;
+    const ids = products.map(product => product.id);
+    [ids[index], ids[target]] = [ids[target], ids[index]];
+    setOrdering(true); setOrderMessage("");
+    try {
+      await onReorder(ids);
+      setOrderMessage(ar ? "تم حفظ الترتيب للموقع." : "Product order saved for the storefront.");
+    } catch {
+      setNeedsRefresh(true);
+      setOrderMessage(ar ? "تعذر تأكيد الحفظ أو تغيرت المنتجات. حدّث القائمة قبل المحاولة مجددًا." : "Could not confirm the save or the catalogue changed. Refresh before trying again.");
+    } finally { setOrdering(false); }
+  };
+  const refreshOrder = async () => {
+    setOrdering(true);
+    try { await onReload(); setNeedsRefresh(false); setOrderMessage(ar ? "تم تحديث القائمة." : "Catalogue refreshed."); }
+    catch { setOrderMessage(ar ? "تعذر تحديث القائمة. حاول مجددًا." : "Could not refresh the catalogue. Try again."); }
+    finally { setOrdering(false); }
+  };
 
   const scoped = useMemo(
     () => products.filter((product) => {
@@ -77,6 +105,12 @@ export function ProductTable({
         </p>
       </div>
 
+      <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-xl bg-bone-2/40 px-3 py-2 text-xs text-mist">
+        <p>{ar ? "رتّب المنتجات بالسهمين؛ يُحفظ الترتيب للرئيسية والمتجر والاستوديو. اختر «كل المنتجات» وامسح البحث للترتيب." : "Use the arrows to save one order for the homepage, shop and studio. Select All products and clear search to reorder."}</p>
+        {needsRefresh && <button type="button" disabled={ordering} onClick={() => void refreshOrder()} className="font-bold underline disabled:opacity-40">{ar ? "تحديث القائمة" : "Refresh catalogue"}</button>}
+        {products.length > 1000 && <p>{ar ? "الحد الأقصى للترتيب 1000 منتج." : "Ordering supports up to 1000 products."}</p>}
+        {orderMessage && <p role="status" aria-live="polite" className="w-full font-semibold">{orderMessage}</p>}
+      </div>
       {filtered.length === 0 ? (
         <p className="mt-6 rounded-2xl border border-dashed border-ink/15 py-10 text-center text-[12px] text-mist">{t("admin.noProducts")}</p>
       ) : (
@@ -87,7 +121,7 @@ export function ProductTable({
             <span>{t("featured.eyebrow")}</span>
             <span className="text-end">{t("admin.edit")}</span>
           </div>
-          {filtered.map((product) => (
+          {filtered.map((product, index) => (
             <div key={product.id} className="grid grid-cols-[1fr_auto] items-center gap-3 border-b border-ink/8 px-3 py-3 last:border-0 hover:bg-surface/60 md:grid-cols-[2.6fr_0.9fr_0.9fr_0.7fr] md:px-4">
               <div className="flex min-w-0 items-center gap-3">
                 <SmartImage src={primaryProductImage(product) ?? ""} alt={l(product.name)} className="h-12 w-10 shrink-0 rounded-lg" />
@@ -112,10 +146,12 @@ export function ProductTable({
                 {product.bestseller && <span className="rounded-full bg-acid px-1.5 py-0.5 text-[7px] font-bold">{ar ? "الأكثر مبيعًا" : "best"}</span>}
               </div>
               <div className="flex items-center justify-end gap-1.5">
-                <button onClick={() => onEdit(product)} className="grid h-8 w-8 place-items-center rounded-full border border-ink/10 text-ink transition hover:bg-ink hover:text-bone" aria-label={t("admin.edit")}>
+                <button type="button" disabled={!canReorder || index === 0} onClick={() => void move(index, -1)} className="grid h-8 w-8 place-items-center rounded-full border border-ink/10 text-ink disabled:opacity-30" aria-label={`${ar ? "نقل لأعلى" : "Move up"} · ${l(product.name)}`}>↑</button>
+                <button type="button" disabled={!canReorder || index === products.length - 1} onClick={() => void move(index, 1)} className="grid h-8 w-8 place-items-center rounded-full border border-ink/10 text-ink disabled:opacity-30" aria-label={`${ar ? "نقل لأسفل" : "Move down"} · ${l(product.name)}`}>↓</button>
+                <button disabled={ordering} onClick={() => onEdit(product)} className="grid h-8 w-8 place-items-center rounded-full border border-ink/10 text-ink transition hover:bg-ink hover:text-bone" aria-label={t("admin.edit")}>
                   <Pencil className="h-3.5 w-3.5" />
                 </button>
-                <button onClick={() => onDelete(product)} className="grid h-8 w-8 place-items-center rounded-full border border-ink/10 text-mist transition hover:bg-rose-100 hover:text-rose-600" aria-label={t("admin.delete")}>
+                <button disabled={ordering} onClick={() => onDelete(product)} className="grid h-8 w-8 place-items-center rounded-full border border-ink/10 text-mist transition hover:bg-rose-100 hover:text-rose-600" aria-label={t("admin.delete")}>
                   <Trash className="h-3.5 w-3.5" />
                 </button>
               </div>

@@ -29,10 +29,10 @@ export function ShopHeroSlider() {
   const { t, l, dir } = useLang();
   const { c } = useContent();
   const { wordmark } = useBrand();
-  const { products } = useStore();
+  const { products, manualProductOrder } = useStore();
   const rtl = dir === "rtl";
 
-  const slides = useMemo(() => shopHeroProducts(products), [products]);
+  const slides = useMemo(() => shopHeroProducts(products, manualProductOrder), [products, manualProductOrder]);
 
   const [index, setIndex] = useState(0);
   const drag = useRef<{ x: number; y: number } | null>(null);

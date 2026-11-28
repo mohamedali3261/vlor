@@ -224,7 +224,44 @@ app.delete('/api/admin/accounts/:id', async c => {
 });
 app.get('/api/admin/audit', async c => c.json((await c.env.DB.prepare('SELECT id,admin_id,action,target_id,created_at FROM audit_log ORDER BY created_at DESC LIMIT 100').all()).results));
 app.get('/api/categories', async c => c.json((await c.env.DB.prepare('SELECT * FROM categories ORDER BY id').all()).results));
-app.get('/api/products', async c => c.json((await c.env.DB.prepare('SELECT data FROM products WHERE archived=0 ORDER BY updated_at DESC').all<{data:string}>()).results.map(x => JSON.parse(x.data))));
+const productOrderId = z.string().regex(/^[\w-]{1,100}$/);
+const productOrderRecord = z.object({version:z.string().uuid(), ids:z.array(productOrderId).max(1000)}).strict();
+app.get('/api/products', async c => {
+  // Read both in one batch so the order version and catalogue describe the same snapshot.
+  const [rows, meta] = await c.env.DB.batch([
+    c.env.DB.prepare('SELECT id,data FROM products WHERE archived=0 ORDER BY updated_at DESC'),
+    c.env.DB.prepare("SELECT value FROM store_meta WHERE key='product_order_v1'"),
+  ]);
+  const products = rows.results as {id:string,data:string}[];
+  let saved: z.infer<typeof productOrderRecord> | null = null;
+  const raw = (meta.results[0] as {value:string} | undefined)?.value;
+  if (raw) {
+    try { const parsed = productOrderRecord.safeParse(JSON.parse(raw)); if (parsed.success && new Set(parsed.data.ids).size === parsed.data.ids.length) saved = parsed.data; }
+    catch { /* Ignore corrupt ordering without hiding products. */ }
+    if (!saved) c.header('X-Product-Order-Version','invalid');
+  }
+  if (saved) {
+    const positions = new Map(saved.ids.map((id,index) => [id,index]));
+    products.sort((a,b) => (positions.get(a.id) ?? saved!.ids.length) - (positions.get(b.id) ?? saved!.ids.length));
+    c.header('X-Product-Order-Version', saved.version);
+  }
+  return c.json(products.map(row => JSON.parse(row.data)));
+});
+
+// Ordering is a separate versioned record: no product, image, inventory or order is rewritten.
+app.put('/api/admin/product-order', async c => {
+  const input = z.object({version:z.string().uuid().nullable(), ids:z.array(productOrderId).min(1).max(1000)}).strict().safeParse(await jsonBody(c));
+  if (!input.success || new Set(input.data.ids).size !== input.data.ids.length) return c.json({error:'Invalid product order'},400);
+  const ids=JSON.stringify(input.data.ids), version=crypto.randomUUID(), value=JSON.stringify({version,ids:input.data.ids});
+  // The active-ID check and version comparison happen within the same SQL write.
+  const activeMatches = `(SELECT count(*) FROM products WHERE archived=0)=json_array_length(?)
+    AND NOT EXISTS (SELECT 1 FROM products p WHERE p.archived=0 AND NOT EXISTS (SELECT 1 FROM json_each(?) i WHERE i.value=p.id))`;
+  const result = input.data.version === null
+    ? await c.env.DB.prepare(`INSERT OR IGNORE INTO store_meta(key,value) SELECT 'product_order_v1',? WHERE ${activeMatches}`).bind(value,ids,ids).run()
+    : await c.env.DB.prepare(`UPDATE store_meta SET value=? WHERE key='product_order_v1' AND json_valid(value) AND json_extract(value,'$.version')=? AND ${activeMatches}`).bind(value,input.data.version,ids,ids).run();
+  if (!result.meta.changes) return c.json({error:'Product order or catalogue changed. Refresh and try again.'},409);
+  return c.json({ok:true,version});
+});
 app.post('/api/analytics/profile', async c => {
   const input=z.object({token:z.string().uuid(),name:z.string().trim().min(1).max(80)}).strict().safeParse(await jsonBody(c));
   if(!input.success)return c.json({error:'Invalid profile'},400);
