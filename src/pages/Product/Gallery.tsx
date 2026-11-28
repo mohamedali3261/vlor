@@ -1,4 +1,5 @@
 import { productImages } from "@/lib/productImages";
+import { LoadingImage } from "@/components/ui/LoadingImage";
 import { ProductPhoto } from "@/components/product/ProductPhoto";
 import { useLang } from "@/i18n/LanguageContext";
 import type { Product } from "@/types";
@@ -107,7 +108,7 @@ export function Gallery({ product, selectedSize }: { product: Product; selectedS
         onPointerLeave={(event) => { setZoomPoint(null); if (event?.pointerType === "touch") cancelTouch(event.pointerId); }}>
         <div className="product-gallery__halo" aria-hidden="true" />
         <div className="product-gallery__zoom-layer" data-zoomed={Boolean(zoomPoint && loadedSrc === src)} style={zoomStyle}>
-          <ProductPhoto key={src ?? "empty"} src={src} alt={l(product.name)} className="product-gallery__image" onLoad={() => setLoadedSrc(src ?? "")} onError={() => setLoadedSrc("")} fallback={<div className="product-gallery__fallback">
+          <ProductPhoto key={src ?? "empty"} variant="large-v1" priority retry src={src} alt={l(product.name)} className="product-gallery__image" onLoad={() => setLoadedSrc(src ?? "")} onError={() => setLoadedSrc("")} fallback={<div className="product-gallery__fallback">
             <p>{x("Fragrance", "عطر")}</p>
             <h2>{l(product.name)}</h2>
             <p>{l(product.tagline)}</p>
@@ -133,7 +134,7 @@ export function Gallery({ product, selectedSize }: { product: Product; selectedS
         </div>
         <div className="product-gallery__thumbnails" role="group" aria-label={x("Choose an image", "اختر صورة")}>
           {images.map((image, i) => <button data-analytics="gallery" type="button" key={`${image}-${i}`} onClick={() => select(i)} aria-pressed={activeIndex === i} aria-label={`${x("Image", "الصورة")} ${i + 1}${i === 0 ? ` · ${x("Main", "الأساسية")}` : ""}${unavailable(image) ? ` · ${x("Out of stock", "غير متوفر")} · ${size} ml` : ""}`}>
-            <img src={image} alt="" loading="lazy" decoding="async" />
+            <LoadingImage src={image} alt="" fallback={<span aria-hidden="true">—</span>} />
             {unavailable(image) && <span className="product-gallery__thumbnail-status">{lang === "ar" ? "غير متوفر" : "Sold out"}</span>}
           </button>)}
         </div>

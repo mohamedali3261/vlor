@@ -19,7 +19,7 @@ function Bottle({ product, active, near }: { product: Product; active: boolean; 
   return <div aria-hidden="true" className={cn("absolute inset-0 grid place-items-center overflow-hidden px-4 text-center transition-opacity", active ? "opacity-100" : "opacity-0")}>
     <div className="shop-bottle-enter" data-active={active}>
       <div className={cn("shop-bottle-content", active && "shop-bottle")}>
-        <ProductPhoto src={primaryProductImage(product)} alt="" className="h-full w-full object-contain" fallback={<span className="font-display text-2xl font-bold text-ink/70 sm:text-3xl">{l(product.name)}</span>} />
+        <ProductPhoto priority={active} variant="large-v1" src={primaryProductImage(product)} alt="" className="h-full w-full object-contain" fallback={<span className="font-display text-2xl font-bold text-ink/70 sm:text-3xl">{l(product.name)}</span>} />
       </div>
     </div>
   </div>;

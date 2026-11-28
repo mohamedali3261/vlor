@@ -1,3 +1,4 @@
+import { LoadingImage } from "@/components/ui/LoadingImage";
 import { useCallback, useEffect, useState } from "react";
 import { useLang } from "@/i18n/LanguageContext";
 import { ImageError, uploadImageToD1 } from "@/lib/image";
@@ -114,7 +115,7 @@ export function Images() {
           const url = `/api/images/${i.key}`;
           return (
             <div key={i.key} className="rounded-xl border border-ink/10 bg-surface/60 p-2.5">
-              <img src={url} alt="" className="h-32 w-full object-contain" />
+              <div className="h-32"><LoadingImage src={url} alt="" className="h-full w-full object-contain" fallback={<span aria-hidden="true">—</span>} /></div>
               <p className="mt-1.5 text-[11px] break-all text-ink/80" dir="ltr">
                 {i.key}
               </p>

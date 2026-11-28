@@ -540,11 +540,12 @@ const fromBase64 = (b64: string): Uint8Array<ArrayBuffer> => {
 app.get('/api/admin/images', async c => {
   const cursor=c.req.query('cursor') || '';
   if (cursor && !imageKey.test(cursor)) return c.json({error:'Invalid cursor'},400);
-  const rows=(await c.env.DB.prepare('SELECT key,size,created_at AS uploaded FROM images WHERE key>? ORDER BY key LIMIT 101').bind(cursor).all<{key:string,size:number,uploaded:string}>()).results;
+  const rows=(await c.env.DB.prepare(`SELECT key,size,created_at AS uploaded, EXISTS(SELECT 1 FROM image_variants v WHERE v.image_key=images.key AND v.variant='small-v1') AS has_small, EXISTS(SELECT 1 FROM image_variants v WHERE v.image_key=images.key AND v.variant='large-v1') AS has_large FROM images WHERE key>? ORDER BY key LIMIT 101`).bind(cursor).all<{key:string,size:number,uploaded:string}>()).results;
   const more=rows.length>100;
   if (more) rows.pop();
   return c.json({images:rows,cursor:more ? rows[rows.length-1].key : null});
 });
+const detectImageType = (bytes:Uint8Array):string|null => bytes[0]===0xff && bytes[1]===0xd8 && bytes[2]===0xff ? 'image/jpeg' : bytes[0]===0x89 && bytes[1]===0x50 && bytes[2]===0x4e && bytes[3]===0x47 && bytes[4]===0x0d && bytes[5]===0x0a && bytes[6]===0x1a && bytes[7]===0x0a ? 'image/png' : String.fromCharCode(...bytes.slice(0,4))==='RIFF' && String.fromCharCode(...bytes.slice(8,12))==='WEBP' ? 'image/webp' : null;
 const edgeCache = (): Cache | undefined => (typeof caches !== 'undefined' ? (caches as unknown as { default?: Cache }).default : undefined);
 const deleteImage = async (c: Context<Env>) => {
   const key=c.req.param('key') ?? ''; if(!imageKey.test(key)) return c.json({error:'Invalid key'},400);
@@ -589,7 +590,7 @@ const uploadImage = async (c: Context<Env>) => {
   if (files.length!==1 || !(file instanceof File) || file.size<12) return c.json({error:'Invalid image'},400);
   if (file.size>maxImageBytes) return c.json({error:'Image exceeds 1 MB limit'},413);
   const bytes=new Uint8Array(await file.arrayBuffer());
-  const type=bytes[0]===0xff && bytes[1]===0xd8 && bytes[2]===0xff ? 'image/jpeg' : bytes[0]===0x89 && bytes[1]===0x50 && bytes[2]===0x4e && bytes[3]===0x47 && bytes[4]===0x0d && bytes[5]===0x0a && bytes[6]===0x1a && bytes[7]===0x0a ? 'image/png' : String.fromCharCode(...bytes.slice(0,4))==='RIFF' && String.fromCharCode(...bytes.slice(8,12))==='WEBP' ? 'image/webp' : null;
+  const type=detectImageType(bytes);
   if (!type) return c.json({error:'Only JPEG, PNG and WebP are supported'},400);
   const key=crypto.randomUUID();
   await c.env.DB.batch([
@@ -600,27 +601,53 @@ const uploadImage = async (c: Context<Env>) => {
 };
 app.post('/api/admin/images', uploadImage);
 app.post('/api/images', adminGuard, uploadImage);
+// Immutable, owner-generated derivatives are additive; originals and product URLs never change.
+app.put('/api/admin/images/:key/variants/:variant', async c => {
+  const key=c.req.param('key'), variant=c.req.param('variant');
+  if (!imageKey.test(key) || !['small-v1','large-v1'].includes(variant)) return c.json({error:'Invalid image variant'},400);
+  const max=350000;
+  if (Number(c.req.header('Content-Length') || 0)>max) return c.json({error:'Variant too large'},413);
+  const reader=c.req.raw.body?.getReader(); if(!reader)return c.json({error:'Invalid image'},400);
+  const parts:Uint8Array[]=[];let length=0;
+  try { for (;;) {const {done,value}=await reader.read();if(done)break;length+=value.byteLength;if(length>max){await reader.cancel();return c.json({error:'Variant too large'},413);}parts.push(value);} }
+  catch { return c.json({error:'Invalid image'},400); }
+  const bytes=new Uint8Array(length);let offset=0;for(const part of parts){bytes.set(part,offset);offset+=part.length;}
+  const type=length>=12 ? detectImageType(bytes) : null;
+  if(!type)return c.json({error:'Invalid image'},400);
+  const result=await c.env.DB.prepare(`INSERT INTO image_variants(image_key,variant,content_type,data_base64,size)
+    SELECT ?,?,?,?,? WHERE EXISTS (SELECT 1 FROM images WHERE key=? AND size>?) AND NOT EXISTS (SELECT 1 FROM deleted_images WHERE key=?)
+    ON CONFLICT(image_key,variant) DO NOTHING`).bind(key,variant,type,toBase64(bytes),length,key,length,key).run();
+  if(result.meta.changes)return c.json({ok:true},201);
+  const existing=await c.env.DB.prepare('SELECT 1 FROM images WHERE key=? AND NOT EXISTS (SELECT 1 FROM deleted_images WHERE key=?)').bind(key,key).first();
+  return existing ? c.json({ok:true}) : c.json({error:'Image not found'},404);
+});
 app.get('/api/images/:key', async c => {
   const key=c.req.param('key');
   if(!imageKey.test(key)) { c.header('Cache-Control','no-store'); return c.notFound(); }
   // Check tombstones before the edge cache, including images removed in bulk.
   const deleted = await c.env.DB.prepare('SELECT 1 FROM deleted_images WHERE key=?').bind(key).first();
   if (deleted) { c.header('Cache-Control','no-store'); return c.notFound(); }
-  const cacheKey = new Request(new URL(`/api/images/${key}`, c.req.url).toString(), { method: 'GET' });
+  const variant=c.req.query('variant');
+  if(variant && !['small-v1','large-v1'].includes(variant)) { c.header('Cache-Control','no-store');return c.json({error:'Invalid image variant'},400); }
+  const cacheUrl = new URL(`/api/images/${key}`, c.req.url);
+  if(variant)cacheUrl.searchParams.set('variant',variant);
+  const cacheKey = new Request(cacheUrl.toString(), { method: 'GET' });
   const cache = edgeCache();
   const cached = await cache?.match(cacheKey);
   if (cached) return cached;
-  const image=await c.env.DB.prepare('SELECT content_type,data_base64 FROM images WHERE key=?').bind(key).first<{content_type:string,data_base64:string}>();
-  if(!image) { c.header('Cache-Control','no-store'); return c.notFound(); }
-  const bytes=fromBase64(image.data_base64);
+  const image=variant ? await c.env.DB.prepare('SELECT content_type,data_base64 FROM image_variants WHERE image_key=? AND variant=?').bind(key,variant).first<{content_type:string,data_base64:string}>() : null;
+  const chosen=image ?? await c.env.DB.prepare('SELECT content_type,data_base64 FROM images WHERE key=?').bind(key).first<{content_type:string,data_base64:string}>();
+  if(!chosen) { c.header('Cache-Control','no-store'); return c.notFound(); }
+  // Never cache a missing derivative: it may be generated later.
+  const bytes=fromBase64(chosen.data_base64);
   const res = new Response(bytes, {
     headers: {
-      'Content-Type': image.content_type,
+      'Content-Type': chosen.content_type,
       'X-Content-Type-Options': 'nosniff',
-      'Cache-Control': 'public, max-age=31536000, immutable',
+      'Cache-Control': variant && !image ? 'no-store' : 'public, max-age=31536000, immutable',
     },
   });
-  if (cache) await cache.put(cacheKey, res.clone());
+  if (cache && (!variant || image)) await cache.put(cacheKey, res.clone());
   return res;
 });
 app.all('/api/*', c => c.json({error:'Not found'},404));
