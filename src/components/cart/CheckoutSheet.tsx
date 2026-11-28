@@ -32,6 +32,7 @@ export function CheckoutSheet({ open, onClose }: CheckoutSheetProps) {
   const [remember, setRemember] = useState(() => !!loadProfile());
   const [errors, setErrors] = useState<{ name?: boolean; phone?: boolean; additionalPhone?: boolean; city?: boolean; address?: boolean }>({});
   const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState("");
   const submittingRef = useRef(false);
   const pendingRef = useRef<{digest:string; key:string} | null>(null);
   const [quote, setQuote] = useState<Quote | null>(null);
@@ -45,7 +46,7 @@ export function CheckoutSheet({ open, onClose }: CheckoutSheetProps) {
 
   useEffect(() => {
     if (!open) return;
-    setStep("details"); setConfirmation(null); setQuote(null); setErrors({}); setQuoteState("idle");
+    setStep("details"); setConfirmation(null); setQuote(null); setErrors({}); setSubmitError(""); setQuoteState("idle");
   }, [open]);
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => { if (event.key === "Escape" && !submittingRef.current) onClose(); };
@@ -57,19 +58,23 @@ export function CheckoutSheet({ open, onClose }: CheckoutSheetProps) {
   useEffect(() => {
     if (!open || step !== "details" || !customer.city || !lines.length) { setQuoteState("idle"); return; }
     const controller = new AbortController();
+    let requestTimeout: ReturnType<typeof setTimeout> | undefined;
+    let timedOut = false;
     setQuoteState("loading");
     const timer = window.setTimeout(async () => {
+      requestTimeout = setTimeout(() => { timedOut = true; controller.abort(); }, 15000);
       try {
         const response = await fetch("/api/quote", { method: "POST", headers: { "Content-Type": "application/json" }, body: quoteSignature, signal: controller.signal });
         if (!response.ok) throw new Error("quote unavailable");
         const result = await response.json();
         if (!controller.signal.aborted) { setQuote({ ...result, signature: quoteSignature }); setQuoteState("ready"); }
-      } catch { if (!controller.signal.aborted) { setQuote(null); setQuoteState("error"); } }
+      } catch { if (timedOut || !controller.signal.aborted) { setQuote(null); setQuoteState("error"); } }
+      finally { if (requestTimeout !== undefined) clearTimeout(requestTimeout); }
     }, 350);
-    return () => { window.clearTimeout(timer); controller.abort(); };
+    return () => { window.clearTimeout(timer); if (requestTimeout !== undefined) clearTimeout(requestTimeout); controller.abort(); };
   }, [open, step, quoteSignature, quoteAttempt, customer.city, lines.length]);
 
-  const set = (key: keyof OrderCustomer, value: string) => setCustomer((previous) => ({ ...previous, [key]: value }));
+  const set = (key: keyof OrderCustomer, value: string) => { setSubmitError(""); setCustomer((previous) => ({ ...previous, [key]: value })); };
   const validPhone = (phone: string) => /^[+\d\s()-]{8,30}$/.test(phone.trim()) && phone.replace(/\D/g, "").length >= 8;
   const validate = () => {
     const next = { name: customer.name.trim().length < 2, phone: !validPhone(customer.phone), additionalPhone: Boolean(customer.additionalPhone?.trim()) && !validPhone(customer.additionalPhone ?? ""), city: !customer.city, address: customer.address.trim().length < 6 };
@@ -96,7 +101,13 @@ export function CheckoutSheet({ open, onClose }: CheckoutSheetProps) {
   };
   const submitOrder = async (event: FormEvent) => {
     event.preventDefault();
-    if (submittingRef.current || !validate() || !activeQuote || quoteState !== "ready" || !lines.length) return;
+    if (submittingRef.current) return;
+    setSubmitError("");
+    if (!validate()) { setSubmitError(ar ? "راجع بيانات التوصيل المطلوبة وأرقام الموبيل قبل إتمام الطلب." : "Check the required delivery details and phone numbers before placing the order."); return; }
+    if (!activeQuote || quoteState !== "ready" || !lines.length) {
+      setSubmitError(ar ? "تعذر حساب الإجمالي. تحقق من المحافظة والاتصال، ثم أعد المحاولة." : "Could not calculate the total. Check the governorate and connection, then retry.");
+      return;
+    }
     submittingRef.current = true; setSubmitting(true);
     try {
       const body = JSON.stringify({ customer, expectedShipping: activeQuote.shipping, expectedDiscount: activeQuote.discount, items: lines.map(({ productId, ml, qty }) => ({ productId, ml, qty, expectedPrice: activeQuote.prices.find((p) => p.productId === productId && p.ml === ml)!.price })) });
@@ -107,14 +118,29 @@ export function CheckoutSheet({ open, onClose }: CheckoutSheetProps) {
         pending = { digest, key: crypto.randomUUID() }; pendingRef.current = pending;
         try { sessionStorage.setItem("malika.pendingOrder", JSON.stringify(pending)); } catch { /* retain key in memory */ }
       }
-      const response = await fetch("/api/orders", { method: "POST", headers: { "Content-Type": "application/json", "Idempotency-Key": pending.key }, body });
-      const result = await response.json();
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 20000);
+      let response: Response;
+      let result: {id?:string; trackingToken?:string; total?:number; error?:string; code?:string};
+      try {
+        response = await fetch("/api/orders", { method: "POST", headers: { "Content-Type": "application/json", "Idempotency-Key": pending.key }, body, signal: controller.signal });
+        result = await response.json();
+      } finally { clearTimeout(timeout); }
       if (response.status === 409) {
         setQuote(null); setQuoteState("loading"); setQuoteAttempt((value) => value + 1);
-        push(ar ? "تغير السعر أو الشحن أو المخزون. راجع الإجمالي المحدث قبل إعادة الطلب." : "Price, shipping or stock changed. Review the updated total before retrying.", "error");
+        const text = result.error === 'Idempotency key reused'
+          ? (ar ? "تعذر إتمام الطلب بسبب تعارض في المحاولة السابقة. راجع طلباتك قبل إعادة المحاولة." : "The previous attempt conflicts with this order. Check your orders before retrying.")
+          : result.code === 'OUT_OF_STOCK'
+          ? (ar ? "الكمية المطلوبة غير متوفرة. قلّل الكمية أو احذف المنتج من السلة ثم حاول مجددًا." : "The requested quantity is unavailable. Reduce the quantity or remove the item from the cart, then try again.")
+          : (ar ? "تغير السعر أو الشحن أو المخزون. راجع الإجمالي المحدث قبل إعادة الطلب." : "Price, shipping or stock changed. Review the updated total before retrying.");
+        setSubmitError(text); push(text, "error");
         return;
       }
-      if (!response.ok) throw new Error("Order failed");
+      if (response.status === 400) {
+        const text=ar ? "لم يُسجل الطلب. راجع بيانات التوصيل والموبايل والمنتجات في السلة ثم حاول مجددًا." : "The order was not placed. Check your delivery details, phone numbers and cart, then retry.";
+        setSubmitError(text); push(text, "error"); return;
+      }
+      if (!response.ok || !result.id || !result.trackingToken || typeof result.total !== "number" || !Number.isFinite(result.total)) throw new Error("Order response unavailable");
       if (remember) {
         const details: ProfileDetails = { name: customer.name.trim(), phone: customer.phone.trim(), additionalPhone: (customer.additionalPhone ?? "").trim(), city: customer.city, address: customer.address.trim() };
         const prior = loadProfile();
@@ -127,7 +153,10 @@ export function CheckoutSheet({ open, onClose }: CheckoutSheetProps) {
       setStep("sent"); closeCart(); clear();
       pendingRef.current = null; try { sessionStorage.removeItem("malika.pendingOrder"); } catch { /* no action needed */ }
       push(ar ? "تم تسجيل طلبك بنجاح." : "Your order was placed successfully.");
-    } catch { push(ar ? "تعذر حفظ الطلب، حاول مجدداً." : "Could not save the order. Please try again.", "error"); }
+    } catch {
+      const text=ar ? "تعذر التأكد من إرسال الطلب. تحقق من الاتصال واضغط إتمام الطلب مجددًا دون تغيير البيانات." : "Could not confirm that your order was sent. Check your connection and retry without changing the details.";
+      setSubmitError(text); push(text, "error");
+    }
     finally { submittingRef.current = false; setSubmitting(false); }
   };
   const close = () => { if (!submittingRef.current) onClose(); };
@@ -152,14 +181,14 @@ export function CheckoutSheet({ open, onClose }: CheckoutSheetProps) {
           <fieldset disabled={submitting} className="checkout-section checkout-details mt-4 space-y-3 disabled:opacity-70">
             <legend className="sr-only">{ar ? "بيانات التوصيل" : "Delivery details"}</legend>
             <h3 className="checkout-heading">{ar ? "بيانات التوصيل" : "Delivery details"}</h3>
-            <label className="checkout-field"><span>{t("cart.fullName")} *</span><input value={customer.name} onChange={(e) => set("name", e.target.value)} className={cn("field", errors.name && "border-rose-400 bg-rose-50")} autoComplete="name" aria-invalid={!!errors.name} /></label>
+            <label className="checkout-field"><span>{t("cart.fullName")} *</span><input value={customer.name} onChange={(e) => set("name", e.target.value)} className={cn("field", errors.name && "border-rose-400 bg-rose-50")} autoComplete="name" maxLength={120} aria-invalid={!!errors.name} /></label>
             <div className="grid gap-3 sm:grid-cols-2">
-              <label className="checkout-field"><span>{ar ? "رقم الموبيل" : "Mobile number"} *</span><input type="tel" value={customer.phone} onChange={(e) => set("phone", e.target.value)} className={cn("field", errors.phone && "border-rose-400 bg-rose-50")} inputMode="tel" dir="ltr" autoComplete="tel" aria-invalid={!!errors.phone} /></label>
-              <label className="checkout-field"><span>{ar ? "رقم إضافي (اختياري)" : "Additional number (optional)"}</span><input type="tel" value={customer.additionalPhone ?? ""} onChange={(e) => set("additionalPhone", e.target.value)} className={cn("field", errors.additionalPhone && "border-rose-400 bg-rose-50")} inputMode="tel" dir="ltr" aria-invalid={!!errors.additionalPhone} /></label>
+              <label className="checkout-field"><span>{ar ? "رقم الموبيل" : "Mobile number"} *</span><input type="tel" value={customer.phone} onChange={(e) => set("phone", e.target.value)} className={cn("field", errors.phone && "border-rose-400 bg-rose-50")} inputMode="tel" dir="ltr" maxLength={30} autoComplete="tel" aria-invalid={!!errors.phone} /></label>
+              <label className="checkout-field"><span>{ar ? "رقم إضافي (اختياري)" : "Additional number (optional)"}</span><input type="tel" value={customer.additionalPhone ?? ""} onChange={(e) => set("additionalPhone", e.target.value)} className={cn("field", errors.additionalPhone && "border-rose-400 bg-rose-50")} inputMode="tel" dir="ltr" maxLength={30} aria-invalid={!!errors.additionalPhone} /></label>
             </div>
             <label className="checkout-field"><span>{t("cart.city")} *</span><select value={customer.city} onChange={(e) => set("city", e.target.value)} className={cn("field", errors.city && "border-rose-400 bg-rose-50")} aria-invalid={!!errors.city}><option value="">{t("cart.cityPh")}</option>{governorates.map((governorate) => <option key={governorate.en} value={governorate.en}>{l(governorate)}</option>)}</select></label>
-            <label className="checkout-field"><span>{t("cart.address")} *</span><textarea value={customer.address} onChange={(e) => set("address", e.target.value)} rows={2} className={cn("field resize-y", errors.address && "border-rose-400 bg-rose-50")} placeholder={t("cart.addressPh")} autoComplete="street-address" aria-invalid={!!errors.address} /></label>
-            <label className="checkout-field"><span>{t("cart.noteField")}</span><input value={customer.note} onChange={(e) => set("note", e.target.value)} className="field" placeholder={t("cart.notePh")} /></label>
+            <label className="checkout-field"><span>{t("cart.address")} *</span><textarea value={customer.address} onChange={(e) => set("address", e.target.value)} rows={2} className={cn("field resize-y", errors.address && "border-rose-400 bg-rose-50")} placeholder={t("cart.addressPh")} autoComplete="street-address" maxLength={500} aria-invalid={!!errors.address} /></label>
+            <label className="checkout-field"><span>{t("cart.noteField")}</span><input value={customer.note} onChange={(e) => set("note", e.target.value)} className="field" maxLength={1000} placeholder={t("cart.notePh")} /></label>
             <button type="button" onClick={saveDeliveryDetails} className="rounded-full border border-ink/20 px-4 py-2 text-xs font-bold">{ar ? "حفظ بيانات التوصيل" : "Save delivery details"}</button>
             <label className="flex items-start gap-2 rounded-xl border border-ink/10 bg-bone/60 p-3 text-xs leading-relaxed"><input type="checkbox" className="mt-0.5" checked={remember} onChange={e=>setRemember(e.target.checked)} /><span>{ar ? "احفظ بياناتي ورابط الطلب في بروفيل على هذا المتصفح فقط. لا تستخدمه على جهاز مشترك." : "Save my details and tracking link in a profile on this browser only. Avoid this on shared devices."}</span></label>
           </fieldset>
@@ -171,11 +200,12 @@ export function CheckoutSheet({ open, onClose }: CheckoutSheetProps) {
               {activeQuote && <div className="checkout-total"><span>{ar ? "الإجمالي" : "Total"}</span><b>{formatPrice(activeQuote.total, lang)}</b></div>}
             </div>
             {quoteState === "loading" && <p role="status" className="mt-2 text-xs text-mist">{ar ? "جاري حساب الشحن والإجمالي…" : "Calculating shipping and total…"}</p>}
-            {quoteState === "error" && <p role="alert" className="mt-2 text-xs text-rose-700">{ar ? "تعذر حساب الشحن والإجمالي. راجع المحافظة وحاول مجددًا." : "Could not calculate the total. Check the governorate and try again."}</p>}
+            {quoteState === "error" && <div role="alert" className="mt-2 text-xs text-rose-700"><p>{ar ? "تعذر حساب الشحن والإجمالي. راجع المحافظة وحاول مجددًا." : "Could not calculate the total. Check the governorate and try again."}</p><button type="button" onClick={()=>setQuoteAttempt(value=>value+1)} className="mt-2 font-bold underline">{ar ? "إعادة حساب الإجمالي" : "Retry total"}</button></div>}
             <p className="checkout-payment"><Check className="h-4 w-4 shrink-0" /> {ar ? "الدفع عند الاستلام" : "Cash on delivery"}</p>
           </section>
           <div className="checkout-actions sticky bottom-0 -mx-4 mt-4 grid gap-2 border-t border-ink/10 bg-bone/95 px-4 pb-3 pt-3 backdrop-blur sm:-mx-5 sm:px-5">
-            <Button data-analytics="place-order" type="submit" disabled={submitting || !activeQuote || quoteState !== "ready" || !lines.length} variant="acid" full size="lg">{submitting ? (ar ? "جاري إتمام الطلب…" : "Placing order…") : (ar ? "إتمام الطلب" : "Place order")}</Button>
+            {submitError && <p role="alert" className="rounded-xl bg-rose-50 p-3 text-xs font-bold leading-relaxed text-rose-800">{submitError}</p>}
+            <Button data-analytics="place-order" type="submit" disabled={submitting || quoteState === "loading" || !lines.length} variant="acid" full size="lg">{submitting ? (ar ? "جاري إتمام الطلب…" : "Placing order…") : (ar ? "إتمام الطلب" : "Place order")}</Button>
             <Button data-analytics="copy-order" type="button" variant="ghost" size="sm" disabled={submitting || !lines.length} onClick={copyOrder} icon={<Copy className="h-4 w-4" />} iconPosition="start">{ar ? "نسخ الطلب" : "Copy order"}</Button>
           </div>
         </form> : <div className="flex flex-1 flex-col items-center justify-center overflow-y-auto px-6 py-10 text-center">
