@@ -39,7 +39,7 @@ export function PurchasePanel({ product, ml, onSizeChange }: { product: Product;
   };
 
   return (
-    <div className="space-y-4">
+    <div className="product-purchase-panel min-w-0 space-y-4">
       <nav className="hidden items-center gap-1.5 text-[9px] font-bold uppercase tracking-[0.16em] text-mist lg:flex" aria-label="Breadcrumb">
         <Link to="/" className="transition hover:text-ink">{t("nav.home")}</Link>
         <span>/</span>
@@ -55,7 +55,7 @@ export function PurchasePanel({ product, ml, onSizeChange }: { product: Product;
       </div>
 
       <div>
-        <h1 className="hd-page font-display leading-[0.98] tracking-tight">
+        <h1 className="product-purchase-panel__title hd-page font-display leading-[0.98] tracking-tight">
           {l(product.name)}
         </h1>
         <p className="mt-1.5 text-[13px] leading-snug text-mist">{l(product.tagline)}</p>
@@ -76,11 +76,12 @@ export function PurchasePanel({ product, ml, onSizeChange }: { product: Product;
 
       <div>
         <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-mist">{t("product.size")}</p>
-        <div className="mt-2 grid grid-cols-3 gap-2">
+        <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
           {product.sizes.map((size) => (
             <button
               key={size.ml}
               data-analytics="choose-size"
+              aria-pressed={ml === size.ml}
               onClick={() => onSizeChange(size.ml)}
               className={cn(
                 "relative flex flex-col items-start gap-0.5 rounded-xl border px-3 py-2.5 text-start transition",
@@ -99,8 +100,8 @@ export function PurchasePanel({ product, ml, onSizeChange }: { product: Product;
         </div>
       </div>
 
-      <div className="flex items-center gap-2.5 pt-1">
-        <div className="flex h-11 items-center rounded-full border border-ink/12 bg-surface">
+      <div className="product-purchase-actions flex items-center gap-2.5 pt-1">
+        <div className="product-purchase-actions__quantity flex h-11 items-center rounded-full border border-ink/12 bg-surface">
           <button data-analytics="quantity" onClick={() => setQty(Math.max(1, qty - 1))} className="grid h-9 w-9 place-items-center rounded-full hover:bg-ink/5" aria-label="decrease">
             <Minus className="h-3.5 w-3.5" />
           </button>
@@ -109,7 +110,7 @@ export function PurchasePanel({ product, ml, onSizeChange }: { product: Product;
             <Plus className="h-3.5 w-3.5" />
           </button>
         </div>
-        <Button data-analytics="add-to-cart" variant="primary" size="lg" className="flex-1" onClick={handleAdd}>
+        <Button data-analytics="add-to-cart" variant="primary" size="lg" className="product-purchase-actions__add flex-1" onClick={handleAdd}>
           {t("product.addToBag")}
         </Button>
         <button
@@ -117,7 +118,7 @@ export function PurchasePanel({ product, ml, onSizeChange }: { product: Product;
           onClick={handleSave}
           aria-label={wished ? t("product.removeWishlist") : t("product.wishlist")}
           className={cn(
-            "grid h-11 w-11 place-items-center rounded-full border transition",
+            "product-purchase-actions__wishlist grid h-11 w-11 place-items-center rounded-full border transition",
             wished ? "border-ink bg-ink text-acid" : "border-ink/12 bg-surface text-ink hover:border-ink/30"
           )}
         >

@@ -24,6 +24,7 @@ const tick=async()=>{const entries=[...timers]; assert.equal(entries.length,1);t
 assert.equal(image().props.src,'/main.png');
 assert.equal(root.findAllByType('img').length,4); // main plus all thumbnails
 assert.equal(byLabel('Image 1 · Main').props['aria-pressed'],true);
+for(const label of ['Previous image','Next image','Pause automatic image rotation','Play automatic image rotation']) assert.equal(root.findAllByProps({'aria-label':label}).length,0);
 await tick(); assert.equal(image().props.src,'/other.png');
 const pointer=(x,y,id=1,isPrimary=true,pointerType='touch')=>({pointerType, isPrimary, pointerId:id, clientX:x, clientY:y, currentTarget:{setPointerCapture:()=>{}}});
 const down=async(x,y,id=1)=>act(async()=>stage().props.onPointerDown(pointer(x,y,id)));
@@ -41,7 +42,7 @@ await down(120,100); await up(200,100); assert.equal(image().props.src,'/last.pn
 await act(async()=>byLabel('Image 2').props.onClick());
 await act(async()=>root.findByType('section').props.onPointerEnter({pointerType:"mouse"})); assert.equal(timers.size,0);
 await act(async()=>byLabel('Image 3').props.onClick()); assert.equal(image().props.src,'/last.png');
-await act(async()=>byLabel('Previous image').props.onClick()); assert.equal(image().props.src,'/other.png');
+await act(async()=>byLabel('Image 2').props.onClick()); assert.equal(image().props.src,'/other.png');
 await act(async()=>image().props.onLoad());
 await act(async()=>stage().props.onPointerMove({pointerType:'mouse',clientX:80,clientY:45,currentTarget:{getBoundingClientRect:()=>({left:0,top:5,width:100,height:100})}}));
 let layer=root.findByProps({className:'product-gallery__zoom-layer'});
@@ -50,14 +51,12 @@ await act(async()=>stage().props.onPointerLeave()); assert.equal(root.findByProp
 await act(async()=>stage().props.onPointerMove({pointerType:'touch',clientX:80,clientY:45,currentTarget:{getBoundingClientRect:()=>({left:0,top:0,width:100,height:100})}}));
 assert.equal(root.findByProps({className:'product-gallery__zoom-layer'}).props['data-zoomed'],false);
 await act(async()=>root.findByType('section').props.onPointerLeave({pointerType:"mouse"})); assert.equal(timers.size,1);
-await act(async()=>byLabel('Pause automatic image rotation').props.onClick()); assert.equal(timers.size,0);
-await act(async()=>byLabel('Play automatic image rotation').props.onClick()); assert.equal(timers.size,1);
 await act(async()=>{document.hidden=true;visibilityHandler();}); assert.equal(timers.size,0);
 await act(async()=>{document.hidden=false;visibilityHandler();}); assert.equal(timers.size,1);
 await act(async()=>root.findByType('section').props.onFocus()); assert.equal(timers.size,0);
 await act(async()=>root.findByType('section').props.onBlur({currentTarget:{contains:()=>false},relatedTarget:null})); assert.equal(timers.size,1);
 await act(async()=>{media.matches=true;mediaHandler();}); assert.equal(timers.size,0);
-assert.ok(byLabel('Play automatic image rotation'));
+assert.equal(root.findAllByProps({'aria-label':'Play automatic image rotation'}).length,0);
 await act(async()=>renderer.update(React.createElement(Gallery,{product:{...product,id:'p2',images:['/new.png']}})));
 assert.equal(image().props.src,'/new.png'); assert.equal(timers.size,0); assert.equal(root.findAllByProps({'aria-label':'Next image'}).length,0);
 await down(200,100); await up(100,100); assert.equal(image().props.src,'/new.png');

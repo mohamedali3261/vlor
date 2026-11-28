@@ -126,11 +126,6 @@ export function Gallery({ product, selectedSize }: { product: Product; selectedS
         <p className="sr-only" aria-live={playing && !focused && !hovered ? "off" : "polite"}>{`${x("Image", "الصورة")} ${activeIndex + 1} ${x("of", "من")} ${count}`}</p>
         <div className="product-gallery__toolbar">
           <span className="product-gallery__label">{x("Explore the details", "استعرض تفاصيل العطر")}</span>
-          <div className="product-gallery__controls">
-            <button data-analytics="gallery" type="button" onClick={() => select(activeIndex - 1)} aria-label={x("Previous image", "الصورة السابقة")}>{lang === "ar" ? "→" : "←"}</button>
-            <button data-analytics="gallery" type="button" onClick={() => select(activeIndex + 1)} aria-label={x("Next image", "الصورة التالية")}>{lang === "ar" ? "←" : "→"}</button>
-            <button data-analytics="gallery" type="button" onClick={() => setPlaying((value) => !value)} aria-label={playing ? x("Pause automatic image rotation", "إيقاف تغيير الصور تلقائياً") : x("Play automatic image rotation", "تشغيل تغيير الصور تلقائياً")} aria-pressed={!playing}>{playing ? "Ⅱ" : "▶"}</button>
-          </div>
         </div>
         <div className="product-gallery__thumbnails" role="group" aria-label={x("Choose an image", "اختر صورة")}>
           {images.map((image, i) => <button data-analytics="gallery" type="button" key={`${image}-${i}`} onClick={() => select(i)} aria-pressed={activeIndex === i} aria-label={`${x("Image", "الصورة")} ${i + 1}${i === 0 ? ` · ${x("Main", "الأساسية")}` : ""}${unavailable(image) ? ` · ${x("Out of stock", "غير متوفر")} · ${size} ml` : ""}`}>
