@@ -1,4 +1,5 @@
 import { useState } from "react";
+import "@/styles/product-page.css";
 import { Gallery } from "@/pages/Product/Gallery";
 import { PurchasePanel } from "@/pages/Product/PurchasePanel";
 import { RelatedScents } from "@/pages/Product/RelatedScents";
@@ -37,8 +38,8 @@ export function ProductPage() {
   const ml = selection?.id === product.id && product.sizes.some(size => size.ml === selection.ml) ? selection.ml : (product.sizes.find(size => size.ml === 50) ?? product.sizes[0])?.ml ?? 50;
 
   return (
-    <div className="anim-page bg-bone">
-      <section className="relative overflow-hidden page-pad">
+    <div className="product-page anim-page bg-bone">
+      <section className="product-page__section relative overflow-hidden page-pad">
         <div
           className="pointer-events-none absolute -start-32 top-20 h-80 w-80 rounded-full opacity-20 blur-[100px]"
           style={{ background: productAccent(product.accent, "var(--color-acid)") }}
@@ -46,11 +47,11 @@ export function ProductPage() {
         <div className="relative mx-auto max-w-[1400px] px-4 sm:px-6 lg:px-10">
           <Link
             to="/shop"
-            className="mb-5 inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.16em] text-mist transition hover:text-ink"
+            className="product-page__back mb-5 inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.16em] text-mist transition hover:text-ink"
           >
             <span className="rtl:rotate-180">←</span> {t("featured.all")}
           </Link>
-          <div className="grid gap-8 lg:grid-cols-[1.02fr_0.98fr] lg:gap-14">
+          <div className="product-page__layout grid gap-8 lg:grid-cols-[1.02fr_0.98fr] lg:gap-14">
             <div className="lg:sticky lg:top-24 lg:self-start">
               <Gallery product={product} selectedSize={ml} />
             </div>

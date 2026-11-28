@@ -1,0 +1,39 @@
+/* Keep product details comfortable on phones without changing desktop layouts. */
+@media (max-width: 639px) {
+  .product-page__section {
+    padding-top: calc(1rem * var(--ss));
+    padding-bottom: calc(1.4rem * var(--ss));
+  }
+  .product-page__back { margin-bottom: .75rem; min-height: 40px; }
+  .product-page__layout { gap: 1.25rem; }
+  .product-page .product-gallery { max-width: 360px; }
+  .product-page .product-gallery__stage {
+    aspect-ratio: auto;
+    height: clamp(190px, 42vh, 310px);
+    height: clamp(190px, 42svh, 310px);
+    min-height: 0;
+    border-radius: 24px;
+  }
+  .product-page .product-gallery__zoom-layer { padding: 9%; }
+  .product-page .product-gallery__toolbar { margin-top: .6rem; }
+  .product-page .product-gallery__thumbnails { padding-top: .55rem; }
+  .product-page .product-gallery__thumbnails button { flex-basis: 62px; width: 62px; height: 68px; }
+  .product-page .product-purchase-panel__title {
+    font-size: calc(clamp(1.8rem, 7vw, 2.2rem) * var(--hs));
+    overflow-wrap: anywhere;
+  }
+  .product-page .product-details { overflow-wrap: anywhere; }
+  .product-page .product-details__notes {
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 120px), 1fr));
+  }
+  .product-page .product-purchase-actions {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 44px;
+    grid-template-areas: "quantity wishlist" "add add";
+    gap: .625rem;
+  }
+  .product-page .product-purchase-actions__quantity { grid-area: quantity; width: max-content; max-width: 100%; }
+  .product-page .product-purchase-actions__quantity button { width: 44px; height: 44px; }
+  .product-page .product-purchase-actions__wishlist { grid-area: wishlist; }
+  .product-page .product-purchase-actions__add { grid-area: add; width: 100%; min-height: 48px; }
+}
