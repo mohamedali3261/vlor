@@ -1,3 +1,4 @@
+import { LoadingImage } from "@/components/ui/LoadingImage";
 import { primaryProductImage } from "@/lib/productImages";
 import { useLang } from "@/i18n/LanguageContext";
 import { resolveAsset } from "@/lib/assets";
@@ -36,7 +37,7 @@ export function ProductImageScale({ products, value, onChange }: {
       <div>
         <p className="mb-2 text-xs font-bold">{ar ? "معاينة حجم الصورة" : "Image size preview"}</p>
         <div className="flex h-56 items-center justify-center overflow-hidden rounded-2xl border border-ink/10 bg-bone-2/50 p-4">
-          {src && failedSrc !== src ? <img key={src} src={resolveAsset(src)} alt={product ? l(product.name) : ""} onError={() => setFailedSrc(src)} style={{ transform: `scale(${scale / 100})` }} className="h-full w-full object-contain transition-transform" /> : <p className="text-center text-xs text-mist">{ar ? "لا توجد صورة متاحة لهذا المنتج. يمكنك إضافتها من تبويب المنتجات." : "No image is available for this product. Add one in Products."}</p>}
+          {src && failedSrc !== src ? <LoadingImage key={src} src={resolveAsset(src)} alt={product ? l(product.name) : ""} onError={() => setFailedSrc(src)} style={{ transform: `scale(${scale / 100})` }} className="h-full w-full object-contain transition-transform" /> : <p className="text-center text-xs text-mist">{ar ? "لا توجد صورة متاحة لهذا المنتج. يمكنك إضافتها من تبويب المنتجات." : "No image is available for this product. Add one in Products."}</p>}
         </div>
       </div>
     </div>

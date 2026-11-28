@@ -1,3 +1,4 @@
+import { LoadingImage } from "@/components/ui/LoadingImage";
 import { Button } from "@/components/ui/Button";
 import { SectionHeading } from "@/components/ui/Primitives";
 import { Reveal } from "@/components/ui/Reveal";
@@ -191,11 +192,10 @@ export function Showcase() {
                   >
                     {item.fit === "contain" ? (
                       <div className="absolute inset-0 p-4 pb-14 sm:p-10 sm:pb-24 lg:p-14 lg:pb-28">
-                        <img
+                        <LoadingImage
                           src={item.src}
+                          variant="large-v1"
                           alt={item.title}
-                          loading={isActive ? "eager" : "lazy"}
-                          decoding="async"
                           draggable={false}
                           className={cn(
                             "h-full w-full object-contain drop-shadow-[0_18px_22px_rgba(77,51,8,0.48)] sm:drop-shadow-[0_28px_30px_rgba(77,51,8,0.5)]",
@@ -204,11 +204,10 @@ export function Showcase() {
                         />
                       </div>
                     ) : (
-                      <img
+                      <LoadingImage
                         src={item.src}
+                        variant="large-v1"
                         alt={item.title}
-                        loading={isActive ? "eager" : "lazy"}
-                        decoding="async"
                         draggable={false}
                         className="absolute inset-0 h-full w-full object-cover"
                       />
@@ -263,11 +262,9 @@ export function Showcase() {
                           : "border-bone/25 opacity-68 hover:opacity-100"
                       )}
                     >
-                      <img
+                      <LoadingImage
                         src={item.src}
                         alt=""
-                        loading="lazy"
-                        decoding="async"
                         draggable={false}
                         className={cn(
                           "h-full w-full",

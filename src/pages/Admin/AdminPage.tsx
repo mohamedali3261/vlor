@@ -5,6 +5,7 @@ import { Security } from "@/pages/Admin/Security";
 import { Orders } from "@/pages/Admin/Orders";
 import { AdminHeader, type AdminTab } from "@/pages/Admin/AdminHeader";
 import { ProductForm } from "@/pages/Admin/ProductForm";
+import { ImageOptimization } from "@/pages/Admin/ImageOptimization";
 import { ImageStockEditor } from "@/pages/Admin/ImageStockEditor";
 import { UnifyProductImages } from "@/pages/Admin/UnifyProductImages";
 import { ProductTable } from "@/pages/Admin/ProductTable";
@@ -208,6 +209,7 @@ export function AdminPage() {
                 </div>
               </div>
               <UnifyProductImages products={products} reloadProducts={reloadProducts} disabled={formOpen} />
+              <ImageOptimization disabled={formOpen} />
               <ImageStockEditor products={products} disabled={formOpen} />
               <ProductTable products={products} onEdit={openEdit} onDelete={handleDelete} />
             </>

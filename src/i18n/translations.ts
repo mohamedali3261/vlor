@@ -526,7 +526,6 @@ export const dict = {
   "cart.address": { en: "Street address", ar: "العنوان بالتفصيل" },
   "cart.addressPh": { en: "Street, building, floor, landmark", ar: "الشارع، المبنى، الدور، علامة مميزة" },
   "cart.noteField": { en: "Order note (optional)", ar: "ملاحظات على الطلب (اختياري)" },
-  "cart.notePh": { en: "Gift wrap, preferred delivery time…", ar: "تغليف هدية، وقت توصيل مفضل…" },
   "cart.sendOrder": { en: "Send order on WhatsApp", ar: "إرسال الطلب على واتساب" },
   "cart.sendMessenger": { en: "Send via Messenger", ar: "إرسال عبر ماسنجر" },
   "cart.quickSend": { en: "Send bag right away on WhatsApp", ar: "إرسال السلة فوراً على واتساب" },

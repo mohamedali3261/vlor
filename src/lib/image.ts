@@ -185,15 +185,69 @@ export async function prepareProductImageForUpload(file: File, maxBytes = MAX_D1
 }
 
 export async function uploadImageToD1(file: File, options?: { product?: boolean }): Promise<{ id: string; url: string; originalBytes: number; uploadedBytes: number }> {
-  const prepared = options?.product ? await prepareProductImageForUpload(file) : await prepareImageForUpload(file);
+  if (options?.product && !["image/jpeg", "image/png", "image/webp"].includes(file.type)) throw new ImageError("type");
+  // Keep the original byte-for-byte when D1 can store it; larger files still need
+  // the existing 1 MB upload preparation before they can be saved.
+  const prepared = options?.product && file.size > MAX_D1_IMAGE_BYTES ? await prepareProductImageForUpload(file) : await prepareImageForUpload(file);
   const data = new FormData();
   data.append("file", prepared);
   const response = await fetch("/api/admin/images", { method: "POST", body: data });
   if (response.status === 413) throw new ImageError("size");
   if (!response.ok) throw new Error("upload_failed");
   const result = (await response.json()) as { id: string; url: string };
+  // Variants are optional. A preparation/network error must never lose a successful upload.
+  try { await uploadImageVariants(result.id, prepared); } catch { /* Backfill can retry later. */ }
   return { ...result, originalBytes: file.size, uploadedBytes: prepared.size };
 }
 
 /** Rough storage cost of a string, in kilobytes. */
 export const kb = (value: string) => Math.round(value.length / 1024);
+
+export type ImageVariant = "small-v1" | "large-v1";
+
+/** Derive smaller images without changing the stored original or flattening transparency. */
+export async function createImageVariants(file: File, wanted: ImageVariant[] = ["small-v1", "large-v1"]): Promise<Partial<Record<ImageVariant, File>>> {
+  if (!wanted.length || file.size < 12) return {};
+  const decoded = await decode(file);
+  try {
+    const result: Partial<Record<ImageVariant, File>> = {};
+    const dimension = Math.max(decoded.width, decoded.height);
+    if (!dimension) throw new ImageError("decode");
+    for (const variant of wanted) {
+      const side = variant === "small-v1" ? 420 : 1000;
+      const scale = Math.min(1, side / dimension);
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.max(1, Math.round(decoded.width * scale));
+      canvas.height = Math.max(1, Math.round(decoded.height * scale));
+      const context = canvas.getContext("2d");
+      if (!context) throw new ImageError("decode");
+      context.imageSmoothingQuality = "high";
+      context.drawImage(decoded.source, 0, 0, canvas.width, canvas.height);
+      let best: Blob | undefined;
+      for (const quality of [0.8, 0.68, 0.56]) {
+        let candidate = await canvasBlob(canvas, "image/webp", quality);
+        if (!candidate || candidate.type !== "image/webp") {
+          const type = file.type === "image/jpeg" ? "image/jpeg" : "image/png";
+          candidate = await canvasBlob(canvas, type, quality);
+          if (candidate?.type !== type) candidate = null;
+        }
+        if (candidate && candidate.size >= 12 && candidate.size <= 350_000 && candidate.size < file.size && (!best || candidate.size < best.size)) best = candidate;
+        if (best && best.size <= (variant === "small-v1" ? 80_000 : 200_000)) break;
+      }
+      if (best) result[variant] = new File([best], `${variant}.${best.type === "image/webp" ? "webp" : best.type === "image/jpeg" ? "jpg" : "png"}`, { type: best.type });
+    }
+    return result;
+  } finally { decoded.release(); }
+}
+
+/** Best-effort: an original remains usable even if a derivative cannot be prepared or uploaded. */
+export async function uploadImageVariants(key: string, file: File, wanted: ImageVariant[] = ["small-v1", "large-v1"], signal?: AbortSignal): Promise<void> {
+  const variants = await createImageVariants(file, wanted);
+  for (const variant of wanted) {
+    if (signal?.aborted) throw new DOMException("Aborted", "AbortError");
+    const image = variants[variant];
+    if (!image) continue; // Already smaller, unsupported encoder, or no useful saving.
+    const response = await fetch(`/api/admin/images/${encodeURIComponent(key)}/variants/${variant}`, { method: "PUT", headers: { "Content-Type": image.type }, body: image, signal });
+    if (!response.ok) throw new Error("variant_upload_failed");
+  }
+}
