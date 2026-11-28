@@ -84,7 +84,7 @@ export function ShopHeroSlider() {
     <section
       className="shop-stage relative isolate overflow-hidden bg-ink text-bone"
       data-size={c.shopHero.size}
-      style={{ "--acc": accent } as CSSProperties}
+      style={{ "--acc": accent, "--product-image-scale": "var(--shop-hero-product-image-scale)" } as CSSProperties}
       aria-roledescription="carousel"
       aria-label={t("shop.slider.region")}
     >

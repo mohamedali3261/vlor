@@ -5,6 +5,7 @@ import { ArrowDown, Sparkle } from "@/components/ui/icons";
 import { useLang } from "@/i18n/LanguageContext";
 import { formatNumber } from "@/lib/format";
 import { pickCardRevealVariant } from "@/motion";
+import type { CSSProperties } from "react";
 import type { Product } from "@/types";
 
 interface ProductGridProps {
@@ -50,7 +51,7 @@ export function ProductGrid({ products, total, visible, onMore, onReset, emptySa
         </span>
       </div>
 
-      <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3 lg:gap-6 xl:gap-7">
+      <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3 lg:gap-6 xl:gap-7" style={{ "--product-image-scale": "var(--shop-grid-product-image-scale)" } as CSSProperties}>
         {products.map((product, index) => (
           <Reveal
             key={product.id}

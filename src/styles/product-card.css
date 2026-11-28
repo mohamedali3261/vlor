@@ -149,7 +149,7 @@ html[lang="ar"] .pc-watermark {
 /* Bottle stage — centered at rest, lifts on hover */
 .pc-bottle-link {
   position: absolute;
-  top: 50%;
+  top: calc(50% - 8px);
   left: 0;
   z-index: 20;
   display: block;
@@ -163,7 +163,7 @@ html[lang="ar"] .pc-watermark {
 
 @media (hover: hover) {
 .pc-card:hover .pc-bottle-link {
-  top: 25px;
+  top: 18px;
   transform: translateY(0);
 }
 }
@@ -459,9 +459,12 @@ html[data-theme="dark"] .pc-badge--light {
   color: var(--product-card-text, var(--color-ink));
   overflow: hidden;
 }
+.pc-bottle-link .loading-image { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); }
 .pc-user-image {
-  width: 100%;
-  height: 100%;
+  /* Leave room for the section scale (up to 150%) and the hover tilt. */
+  width: auto;
+  max-width: 62%;
+  height: 62%;
   object-fit: contain;
   /* Keep rotation angles visually consistent in RTL and LTR documents. */
   direction: ltr;
@@ -487,7 +490,7 @@ html[lang="ar"] .pc-card { --pc-photo-tilt: -14deg; }
 
 /* Keyboard users can reveal and operate the same controls as pointer users. */
 .pc-card:focus-within .pc-panel { height: 190px; }
-.pc-card:focus-within .pc-bottle-link { top: 25px; transform: translateY(0); }
+.pc-card:focus-within .pc-bottle-link { top: 18px; transform: translateY(0); }
 .pc-card:focus-within .pc-sizes { visibility: visible; opacity: 1; }
 .pc-card:focus-within .pc-buy-btn { opacity: 1; transform: translateY(0); }
 @media (max-width: 420px) {
@@ -512,7 +515,7 @@ html[lang="ar"] .pc-card { --pc-photo-tilt: -14deg; }
   .pc-card.pc-scroll-active .pc-disc { clip-path: circle(330px at 80% -18%); }
   [dir="rtl"] .pc-card.pc-scroll-active .pc-disc { clip-path: circle(330px at 20% -18%); }
   .pc-card.pc-scroll-active .pc-bottle-link,
-  .pc-card:focus-within .pc-bottle-link { top: 10px; transform: translateY(0); }
+  .pc-card:focus-within .pc-bottle-link { top: 6px; transform: translateY(0); }
   .pc-card.pc-scroll-active .pc-panel,
   .pc-card:focus-within .pc-panel { height: 238px; }
   .pc-card.pc-scroll-active .pc-sizes { visibility: visible; opacity: 1; transition-delay: 400ms; }

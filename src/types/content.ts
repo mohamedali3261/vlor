@@ -56,6 +56,10 @@ export interface ThemeContent {
   productCardText?: string;
   /** Scale for product images on the storefront and in the studio preview. */
   productImageScale: number;
+  /** Per-section overrides; absent values inherit the legacy product image scale. */
+  homeProductImageScale?: number;
+  shopHeroProductImageScale?: number;
+  shopGridProductImageScale?: number;
   /** Headings, in percent of the designed size (see lib/scale.ts for limits). */
   headingScale: number;
   /** Lead paragraphs, in percent. */

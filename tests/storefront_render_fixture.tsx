@@ -47,7 +47,7 @@ export function renderStudioSettingsAndImages(scale: number, withImage = true) {
   return renderToStaticMarkup(
     <StoreProvider><LanguageProvider>
       <StoreSettingsForm settings={defaultSettings} onSave={() => {}} />
-      <ProductImageScale products={[product]} value={scale} onChange={() => {}} />
+      <ProductImageScale products={[product]} theme={{...mergeContent(null).theme, productImageScale: scale, homeProductImageScale: scale}} onChange={() => {}} />
     </LanguageProvider></StoreProvider>,
   );
 }

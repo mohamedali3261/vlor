@@ -23,6 +23,8 @@ const byLabel=(label)=>root.findByProps({'aria-label':label});
 const tick=async()=>{const entries=[...timers]; assert.equal(entries.length,1);timers.delete(entries[0][0]);await act(async()=>entries[0][1]());};
 assert.equal(image().props.src,'/main.png');
 assert.equal(root.findAllByType('img').length,4); // main plus all thumbnails
+assert.equal(root.findByProps({className:'product-gallery__layout'}).props['data-has-thumbnails'],true);
+assert.equal(root.findByProps({className:'product-gallery__thumbnails'}).props.role,'group');
 assert.equal(byLabel('Image 1 · Main').props['aria-pressed'],true);
 for(const label of ['Previous image','Next image','Pause automatic image rotation','Play automatic image rotation']) assert.equal(root.findAllByProps({'aria-label':label}).length,0);
 await tick(); assert.equal(image().props.src,'/other.png');
@@ -58,7 +60,7 @@ await act(async()=>root.findByType('section').props.onBlur({currentTarget:{conta
 await act(async()=>{media.matches=true;mediaHandler();}); assert.equal(timers.size,0);
 assert.equal(root.findAllByProps({'aria-label':'Play automatic image rotation'}).length,0);
 await act(async()=>renderer.update(React.createElement(Gallery,{product:{...product,id:'p2',images:['/new.png']}})));
-assert.equal(image().props.src,'/new.png'); assert.equal(timers.size,0); assert.equal(root.findAllByProps({'aria-label':'Next image'}).length,0);
+assert.equal(image().props.src,'/new.png'); assert.equal(root.findByProps({className:'product-gallery__layout'}).props['data-has-thumbnails'],false); assert.equal(root.findAllByProps({className:'product-gallery__thumbnails'}).length,0); assert.equal(timers.size,0); assert.equal(root.findAllByProps({'aria-label':'Next image'}).length,0);
 await down(200,100); await up(100,100); assert.equal(image().props.src,'/new.png');
 await act(async()=>renderer.unmount()); assert.equal(timers.size,0);assert.equal(visibilityHandler,undefined);assert.equal(mediaHandler,undefined);
 console.log('Gallery swipe, scroll and pinch safety, rotation, zoom, reduced motion and cleanup passed.');

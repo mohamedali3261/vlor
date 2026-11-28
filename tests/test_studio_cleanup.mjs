@@ -9,7 +9,7 @@ const { renderStudioSettingsAndImages, mergeContent } = module.exports;
 const html = renderStudioSettingsAndImages(125);
 assert.match(html, /<img src="https:\/\/example.com\/scent.png"/); assert.match(html, /transform:scale\(1\.25\)/);
 assert.match(html, /type="range"[^>]+min="50"[^>]+max="150"/);
-assert.match(html, /تظهر الصور الجديدة للزوار/);
+assert.match(html, /احفظ التعديلات لتظهر للزوار/);
 assert.match(html, /رابط فيسبوك/); assert.match(html, /رابط يوتيوب/);
 assert.doesNotMatch(html, />Email<|>Hours \(English\)<|>المواعيد \(عربي\)</);
 assert.match(renderStudioSettingsAndImages(100, false), /لا توجد صورة متاحة/);
@@ -22,7 +22,7 @@ assert.equal(mergeContent({theme:{productImageScale:'oops'}}).theme.productImage
 const saved = mergeContent({theme:{productImageScale:130}});
 assert.equal(mergeContent(JSON.parse(JSON.stringify(saved))).theme.productImageScale, 130);
 const content = readFileSync('src/pages/Admin/ContentEditor.tsx', 'utf8');
-assert.doesNotMatch(content, /key: "story"/); assert.match(content, /next\.theme\.productImageScale = value/);
+assert.doesNotMatch(content, /key: "story"/); assert.match(content, /next\.theme\[key\] = value/);
 const form = readFileSync('src/pages/Admin/ProductForm.tsx', 'utf8');
 assert.doesNotMatch(form, /admin\.cutout/); assert.match(form, /<ProductImagesEditor/);
 assert.match(form, /images: draft\.images/);

@@ -376,6 +376,9 @@ export function mergeContent(stored: DeepPartial<SiteContent> | null | undefined
   // Older/imported content can contain missing or invalid values.
   const validColour = (value: unknown, fallback: string) =>
     typeof value === "string" && /^#[0-9a-f]{6}$/i.test(value) ? value : fallback;
+  const imageScale = (value: unknown, fallback: number) =>
+    typeof value === "number" && Number.isFinite(value) ? Math.min(150, Math.max(50, Math.round(value))) : fallback;
+  const legacyImageScale = imageScale(result.theme?.productImageScale, 100);
   result.theme = {
     ...result.theme,
     // Upgrade the previous built-in near-black, but keep custom owner colours.
@@ -391,7 +394,10 @@ export function mergeContent(stored: DeepPartial<SiteContent> | null | undefined
     productCardBase: validColour(result.theme?.productCardBase, "") || undefined,
     productCardDisc: validColour(result.theme?.productCardDisc, "") || undefined,
     productCardText: validColour(result.theme?.productCardText, "") || undefined,
-    productImageScale: typeof result.theme?.productImageScale === "number" && Number.isFinite(result.theme.productImageScale) ? Math.min(150, Math.max(50, Math.round(result.theme.productImageScale))) : 100,
+    productImageScale: legacyImageScale,
+    homeProductImageScale: imageScale(result.theme?.homeProductImageScale, legacyImageScale),
+    shopHeroProductImageScale: imageScale(result.theme?.shopHeroProductImageScale, legacyImageScale),
+    shopGridProductImageScale: imageScale(result.theme?.shopGridProductImageScale, legacyImageScale),
     headingScale: clampScale("headingScale", Number(result.theme?.headingScale)),
     bodyScale: clampScale("bodyScale", Number(result.theme?.bodyScale)),
     sectionSpacing: clampScale("sectionSpacing", Number(result.theme?.sectionSpacing)),

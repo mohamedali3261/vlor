@@ -191,8 +191,8 @@ export function ContentEditor({ onManageProducts }: { onManageProducts?: () => v
 
       <div className="mt-3">
         <Section title={ar ? "حجم صور المنتجات" : "Product image size"} description={ar ? "تحكّم في حجم صور المنتجات بعد إضافتها من الاستوديو." : "Control the size of product images added from the studio."} defaultOpen>
-          <ProductImageScale products={products} value={draft.theme.productImageScale}
-            onChange={(value) => edit((next) => { next.theme.productImageScale = value; })} />
+          <ProductImageScale products={products} theme={draft.theme}
+            onChange={(key, value) => edit((next) => { next.theme[key] = value; })} />
         </Section>
       </div>
 

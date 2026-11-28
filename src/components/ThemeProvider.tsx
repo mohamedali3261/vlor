@@ -19,6 +19,9 @@ export function ThemeProvider() {
     set("--product-card-disc", card.disc);
     set("--product-card-text", card.text);
     set("--product-image-scale", String(theme.productImageScale / 100));
+    set("--home-product-image-scale", String((theme.homeProductImageScale ?? theme.productImageScale) / 100));
+    set("--shop-hero-product-image-scale", String((theme.shopHeroProductImageScale ?? theme.productImageScale) / 100));
+    set("--shop-grid-product-image-scale", String((theme.shopGridProductImageScale ?? theme.productImageScale) / 100));
     set("--color-ink", theme.ink);
     set("--color-bone", background);
     set("--color-card-light", surfaces.cardLight);
