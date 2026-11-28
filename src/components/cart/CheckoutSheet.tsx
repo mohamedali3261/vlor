@@ -21,7 +21,7 @@ type Quote = { signature: string; subtotal: number; shipping: number; discount: 
 interface CheckoutSheetProps { open: boolean; onClose: () => void; }
 
 export function CheckoutSheet({ open, onClose }: CheckoutSheetProps) {
-  const { lines, count, clear, close: closeCart } = useCart();
+  const { lines, count, clear, close: closeCart, open: openCart } = useCart();
   const { settings } = useStore();
   const { lang, t, l } = useLang();
   const { push } = useToast();
@@ -37,6 +37,7 @@ export function CheckoutSheet({ open, onClose }: CheckoutSheetProps) {
   const pendingRef = useRef<{digest:string; key:string} | null>(null);
   const [quote, setQuote] = useState<Quote | null>(null);
   const [quoteState, setQuoteState] = useState<"idle" | "loading" | "error" | "ready">("idle");
+  const [quoteIssue, setQuoteIssue] = useState<"unavailable" | "other">("other");
   const [quoteAttempt, setQuoteAttempt] = useState(0);
   const [confirmation, setConfirmation] = useState<{ id: string; tracking: string; total: number; message: string; profileName: string | null } | null>(null);
   const quoteInput = { city: customer.city, items: lines.map(({ productId, ml, qty }) => ({ productId, ml, qty })) };
@@ -65,10 +66,13 @@ export function CheckoutSheet({ open, onClose }: CheckoutSheetProps) {
       requestTimeout = setTimeout(() => { timedOut = true; controller.abort(); }, 15000);
       try {
         const response = await fetch("/api/quote", { method: "POST", headers: { "Content-Type": "application/json" }, body: quoteSignature, signal: controller.signal });
-        if (!response.ok) throw new Error("quote unavailable");
+        if (!response.ok) {
+          const result = await response.json().catch(() => null);
+          throw new Error(result?.error === "Size unavailable" || result?.error === "Product unavailable" ? "item unavailable" : "quote unavailable");
+        }
         const result = await response.json();
         if (!controller.signal.aborted) { setQuote({ ...result, signature: quoteSignature }); setQuoteState("ready"); }
-      } catch { if (timedOut || !controller.signal.aborted) { setQuote(null); setQuoteState("error"); } }
+      } catch (error) { if (timedOut || !controller.signal.aborted) { setQuote(null); setQuoteIssue(error instanceof Error && error.message === "item unavailable" ? "unavailable" : "other"); setQuoteState("error"); } }
       finally { if (requestTimeout !== undefined) clearTimeout(requestTimeout); }
     }, 350);
     return () => { window.clearTimeout(timer); if (requestTimeout !== undefined) clearTimeout(requestTimeout); controller.abort(); };
@@ -200,7 +204,7 @@ export function CheckoutSheet({ open, onClose }: CheckoutSheetProps) {
               {activeQuote && <div className="checkout-total"><span>{ar ? "الإجمالي" : "Total"}</span><b>{formatPrice(activeQuote.total, lang)}</b></div>}
             </div>
             {quoteState === "loading" && <p role="status" className="mt-2 text-xs text-mist">{ar ? "جاري حساب الشحن والإجمالي…" : "Calculating shipping and total…"}</p>}
-            {quoteState === "error" && <div role="alert" className="mt-2 text-xs text-rose-700"><p>{ar ? "تعذر حساب الشحن والإجمالي. راجع المحافظة وحاول مجددًا." : "Could not calculate the total. Check the governorate and try again."}</p><button type="button" onClick={()=>setQuoteAttempt(value=>value+1)} className="mt-2 font-bold underline">{ar ? "إعادة حساب الإجمالي" : "Retry total"}</button></div>}
+            {quoteState === "error" && <div role="alert" className="mt-2 text-xs text-rose-700"><p>{quoteIssue === "unavailable" ? (ar ? "أحد المنتجات أو المقاسات في السلة لم يعد متاحًا. ارجع للسلة واحذفه أو اختر مقاسًا آخر." : "A product or size in your cart is no longer available. Return to the cart and remove it or choose another size.") : (ar ? "تعذر حساب الشحن والإجمالي. راجع المحافظة وحاول مجددًا." : "Could not calculate the total. Check the governorate and try again.")}</p>{quoteIssue === "unavailable" && <button type="button" onClick={()=>{onClose();openCart();}} className="mt-2 me-3 font-bold underline">{ar ? "العودة للسلة" : "Return to cart"}</button>}<button type="button" onClick={()=>setQuoteAttempt(value=>value+1)} className="mt-2 font-bold underline">{ar ? "إعادة حساب الإجمالي" : "Retry total"}</button></div>}
             <p className="checkout-payment"><Check className="h-4 w-4 shrink-0" /> {ar ? "الدفع عند الاستلام" : "Cash on delivery"}</p>
           </section>
           <div className="checkout-actions sticky bottom-0 -mx-4 mt-4 grid gap-2 border-t border-ink/10 bg-bone/95 px-4 pb-3 pt-3 backdrop-blur sm:-mx-5 sm:px-5">
